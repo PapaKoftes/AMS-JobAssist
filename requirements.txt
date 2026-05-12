@@ -1,0 +1,19 @@
+# AMS JobAssist — Development Install
+#
+# This file installs both tools plus all dev and AI dependencies in one shot.
+# For production use, install each tool individually via its own pyproject.toml.
+#
+# Usage:
+#   pip install -e "tool-1-cv-maker[ai,dev]"
+#   pip install -e "tool-2-trainer-dashboard[dev]"
+#
+# Or everything at once:
+#   pip install -r requirements.txt
+
+-e shared/
+-e tool-1-cv-maker[ai,dev]
+-e tool-2-trainer-dashboard[dev]
+
+# Dev tools (not part of either package)
+pyinstaller>=6.0
+pytest-cov>=4.0

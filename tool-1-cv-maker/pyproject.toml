@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ams-cv-maker"
+version = "0.2.0"
+description = "AMS JobAssist — offline CV building tool for employment training participants (Tool 1)"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.20",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "python-docx>=0.8",
+    "reportlab>=4.0",
+    "starlette>=0.27",
+"python-multipart>=0.0.6",
+    "lingua-language-detector>=2.0",
+]
+
+[project.optional-dependencies]
+# Local offline LLM — Qwen2.5-1.5B-Instruct Q4_K_M (~1.1 GB model download)
+# pip install -e ".[ai]"
+# The model itself is downloaded separately via the in-app button or ams_jobassist.bat
+# llama-cpp-python CPU wheels: https://abetlen.github.io/llama-cpp-python/whl/cpu
+ai = [
+    "llama-cpp-python",
+]
+dev = [
+    "pytest>=7",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+    "black",
+    "ruff",
+]
+
+[project.scripts]
+# After `pip install -e .` this command starts Tool 1
+ams-cv-maker = "app:main"
+
+# ── Package layout ──────────────────────────────────────────────────────────
+# src/backend/ is declared as the root so that `api`, `cv`, `export`, `ai`,
+# etc. are all importable as top-level packages — no sys.path hacks needed.
+[tool.setuptools.package-dir]
+"" = "src/backend"
+
+[tool.setuptools.packages.find]
+where = ["src/backend"]
+
+# ── Pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+# ── Linting ──────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]

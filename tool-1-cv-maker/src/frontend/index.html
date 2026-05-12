@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMS JobAssist - Lebenslauf-Ersteller</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<!-- Skip navigation link for keyboard / screen reader users -->
+<a href="#mainContent" class="skip-link">Zum Hauptinhalt springen</a>
+<div class="app-container">
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <div class="header-content">
+            <h1 class="logo">AMS JobAssist</h1>
+            <p class="subtitle" id="appSubtitle">Ihr professioneller Lebenslauf — in jeder Sprache</p>
+        </div>
+        <div class="autosave-indicator" id="autosaveIndicator" aria-live="polite" aria-atomic="true">
+            <span class="offline-badge">Vollständig offline</span>
+            <span class="ai-badge ai-off" id="aiBadge" style="display:none;" title="KI-Status">Regelbasiert</span>
+            <span class="save-status" id="saveStatus" aria-live="polite">Bereit</span>
+            <button class="font-size-btn" id="fontSizeBtn" title="Schriftgröße ändern" aria-label="Schriftgröße vergrößern">A+</button>
+        </div>
+    </header>
+
+    <main class="main-content" id="mainContent" role="main">
+
+        <!-- ================================================================
+             WELCOME SCREEN
+             ================================================================ -->
+        <div id="welcomeScreen" class="screen screen-active">
+
+            <!-- #6 Resume banner — shown only when a saved session exists -->
+            <div id="resumeBanner" class="resume-banner" style="display:none;">
+                <div class="resume-banner-inner">
+                    <span class="resume-icon">💾</span>
+                    <div class="resume-text">
+                        <strong id="resumeWelcomeStrong">Willkommen zurück!</strong>
+                        <span id="resumeSessionInfo">Sie haben ein Interview in Bearbeitung.</span>
+                        <!-- C2: offline warning — shown when API unreachable -->
+                        <span id="resumeOfflineWarning" class="offline-warning-inline" style="display:none;">⚠️ Offline — letzte Verbindung wird wiederhergestellt</span>
+                    </div>
+                    <div class="resume-actions">
+                        <button class="btn btn-primary btn-sm" id="resumeBtn">Weiter wo ich aufgehört habe</button>
+                        <button class="btn btn-ghost btn-sm" id="dismissResumeBtn">Neu beginnen</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- C5: Completed-session banner — shown when user returns after finishing -->
+            <div id="completedBanner" class="resume-banner completed-banner" style="display:none;">
+                <div class="resume-banner-inner">
+                    <span class="resume-icon">🎉</span>
+                    <div class="resume-text">
+                        <strong id="completedBannerStrong">Ihr Lebenslauf ist fertig!</strong>
+                        <span id="completedBannerInfo">Sie können ihn erneut herunterladen.</span>
+                    </div>
+                    <div class="resume-actions">
+                        <button class="btn btn-primary btn-sm" id="completedRedownloadBtn">⬇ Erneut herunterladen</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="welcome-container">
+
+                <!-- #1 Trust block -->
+                <div class="trust-block">
+                    <p class="trust-headline" id="trustHeadline">Wir verwandeln Ihre Antworten automatisch in einen professionellen Lebenslauf.</p>
+                    <div class="trust-details">
+                        <span id="trustDetail1">⏱ Etwa 10–15 Minuten</span>
+                        <span id="trustDetail2">💾 Fortschritt nach jeder Antwort gespeichert</span>
+                        <span id="trustDetail3">🌐 Schreiben Sie in jeder Sprache</span>
+                    </div>
+                </div>
+
+                <!-- Language Selector — must come first so users can read everything else -->
+                <div class="language-selector" id="languageSelectorBlock">
+                    <p class="step-label" id="step0Label">
+                        <span class="step-num">1</span>
+                        <span id="langSelectorHeading">Choose your language / Sprache wählen:</span>
+                    </p>
+                    <div class="lang-grid">
+                        <button class="lang-btn selected" data-lang="de">🇦🇹 Deutsch</button>
+                        <button class="lang-btn" data-lang="en">🇬🇧 English</button>
+                        <button class="lang-btn" data-lang="bs">🇧🇦 Bosanski</button>
+                        <button class="lang-btn" data-lang="hr">🇭🇷 Hrvatski</button>
+                        <button class="lang-btn" data-lang="sr">🇷🇸 Srpski</button>
+                        <button class="lang-btn" data-lang="tr">🇹🇷 Türkçe</button>
+                        <button class="lang-btn" data-lang="pl">🇵🇱 Polski</button>
+                        <button class="lang-btn" data-lang="ro">🇷🇴 Română</button>
+                        <button class="lang-btn" data-lang="uk">🇺🇦 Українська</button>
+                        <button class="lang-btn" data-lang="ru">🇷🇺 Русский</button>
+                        <button class="lang-btn" data-lang="ar">🇸🇦 عربي</button>
+                        <button class="lang-btn" data-lang="sk">🇸🇰 Slovenčina</button>
+                    </div>
+                    <p class="lang-note" id="langNote">Sie können immer mehrsprachig schreiben — das System erkennt jede Sprache automatisch.</p>
+                </div>
+
+                <div class="path-selector">
+                    <p class="step-label" id="step1Label">
+                        <span class="step-num">2</span>
+                        <span id="step1Text">Was beschreibt Ihre aktuelle Situation am besten?</span>
+                    </p>
+                    <div class="path-options">
+                        <button class="path-button" data-path="unemployed">
+                            <span class="path-icon">🔍</span>
+                            <span class="path-text">
+                                <span class="path-label">Jobsuchend</span>
+                                <span class="path-desc">Auf der Suche nach Arbeit oder Wiedereinstieg</span>
+                            </span>
+                        </button>
+                        <button class="path-button" data-path="career-switch">
+                            <span class="path-icon">🔄</span>
+                            <span class="path-text">
+                                <span class="path-label">Berufswechsel</span>
+                                <span class="path-desc">Wechsel in ein neues Berufsfeld oder eine andere Branche</span>
+                            </span>
+                        </button>
+                        <button class="path-button" data-path="student">
+                            <span class="path-icon">📚</span>
+                            <span class="path-text">
+                                <span class="path-label">Schüler/in oder Student/in</span>
+                                <span class="path-desc">In Ausbildung oder kurz vor dem Abschluss</span>
+                            </span>
+                        </button>
+                        <button class="path-button" data-path="pause">
+                            <span class="path-icon">⏸️</span>
+                            <span class="path-text">
+                                <span class="path-label">Berufliche Pause</span>
+                                <span class="path-desc">Rückkehr nach einer Zeit ohne Arbeit</span>
+                            </span>
+                        </button>
+                        <button class="path-button" data-path="other">
+                            <span class="path-icon">✨</span>
+                            <span class="path-text">
+                                <span class="path-label">Sonstiges</span>
+                                <span class="path-desc">Meine Situation ist etwas anders</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="user-input">
+                    <p class="step-label" id="step2Label">
+                        <span class="step-num">3</span>
+                        <span id="step2Text">Wie heißen Sie?</span>
+                    </p>
+                    <input type="text" id="userIdInput" placeholder="Ihren Vornamen eingeben — z.B. Maria" autocomplete="given-name" />
+                    <!-- DSGVO consent — required before starting interview -->
+                    <div class="consent-block" id="consentBlock">
+                        <label class="consent-label">
+                            <input type="checkbox" id="consentCheck" aria-required="true" />
+                            <span id="consentText">Ich verstehe, dass meine Antworten nur auf diesem Computer gespeichert werden und nicht ins Internet übertragen werden.</span>
+                        </label>
+                    </div>
+                    <button class="btn btn-primary btn-large" id="startBtn" disabled>Meinen Lebenslauf erstellen →</button>
+                    <p class="start-hint" id="startHint">Bitte wählen Sie oben Ihre Situation aus und geben Sie Ihren Namen ein.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+             INTERVIEW SCREEN
+             ================================================================ -->
+        <div id="interviewScreen" class="screen">
+            <div class="interview-layout">
+
+            <!-- Live CV panel — right column, builds up as answers come in -->
+            <div class="cv-panel-column">
+                <div class="cv-panel-header-bar">Ihr Lebenslauf</div>
+                <div id="liveCVPanel" class="live-cv-panel">
+                    <p class="cv-panel-empty">Ihr Lebenslauf wird hier aufgebaut…</p>
+                </div>
+            </div>
+
+            <div class="interview-container">
+
+                <!-- Progress -->
+                <div class="progress-section">
+                    <div class="progress-info">
+                        <span class="progress-label" id="progressLabel">Frage 1 von 5</span>
+                        <span class="progress-percent" id="progressPercent">20%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <!-- Question -->
+                <div class="question-section">
+                    <h2 id="questionText">Frage kommt gleich</h2>
+                    <p id="questionGermanSubtitle" class="question-german-subtitle" style="display:none;"></p>
+                    <p id="questionHint" class="question-hint">Hinweis kommt gleich</p>
+
+                    <div class="examples-container">
+                        <div class="example example-good">
+                            <h4 class="example-title" id="exampleGoodTitle">✅ Gutes Beispiel</h4>
+                            <p id="goodExample" class="example-text">Gutes Beispiel hier</p>
+                        </div>
+                        <div class="example example-weak">
+                            <h4 class="example-title" id="exampleBadTitle">❌ Weniger hilfreich</h4>
+                            <p id="badExample" class="example-text">Schwaches Beispiel hier</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Helper tip (contextual, shown per-question) -->
+                <div id="helperTip" class="helper-tip" style="display:none;"></div>
+
+                <!-- Quick-fill chips (populated per-question) -->
+                <div id="quickFillContainer" class="quick-fill-container" style="display:none;"></div>
+
+                <!-- Detected language badge -->
+                <div id="detectedLangBadge" class="detected-lang-badge" style="display:none;"></div>
+
+                <!-- Date helper (shown only for date_range questions) -->
+                <div id="dateHelperContainer" class="date-helper" style="display:none;">
+                    <div class="date-row">
+                        <div class="date-field">
+                            <label id="dateFromLabel" for="dateFromInput">Von:</label>
+                            <input type="text" id="dateFromInput" placeholder="z.B. Jän 2019, 2019, ca. 2019" />
+                        </div>
+                        <span class="date-separator">–</span>
+                        <div class="date-field">
+                            <label id="dateToLabel" for="dateToInput">Bis:</label>
+                            <input type="text" id="dateToInput" placeholder="z.B. März 2022, heute, noch nicht beendet" />
+                        </div>
+                    </div>
+                    <button class="btn-link" id="dateHelperInsertBtn" type="button">In Antwortfeld einfügen ↓</button>
+                </div>
+
+                <!-- Answer input -->
+                <div class="answer-section">
+                    <label class="answer-label" id="answerLabel" for="answerInput">
+                        Ihre Antwort — schreiben Sie in jeder Sprache, die Sie möchten:
+                    </label>
+                    <textarea
+                        id="answerInput"
+                        class="answer-input"
+                        placeholder="Schreiben Sie einfach drauf los — auch grobe Notizen sind in Ordnung. Wir verbessern es automatisch."
+                        rows="5"
+                        aria-describedby="wordCount qualityIndicator"
+                        autocomplete="off"
+                        spellcheck="true"
+                    ></textarea>
+                    <div class="answer-meta">
+                        <span class="word-count" id="wordCount" aria-live="polite" aria-atomic="true">0 Wörter</span>
+                        <div class="quality-indicator" id="qualityIndicator" style="display:none;" role="status" aria-live="polite"></div>
+                    </div>
+                </div>
+
+                <!-- Photo upload (shown only for photo question) -->
+                <div id="photoUploadContainer" class="photo-upload-container" style="display:none;">
+                    <div class="photo-preview-area" id="photoPreviewArea">
+                        <span id="photoPlaceholder">📷</span>
+                        <img id="photoPreview" src="" alt="" style="display:none; max-width:120px; max-height:160px; border-radius:4px;">
+                    </div>
+                    <label class="btn btn-secondary" id="photoUploadLabel" for="photoFileInput">
+                        <span id="photoUploadLabelText">Foto auswählen (optional)</span>
+                    </label>
+                    <input type="file" id="photoFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+                    <p class="photo-hint" id="photoHint">Professionelles Foto — optional. Österreichische Arbeitgeber erwarten oft ein Foto im Lebenslauf.</p>
+                    <button class="btn btn-ghost btn-sm" id="photoSkipBtn" type="button">
+                        <span id="photoSkipLabel">Ohne Foto fortfahren</span>
+                    </button>
+                </div>
+
+                <!-- #2 Live split preview: raw → improved -->
+                <div class="preview-section" id="previewSection" style="display:none;" aria-live="polite" aria-atomic="false">
+                    <h3 class="preview-title" id="previewTitle">So sieht es in Ihrem Lebenslauf aus</h3>
+                    <div class="preview-split">
+                        <div class="preview-col">
+                            <h4 class="preview-col-label" id="previewRawLabel">Was Sie geschrieben haben</h4>
+                            <div class="preview-box preview-raw" id="previewRaw"></div>
+                        </div>
+                        <div class="preview-arrow" aria-hidden="true">→</div>
+                        <div class="preview-col">
+                            <h4 class="preview-col-label" id="previewPolishedLabel">In Ihrem Lebenslauf</h4>
+                            <div class="preview-box preview-polished" id="previewPolished">
+                                <span class="preview-loading" id="previewLoadingSpan">Wird verbessert…</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="skipBtn">Frage überspringen</button>
+                    <button class="btn btn-primary" id="submitBtn" disabled>Weiter →</button>
+                </div>
+                <!-- A3: short-input hint shown below submit button -->
+                <p id="submitHint" class="submit-hint" aria-live="polite"></p>
+
+                <!-- Re-ask message -->
+                <div id="reaskMessage" class="reask-message" style="display:none;">
+                    <p id="reaskText"></p>
+                    <p id="reaskSuggestion" class="reask-suggestion"></p>
+                </div>
+
+                <!-- Follow-up mini-chat (shown after answer accepted, before next question) -->
+                <div id="followUpContainer" class="followup-container" style="display:none;"></div>
+
+            </div><!-- end interview-container -->
+            </div><!-- end interview-layout -->
+        </div>
+
+        <!-- ================================================================
+             AI COACH WIDGET — floating helper during interview
+             ================================================================ -->
+        <div id="aiCoachWidget" class="ai-coach-widget" style="display:none;" aria-label="KI-Hilfe">
+            <!-- Toggle button -->
+            <button id="aiCoachToggle" class="ai-coach-toggle" aria-expanded="false" title="KI-Hilfe öffnen">
+                <span class="ai-coach-icon">💬</span>
+                <span class="ai-coach-label" id="aiCoachLabel">Hilfe</span>
+            </button>
+
+            <!-- Chat panel -->
+            <div id="aiCoachPanel" class="ai-coach-panel" aria-hidden="true">
+                <div class="ai-coach-header">
+                    <span>🤖 KI-Coach</span>
+                    <button class="ai-coach-close" id="aiCoachClose" aria-label="Schließen">✕</button>
+                </div>
+
+                <div class="ai-coach-messages" id="aiCoachMessages">
+                    <div class="ai-coach-msg ai-coach-msg--bot" id="aiCoachWelcome">
+                        Hallo! Ich bin Ihr persönlicher KI-Coach. Schreiben Sie mir, wenn Sie Hilfe mit einer Frage brauchen.
+                    </div>
+                </div>
+
+                <!-- Quick-action buttons -->
+                <div class="ai-coach-quick" id="aiCoachQuick">
+                    <button class="ai-coach-quick-btn" data-msg="stuck">Ich weiß nicht weiter</button>
+                    <button class="ai-coach-quick-btn" data-msg="example">Gib mir ein Beispiel</button>
+                    <button class="ai-coach-quick-btn" data-msg="explain">Erkläre die Frage</button>
+                </div>
+
+                <div class="ai-coach-input-row">
+                    <input
+                        id="aiCoachInput"
+                        class="ai-coach-input"
+                        type="text"
+                        placeholder="Schreiben Sie Ihre Frage…"
+                        maxlength="300"
+                        autocomplete="off"
+                    />
+                    <button id="aiCoachSend" class="ai-coach-send" title="Senden">➤</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+             COMPLETION SCREEN
+             ================================================================ -->
+        <div id="completionScreen" class="screen">
+            <div class="completion-container">
+                <h2 id="completionHeading">Ihr Lebenslauf ist fertig 🎉</h2>
+                <p id="completionSubtitle">Ihre Antworten wurden verbessert und gespeichert. Laden Sie Ihren Lebenslauf unten herunter.</p>
+
+                <!-- #3 Quality interpretation (human-readable) -->
+                <div class="quality-card" id="qualityCard">
+                    <div class="quality-score-row">
+                        <span class="quality-badge" id="qualityBadge"></span>
+                        <span class="quality-label" id="qualityLabel"></span>
+                    </div>
+                    <ul class="improvement-tips" id="improvementTips"></ul>
+                </div>
+
+                <!-- Stats summary -->
+                <div class="completion-summary">
+                    <p id="completionSummary"></p>
+                </div>
+
+                <!-- AI Profile Summary — shown after completion -->
+                <div class="profile-summary-card" id="profileSummaryCard" style="display:none;">
+                    <h3 id="profileSummaryHeading">💡 Ihr Stärkenprofil</h3>
+                    <p id="profileSummaryText"></p>
+                </div>
+
+                <!-- Export buttons -->
+                <div class="completion-actions">
+                    <button class="btn btn-primary btn-large" id="exportBtn">⬇ PDF herunterladen</button>
+                    <button class="btn btn-secondary" id="exportDocxBtn">⬇ Word herunterladen (.docx)</button>
+                    <button class="btn btn-secondary" id="exportJsonBtn">⬇ Daten exportieren (für Trainer)</button>
+                    <button class="btn btn-ghost btn-sm" id="myDataBtn" title="DSGVO Art. 20 — alle Ihre gespeicherten Daten">🔒 Meine Daten herunterladen</button>
+                </div>
+
+                <!-- #4 Export feedback — replaces alert() -->
+                <div class="export-feedback" id="exportFeedback" style="display:none;">
+                    <span id="exportFeedbackText"></span>
+                    <button class="btn-link" id="exportRetryBtn">Erneut versuchen</button>
+                </div>
+
+                <!-- ATS: Job Description Input -->
+                <div class="ats-input-section" id="atsInputSection" style="display:none;">
+                    <h3 id="atsInputHeading">🎯 Stellenanzeige einfügen — so vergleichen wir Ihren Lebenslauf</h3>
+                    <p id="atsInputDesc" class="ats-input-desc">Kopieren Sie die Stellenanzeige, auf die Sie sich bewerben möchten, in das Feld unten. Das System findet automatisch die passenden Schlüsselwörter.</p>
+                    <textarea
+                        id="jobDescInput"
+                        class="job-desc-input"
+                        placeholder="Stellenanzeige hier einfügen — zum Beispiel von AMS, karriere.at oder dem Unternehmen direkt..."
+                        rows="6"
+                    ></textarea>
+                    <div class="ats-input-actions">
+                        <button class="btn btn-primary" id="runAtsBtn" type="button">
+                            <span id="runAtsBtnLabel">Lebenslauf analysieren →</span>
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="cancelAtsBtn" type="button">
+                            <span id="cancelAtsBtnLabel">Abbrechen</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- §5 ATS Score Panel -->
+                <div class="ats-section" id="atsSection" style="display:none;">
+                    <h3 id="atsHeading">🎯 Wie gut passt Ihr Lebenslauf?</h3>
+                    <div class="ats-score-row">
+                        <span class="ats-score-badge" id="atsScore">--</span>
+                        <span class="ats-grade" id="atsGrade"></span>
+                    </div>
+                    <div id="atsMatchedRow" style="display:none;">
+                        <p class="ats-label" id="atsMatchedLabel">Gefundene Schlüsselwörter</p>
+                        <div class="ats-keywords" id="atsMatched"></div>
+                    </div>
+                    <div id="atsMissingRow" style="display:none;">
+                        <p class="ats-label" id="atsMissingLabel" style="margin-top:8px;">Fehlende Schlüsselwörter</p>
+                        <div class="ats-keywords" id="atsMissing"></div>
+                    </div>
+                    <ul class="ats-suggestions" id="atsSuggestions"></ul>
+                </div>
+                <button class="btn btn-secondary" id="atsBtn" style="margin-bottom:8px;">🎯 Lebenslauf analysieren</button>
+
+                <!-- Cover Letter Input -->
+                <div class="cover-letter-input" id="coverLetterInputSection" style="display:none;">
+                    <h3 id="clInputHeading">✉️ Anschreiben personalisieren</h3>
+                    <div class="cl-input-row">
+                        <label id="clCompanyLabel" for="clCompanyInput">
+                            <span id="clCompanyLabelText">Unternehmen / Arbeitgeber:</span>
+                        </label>
+                        <input type="text" id="clCompanyInput" placeholder="z.B. BILLA AG, Huber GmbH, AMS Wien" />
+                    </div>
+                    <div class="cl-input-row">
+                        <label id="clPositionLabel" for="clPositionInput">
+                            <span id="clPositionLabelText">Stelle / Berufsbezeichnung:</span>
+                        </label>
+                        <input type="text" id="clPositionInput" placeholder="z.B. Lagermitarbeiter/in, Reinigungskraft, Bürokauffrau" />
+                    </div>
+                    <div class="cl-input-actions">
+                        <button class="btn btn-primary" id="generateCLBtn" type="button">
+                            <span id="generateCLBtnLabel">Anschreiben erstellen →</span>
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="cancelCLBtn" type="button">
+                            <span id="cancelCLBtnLabel">Abbrechen</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- §6 Cover Letter Panel -->
+                <div class="cover-letter-section" id="coverLetterSection" style="display:none;">
+                    <h3 id="coverLetterHeading">✉️ Ihr Anschreiben</h3>
+                    <div class="cover-letter-body" id="coverLetterBody"></div>
+                    <div class="cover-letter-actions" id="coverLetterActions"></div>
+                </div>
+                <button class="btn btn-secondary" id="coverLetterBtn" style="margin-bottom:8px;">✉️ Anschreiben erstellen</button>
+
+                <div class="completion-secondary-actions">
+                    <!-- #7 Trainer-Ansicht -->
+                    <button class="btn btn-secondary" id="reviewBtn">📋 Vorher &amp; Nachher ansehen</button>
+                    <!-- #5 Datenverlust-Schutz ist in JS -->
+                    <button class="btn btn-ghost" id="startOverBtn">Neuen Lebenslauf beginnen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+             BEFORE/AFTER REVIEW PANEL  (#7 Trainer visibility)
+             ================================================================ -->
+        <div id="reviewPanel" class="review-panel screen" style="display:none;">
+            <div class="review-container">
+                <div class="review-header">
+                    <h2 id="reviewHeading">Vorher &amp; Nachher — Ihre Antworten verbessert</h2>
+                    <p id="reviewSubtitle">Das sieht Ihr Trainer, wenn er Ihre Arbeit überprüft.</p>
+                    <button class="btn btn-secondary" id="closeReviewBtn">← Zurück zu meinem Lebenslauf</button>
+                </div>
+                <div id="reviewContent" class="review-content"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <p>AMS JobAssist · Alle Daten bleiben auf diesem Computer · Nichts wird ins Internet gesendet</p>
+    </footer>
+</div>
+
+<style>
+/* ── ATS input section ── */
+.ats-input-section {
+    background: var(--surface, #f8f9fa);
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 12px;
+}
+.ats-input-section h3 { margin: 0 0 8px; font-size: 1rem; }
+.ats-input-desc { margin: 0 0 12px; font-size: 0.9rem; color: #555; }
+.job-desc-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.9rem;
+    resize: vertical;
+    margin-bottom: 12px;
+}
+.ats-input-actions { display: flex; gap: 10px; align-items: center; }
+
+/* ── Cover letter input section ── */
+.cover-letter-input {
+    background: var(--surface, #f8f9fa);
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 12px;
+}
+.cover-letter-input h3 { margin: 0 0 14px; font-size: 1rem; }
+.cl-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+.cl-input-row label { font-size: 0.875rem; font-weight: 600; color: #444; }
+.cl-input-row input {
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+.cl-input-actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+
+/* ── Photo upload container ── */
+.photo-upload-container {
+    background: var(--surface, #f8f9fa);
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+.photo-preview-area {
+    width: 120px;
+    height: 160px;
+    border: 2px dashed var(--border, #dee2e6);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    background: #fff;
+    overflow: hidden;
+}
+.photo-hint { font-size: 0.8rem; color: #666; margin: 0; max-width: 320px; }
+
+/* ── Date helper ── */
+.date-helper {
+    background: var(--surface, #f8f9fa);
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+.date-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 140px;
+}
+.date-field label { font-size: 0.875rem; font-weight: 600; color: #444; }
+.date-field input {
+    border: 1px solid var(--border, #dee2e6);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.875rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+.date-separator { font-size: 1.2rem; color: #888; padding-top: 20px; }
+.btn-link {
+    display: inline-block;
+    margin-top: 10px;
+    background: none;
+    border: none;
+    color: var(--primary, #2563eb);
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    padding: 0;
+}
+.btn-link:hover { opacity: 0.75; }
+</style>
+
+<!-- ============================================================
+     AI COACH CHAT (floating, available on all screens)
+     ============================================================ -->
+<div id="aiChatBubble" class="ai-chat-bubble" title="KI-Coach fragen" style="display:none">
+    💬
+    <span class="ai-chat-badge" id="aiChatBadge" style="display:none">●</span>
+</div>
+
+<div id="aiChatPanel" class="ai-chat-panel hidden">
+    <div class="ai-chat-header">
+        <span class="ai-chat-title">🤖 KI-Coach</span>
+        <div class="ai-chat-header-actions">
+            <button class="btn-icon" id="aiInterviewPrepBtn" title="Vorstellungsgespräch-Fragen">🎯</button>
+            <button class="btn-icon" id="aiJobMatchBtn" title="Stelle analysieren">📋</button>
+            <button class="btn-icon" id="aiChatCloseBtn" title="Schließen">✕</button>
+        </div>
+    </div>
+
+    <div class="ai-chat-messages" id="aiChatMessages">
+        <div class="ai-msg ai-msg-bot">
+            Hallo! Ich bin Ihr KI-Coach. Ich kenne Ihren Lebenslauf und helfe Ihnen gerne weiter.
+            Stellen Sie mir eine Frage — z.B. „Ist meine Erfahrung gut beschrieben?" oder
+            „Was sollte ich noch hinzufügen?"
+        </div>
+    </div>
+
+    <!-- Job match input (hidden until 📋 clicked) -->
+    <div id="aiJobMatchInput" class="ai-job-input hidden">
+        <textarea id="aiJobDescText" class="input ai-job-textarea"
+                  placeholder="Stellenanzeige hier einfügen…" rows="4"></textarea>
+        <button class="btn btn-primary btn-sm" id="aiJobMatchRunBtn">Analysieren →</button>
+    </div>
+
+    <div class="ai-chat-input-row">
+        <input type="text" id="aiChatInput" class="input ai-chat-input"
+               placeholder="Fragen Sie Ihren KI-Coach…">
+        <button class="btn btn-primary btn-sm" id="aiChatSendBtn">→</button>
+    </div>
+    <div id="aiModelStatus" class="ai-model-status"></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

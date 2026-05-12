@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMS JobAssist - Trainer-Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <h1>AMS JobAssist</h1>
+                <span class="subtitle">Trainer-Dashboard</span>
+            </div>
+            <div class="navbar-menu">
+                <button class="nav-btn active" data-view="dashboard">📊 Übersicht</button>
+                <button class="nav-btn" data-view="participants">👥 Teilnehmer</button>
+                <button class="nav-btn" data-view="import">📥 Importieren</button>
+                <button class="nav-btn" data-view="settings">⚙️ Einstellungen</button>
+            </div>
+            <div class="navbar-right">
+                <span id="user-name">Trainer/in</span>
+                <span class="version">v1.0</span>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="views-container">
+            <!-- Dashboard View -->
+            <section id="dashboard-view" class="view active">
+                <div class="view-header">
+                    <h2>Übersicht</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="import-quick-btn">📥 Lebensläufe importieren</button>
+                        <button class="btn btn-secondary" id="export-quick-btn">📤 Alle als PDF exportieren</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Metrics Cards -->
+                    <div class="metrics-section">
+                        <div class="metric-card">
+                            <div class="metric-label">Teilnehmer gesamt</div>
+                            <div class="metric-value" id="metric-total">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Abgeschlossen</div>
+                            <div class="metric-value" id="metric-completed">0</div>
+                            <div class="metric-percentage" id="metric-percentage">0%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Ø Qualität</div>
+                            <div class="metric-value" id="metric-quality">0.0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Ausstehend</div>
+                            <div class="metric-value" id="metric-pending">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Cohort Selector -->
+                    <div class="cohort-section">
+                        <label>Kursgruppe auswählen:</label>
+                        <select id="cohort-select">
+                            <option value="">Alle Gruppen</option>
+                        </select>
+                        <button class="btn btn-small" id="refresh-metrics-btn">🔄 Aktualisieren</button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-section">
+                    <h3>Letzte Aktivitäten</h3>
+                    <div id="activity-feed" class="activity-list">
+                        <p class="empty-state">Keine aktuellen Aktivitäten</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Participants View -->
+            <section id="participants-view" class="view">
+                <div class="view-header">
+                    <h2>Teilnehmer</h2>
+                    <div class="view-actions">
+                        <input type="text" id="search-participants" placeholder="Nach Name oder E-Mail suchen..." class="search-input">
+                        <select id="filter-status">
+                            <option value="">Alle Status</option>
+                            <option value="pending">Ausstehend</option>
+                            <option value="approved">Freigegeben</option>
+                            <option value="rejected">Abgelehnt</option>
+                            <option value="needs_changes">Überarbeitung nötig</option>
+                        </select>
+                        <select id="filter-cohort">
+                            <option value="">Alle Gruppen</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="participants-toolbar">
+                    <label class="checkbox">
+                        <input type="checkbox" id="select-all-participants">
+                        Alle auswählen
+                    </label>
+                    <div class="bulk-actions">
+                        <button class="btn btn-small" id="bulk-approve-btn" disabled title="Erst Teilnehmer auswählen">✅ Ausgewählte freigeben</button>
+                        <button class="btn btn-small" id="bulk-export-btn" disabled title="Erst Teilnehmer auswählen">📤 Ausgewählte exportieren</button>
+                        <button class="btn btn-small btn-danger" id="bulk-reject-btn" disabled title="Erst Teilnehmer auswählen">❌ Ausgewählte ablehnen</button>
+                    </div>
+                </div>
+
+                <div id="participants-list" class="participants-table-container">
+                    <table class="participants-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" class="select-row-header"></th>
+                                <th>Name</th>
+                                <th>Pfad</th>
+                                <th>Status</th>
+                                <th>Qualität</th>
+                                <th>Zuletzt aktualisiert</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participants-tbody">
+                            <tr class="empty-state"><td colspan="7">Teilnehmer werden geladen…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Detail View -->
+            <section id="detail-view" class="view">
+                <div class="view-header">
+                    <button class="btn btn-back" id="back-btn">← Zurück</button>
+                    <h2 id="detail-name">Teilnehmer</h2>
+                    <div class="detail-nav" id="detail-nav" style="display:none;">
+                        <button class="btn btn-small" id="detail-prev-btn">← Vorher</button>
+                        <span id="detail-nav-label">1 von 1</span>
+                        <button class="btn btn-small" id="detail-next-btn">Nächste →</button>
+                    </div>
+                    <div class="view-actions">
+                        <button class="btn btn-secondary" id="detail-refresh-btn">🔄 Aktualisieren</button>
+                    </div>
+                </div>
+
+                <div class="detail-container">
+                    <!-- Participant Info -->
+                    <div class="participant-header">
+                        <div class="info-block">
+                            <label>Pfad:</label>
+                            <span id="detail-path">—</span>
+                        </div>
+                        <div class="info-block">
+                            <label>Sprache:</label>
+                            <span id="detail-language">—</span>
+                        </div>
+                        <div class="info-block">
+                            <label>Status:</label>
+                            <span id="detail-status" class="status-badge">ausstehend</span>
+                        </div>
+                        <div class="info-block">
+                            <label>Qualitätsbewertung:</label>
+                            <span id="detail-quality">0.0</span>
+                        </div>
+                        <div class="info-block">
+                            <label>Importiert:</label>
+                            <span id="detail-imported">—</span>
+                        </div>
+                    </div>
+
+                    <!-- CV Sections (Side-by-Side) — CORE TEACHING FEATURE -->
+                    <div class="cv-comparison">
+                        <div class="cv-column cv-original">
+                            <h3>📝 Originalantworten</h3>
+                            <p class="column-hint">Was der Teilnehmer geschrieben hat</p>
+                            <div id="original-answers"></div>
+                        </div>
+                        <div class="cv-column cv-polished">
+                            <h3>✨ Verbesserter Lebenslauf</h3>
+                            <p class="column-hint">So sieht es im fertigen Lebenslauf aus</p>
+                            <div id="polished-cv"></div>
+                        </div>
+                    </div>
+
+                    <!-- Approval Section -->
+                    <div class="approval-section">
+                        <h3>Freigabe &amp; Feedback</h3>
+                        <div class="approval-controls">
+                            <div class="control-group">
+                                <label>Status:</label>
+                                <select id="approval-status">
+                                    <option value="pending">Ausstehend</option>
+                                    <option value="approved">Freigegeben</option>
+                                    <option value="needs_changes">Überarbeitung nötig</option>
+                                    <option value="rejected">Abgelehnt</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label>Trainer-Notizen:</label>
+                                <textarea id="approval-feedback" placeholder="Feedback für den Teilnehmer eingeben…"></textarea>
+                            </div>
+                            <div class="control-group">
+                                <button class="btn btn-primary" id="save-approval-btn">💾 Speichern &amp; freigeben</button>
+                                <span id="approval-message" class="message"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Import View -->
+            <section id="import-view" class="view">
+                <div class="view-header">
+                    <h2>Lebensläufe der Teilnehmer importieren</h2>
+                </div>
+
+                <div class="import-howto">
+                    <h3>📋 So funktioniert der Import</h3>
+                    <ol>
+                        <li>Bitten Sie jeden Teilnehmer, in der CV-App auf <strong>„Daten exportieren (für Trainer)"</strong> zu klicken — das erstellt eine <code>.json</code>-Datei.</li>
+                        <li>Sammeln Sie die Dateien auf einem USB-Stick oder Ordner.</li>
+                        <li>Wählen Sie hier eine einzelne <code>.json</code>-Datei oder eine <code>.zip</code>-Datei mit mehreren JSONs aus.</li>
+                        <li>Geben Sie einen Kursgruppenname ein (z.B. <em>Kurs-2026-Q2</em>) — dieser hilft später beim Filtern.</li>
+                    </ol>
+                </div>
+
+                <div class="import-container">
+                    <div class="import-form">
+                        <div class="form-group">
+                            <label>Kursgruppe:</label>
+                            <input type="text" id="import-cohort" placeholder="z.B. Kurs-2026-Q2" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Datei auswählen:</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="import-file" accept=".json,.zip">
+                                <div class="file-drop-zone" id="drop-zone">
+                                    <p>JSON- oder ZIP-Datei hier ablegen</p>
+                                    <p>oder klicken zum Auswählen</p>
+                                </div>
+                            </div>
+                            <small>Unterstützt: Einzelne .json-Datei oder .zip mit mehreren JSON-Dateien</small>
+                        </div>
+
+                        <button class="btn btn-primary" id="import-submit-btn">📥 Lebensläufe importieren</button>
+                    </div>
+
+                    <div id="import-result" class="import-result hidden">
+                        <div class="result-message"></div>
+                        <div class="result-details"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings View -->
+            <section id="settings-view" class="view">
+                <div class="view-header">
+                    <h2>Einstellungen</h2>
+                </div>
+
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h3>Trainer-Information</h3>
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <input type="text" id="setting-name" placeholder="Ihr Name">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Export-Einstellungen</h3>
+                        <div class="form-group">
+                            <label>Standardsprache:</label>
+                            <select id="setting-language">
+                                <option value="de">Deutsch</option>
+                                <option value="en">Englisch</option>
+                                <option value="native">Muttersprache des Teilnehmers</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Standardformat:</label>
+                            <select id="setting-format">
+                                <option value="pdf">PDF</option>
+                                <option value="docx">Word (.docx)</option>
+                                <option value="json">JSON</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>System</h3>
+                        <button class="btn btn-secondary" id="clear-cache-btn">🔄 Daten aktualisieren</button>
+                        <p>Version: v1.0 | Stand: 2026-05-09</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

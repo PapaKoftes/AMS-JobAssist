@@ -1,0 +1,22 @@
+# Tool 2: Trainer Dashboard - Dependencies
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+
+# Export Formats
+reportlab==4.0.7
+python-docx==0.8.11
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+
+# Utilities
+python-dotenv==1.0.0

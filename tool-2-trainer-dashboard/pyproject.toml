@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ams-trainer"
+version = "0.2.0"
+description = "AMS JobAssist — trainer dashboard for AMS course coordinators (Tool 2)"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.20",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "sqlalchemy>=2.0",
+    "starlette>=0.27",
+    "python-multipart>=0.0.6",
+    "reportlab>=4.0",
+    "python-docx>=0.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+    "black",
+    "ruff",
+]
+
+[project.scripts]
+# After `pip install -e .` this command starts Tool 2
+ams-trainer = "app:main"
+
+# ── Package layout ──────────────────────────────────────────────────────────
+[tool.setuptools.package-dir]
+"" = "src/backend"
+
+[tool.setuptools.packages.find]
+where = ["src/backend"]
+
+# ── Pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+# ── Linting ──────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]

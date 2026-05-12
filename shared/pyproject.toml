@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ams-shared"
+version = "0.2.0"
+description = "AMS JobAssist — shared schemas and utilities (used by both Tool 1 and Tool 2)"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+]
+
+# ── Package layout ──────────────────────────────────────────────────────────
+# Installs the `shared` package so both tools can import from it
+# without relying on sys.path manipulation.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["shared*"]
