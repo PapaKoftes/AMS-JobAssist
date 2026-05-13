@@ -36,7 +36,7 @@ MODEL_URL = (
 # HuggingFace-side replacement of the file with poisoned weights.
 # To rotate: download the file by hand, run `certutil -hashfile <file> SHA256`
 # (Windows) or `sha256sum <file>` (Linux/macOS), and paste here.
-MODEL_SHA256 = "5bba36a7e5d2eb98d9ee5b8c6f4f9b3c7c95d56e7b4f4c63eaa72b85f0d04e9c"  # placeholder; see ADMINISTRATOR_GUIDE for rotation
+MODEL_SHA256 = "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
 
 _llm = None          # cached Llama instance
 _llm_ready = None    # True / False / None (not yet checked)
@@ -251,13 +251,8 @@ def verify_model_hash() -> bool:
     """
     if not _MODEL_PATH.exists():
         return False
-    if not MODEL_SHA256 or MODEL_SHA256.startswith("5bba36a7e5d2eb98"):
-        # Placeholder hash — log warning, don't block
-        logger.warning(
-            "MODEL_SHA256 is still the placeholder. "
-            "Compute the real hash with `sha256sum %s` and update ai/local_llm.py.",
-            _MODEL_PATH,
-        )
+    if not MODEL_SHA256:
+        logger.warning("MODEL_SHA256 is empty — skipping verification.")
         return True
     actual = _sha256_of(_MODEL_PATH)
     ok = actual.lower() == MODEL_SHA256.lower()
@@ -290,7 +285,7 @@ def download_model(progress_callback=None) -> bool:
 
         # Verify hash BEFORE moving to final location so a corrupted/poisoned
         # download never gets used as the model.
-        if MODEL_SHA256 and not MODEL_SHA256.startswith("5bba36a7e5d2eb98"):
+        if MODEL_SHA256:
             actual = _sha256_of(tmp)
             if actual.lower() != MODEL_SHA256.lower():
                 tmp.unlink()
@@ -302,10 +297,7 @@ def download_model(progress_callback=None) -> bool:
                 return False
             logger.info(f"Model SHA-256 verified: {actual}")
         else:
-            logger.warning(
-                "MODEL_SHA256 is placeholder — skipping hash verification on download. "
-                "Update ai/local_llm.py with the real hash for production."
-            )
+            logger.warning("MODEL_SHA256 is empty — skipping hash verification.")
 
         tmp.rename(_MODEL_PATH)
         logger.info(f"Model downloaded: {_MODEL_PATH}")
