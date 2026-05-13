@@ -56,17 +56,45 @@ Tablets, smartphones, macOS, and Linux are **not** supported in v1.0.
 
 ## Installation
 
-### Path A - Non-developer (`ams_jobassist.bat`)
+### Path A - Windows installer (recommended for classroom IT)
 
-Hand this path to AMS trainers / classroom IT without dev tools.
+No Python required. No admin rights required.
+
+**Option 1 — Setup.exe (if available)**
+
+1. Copy `AMS-JobAssist-Setup.exe` onto the target machine (USB stick or LAN share).
+2. Double-click. The installer wizard runs in German (English also available).
+3. Accept defaults or change the install directory.
+4. Optionally create a Desktop shortcut.
+5. Click "Fertigstellen" — AMS JobAssist launches automatically.
+
+Uninstall via Windows Settings > Apps > AMS JobAssist, or Start Menu > AMS JobAssist > Deinstallieren.
+
+**Option 2 — Batch installer**
+
+1. Copy the `dist\` folder onto the target machine.
+2. Double-click `install.bat` inside `dist\`.
+3. Follow the German prompts (creates Start Menu entry + Add/Remove Programs registration).
+
+Uninstall via Add/Remove Programs or `uninstall.bat` in the install directory.
+
+**Option 3 — Run directly (no install)**
+
+1. Copy the `dist\` folder onto the target machine.
+2. Double-click `AMS-JobAssist-Launcher.exe`.
+3. No shortcuts, no registry entries — just runs.
+
+### Path A-alt - German menu (`ams_jobassist.bat`, requires Python)
+
+Hand this path to trainers who already have Python installed.
 
 1. Copy the release folder onto the target machine (USB stick or LAN share).
 2. Double-click `ams_jobassist.bat`. A German menu appears:
-   - **Installieren** — runs the one-shot install
-   - **Starten** — launches the tray
-   - **Daten löschen** — wipes both `.db` files (with confirmation)
-   - **Deinstallieren** — removes the install folder
-3. Pick **Installieren** the first time, then **Starten**.
+   - **Installieren und Starten** — runs pip install + launches
+   - **Starten** — launches (if already installed)
+   - **Deinstallieren** — removes pip packages
+   - **Daten loeschen** — wipes both `.db` files (with double confirmation)
+3. Pick **Installieren und Starten** the first time.
 4. The launcher opens the default browser to `http://localhost:8000` (Tool 1) and `http://localhost:8001` (Tool 2).
 
 ### Path B - Developer / build from source

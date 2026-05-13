@@ -81,6 +81,32 @@ if errorlevel 1 (
 )
 echo [OK] Launcher build complete.
 
+REM ---- Copy batch installer to dist\ for easy distribution --------------------
+echo.
+echo [4/4] Copying installer files to dist\...
+copy /Y "packaging\install.bat" "dist\install.bat" >nul
+copy /Y "packaging\uninstall_template.bat" "dist\uninstall_template.bat" >nul
+copy /Y "packaging\icon.ico" "dist\icon.ico" >nul 2>&1
+echo [OK] Installer files copied to dist\.
+
+REM ---- Optionally build Inno Setup installer ---------------------------------
+where iscc >nul 2>&1
+if not errorlevel 1 (
+    echo.
+    echo [BONUS] Inno Setup found — building Setup.exe...
+    iscc packaging\installer.iss
+    if not errorlevel 1 (
+        echo [OK] AMS-JobAssist-Setup.exe built in packaging\output\.
+    ) else (
+        echo [!!] Inno Setup build failed — the .exe files are still usable without it.
+    )
+) else (
+    echo.
+    echo [INFO] Inno Setup not found — skipping Setup.exe build.
+    echo        Install Inno Setup from https://jrsoftware.org/isinfo.php
+    echo        to build a proper Windows installer.
+)
+
 REM ---- Done ------------------------------------------------------------------
 echo.
 echo ========================================
@@ -91,8 +117,14 @@ echo Output (in dist\):
 echo   - AMS-JobAssist-Tool1.exe       participant interface
 echo   - AMS-JobAssist-Tool2.exe       trainer interface
 echo   - AMS-JobAssist-Launcher.exe    starts both, opens browser
+echo   - install.bat                   batch installer (no Inno Setup needed)
 echo.
-echo To run:  dist\AMS-JobAssist-Launcher.exe
+echo Install options:
+echo   1. Quick:    dist\AMS-JobAssist-Launcher.exe   (run directly, no install)
+echo   2. Batch:    dist\install.bat                   (Start Menu + Add/Remove Programs)
+echo   3. Pro:      packaging\output\AMS-JobAssist-Setup.exe   (if Inno Setup was available)
+echo.
+echo To run without installing:  dist\AMS-JobAssist-Launcher.exe
 echo.
 
 popd

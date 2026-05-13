@@ -1,16 +1,18 @@
 # Packaging
 
-PyInstaller spec files for building standalone Windows executables of
-AMS JobAssist (Tool 1, Tool 2, and the combined launcher).
+PyInstaller spec files, installer scripts, and Inno Setup configuration for
+building and distributing AMS JobAssist on Windows.
 
 ## Files
 
 | File | Output | Purpose |
 |------|--------|---------|
-| `build_tool1.spec` | `AMS-JobAssist-Tool1.exe`     | Standalone Tool 1 (participant CV maker) |
-| `build_tool2.spec` | `AMS-JobAssist-Tool2.exe`     | Standalone Tool 2 (trainer dashboard) |
-| `launcher.spec`    | `AMS-JobAssist-Launcher.exe`  | Single-entry launcher that starts both tools and opens the browser |
-| `icon.ico`         | Application icon              | Embedded in all three .exe files |
+| `build_tool1.spec` | `AMS-JobAssist-Tool1.exe` | Standalone Tool 1 (participant CV maker) |
+| `build_tool2.spec` | `AMS-JobAssist-Tool2.exe` | Standalone Tool 2 (trainer dashboard) |
+| `launcher.spec` | `AMS-JobAssist-Launcher.exe` | Single-entry launcher that starts both tools and opens the browser |
+| `installer.iss` | `AMS-JobAssist-Setup.exe` | Inno Setup script — proper Windows installer with Add/Remove Programs |
+| `install.bat` | *(runs in place)* | Batch-based installer — no Inno Setup needed |
+| `icon.ico` | Application icon | Embedded in all .exe files and installer |
 
 All three specs are **relocatable** — they derive the project root from
 `SPECPATH`, so the build works no matter what the current working directory is.
@@ -79,6 +81,59 @@ dist\AMS-JobAssist-Launcher.exe
 Expected: console shows "Tool 1 ready" + "Tool 2 ready" + opens default browser
 to `http://localhost:8000`. Test on a clean Windows 10 VM with no Python
 installed to verify the bundle is truly self-contained.
+
+## Installation options
+
+After building, three ways to deploy:
+
+### Option 1 — Run directly (no install)
+
+Double-click `dist\AMS-JobAssist-Launcher.exe`. No installation step,
+no shortcuts, no registry entries. Good for quick demos.
+
+### Option 2 — Batch installer (no extra tools needed)
+
+```bat
+dist\install.bat
+```
+
+This copies the .exe files to `%LOCALAPPDATA%\AMS JobAssist`, creates
+Start Menu and optional Desktop shortcuts, registers in Add/Remove Programs,
+and creates an `uninstall.bat` for clean removal.
+
+No admin rights needed — installs to the current user's AppData.
+
+### Option 3 — Inno Setup installer (professional)
+
+Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php) to be installed.
+
+```bat
+iscc packaging\installer.iss
+```
+
+Produces `packaging\output\AMS-JobAssist-Setup.exe` — a proper Windows
+installer with:
+- Install wizard (German + English)
+- Start Menu group
+- Optional Desktop shortcut
+- Add/Remove Programs registration
+- Clean uninstall with optional data deletion prompt
+- No admin rights required (user-level install by default)
+
+If Inno Setup is available when running `build_all.bat`, the Setup.exe is
+built automatically.
+
+## Uninstalling
+
+| Install method | Uninstall method |
+|---|---|
+| Direct run | Delete the .exe files |
+| `install.bat` | Run `uninstall.bat` from install dir, or use Add/Remove Programs |
+| `AMS-JobAssist-Setup.exe` | Use Add/Remove Programs, or run the uninstaller from Start Menu |
+| `ams_jobassist.bat` (pip) | Option [3] in the menu |
+
+All uninstall methods preserve user data by default. Data deletion is a
+separate explicit step.
 
 ## Code signing
 

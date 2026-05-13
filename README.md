@@ -27,7 +27,19 @@ A participant who has never written a CV in their life sits down for 15 minutes,
 
 ---
 
-## Quick start (developers)
+## Quick start
+
+### Double-click `START.bat`
+
+That's it. The script auto-detects the best way to run:
+
+- **Pre-built `.exe` files in `dist/`?** → Runs them directly. No Python needed.
+- **Python installed?** → Installs dependencies and runs from source.
+- **Neither?** → Tells you exactly what to download.
+
+The browser opens automatically to the CV maker on `http://localhost:8000`. The trainer dashboard is on `http://localhost:8001`.
+
+### For developers
 
 ```bash
 git clone https://github.com/PapaKoftes/AMS-JobAssist
@@ -36,23 +48,31 @@ pip install -r requirements.txt
 python launcher.py
 ```
 
-The launcher starts both servers and opens your browser to the CV maker on `http://localhost:8000`. The trainer dashboard is on `http://localhost:8001`.
-
-**Or build the Windows .exe bundle** (no Python needed on the target machine):
+### Build standalone `.exe` files
 
 ```bat
 build_all.bat
 ```
 
-This produces three standalone executables in `dist/`:
+Produces standalone executables in `dist/` (no Python needed on target machine):
 
 | File | Size | What it does |
 |---|---|---|
 | `AMS-JobAssist-Launcher.exe` | 8 MB | Starts both tools, opens browser |
 | `AMS-JobAssist-Tool1.exe` | 375 MB | Participant CV maker (includes optional LLM runtime) |
 | `AMS-JobAssist-Tool2.exe` | 46 MB | Trainer dashboard |
+| `install.bat` | 8 KB | Batch installer — Start Menu + Add/Remove Programs |
 
-For non-technical users, the project also ships `ams_jobassist.bat` — a German menu that handles install / start / uninstall / data-deletion through `pip` rather than a packaged exe.
+### Install / uninstall options
+
+| Method | How | What you get |
+|---|---|---|
+| **`START.bat`** | Double-click at repo root | Auto-detects best method, handles everything |
+| **Run directly** | Double-click `dist\AMS-JobAssist-Launcher.exe` | Works instantly, no install step |
+| **Batch installer** | Run `dist\install.bat` | Start Menu + Desktop shortcut + Add/Remove Programs |
+| **Inno Setup** | Install [Inno Setup](https://jrsoftware.org/isinfo.php), run `build_all.bat` | Full `Setup.exe` with wizard, German UI, clean uninstall |
+
+All install methods are per-user (no admin rights needed). Uninstall preserves user data by default.
 
 ---
 
