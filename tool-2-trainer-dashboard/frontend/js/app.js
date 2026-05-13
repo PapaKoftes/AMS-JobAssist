@@ -402,9 +402,11 @@ class TrainerApp {
         const fmt = format.trim().toLowerCase();
 
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (api.apiKey) headers['X-API-Key'] = api.apiKey;
             const resp = await fetch('/api/bulk-export', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ participant_ids: ids, format: fmt, language: 'de' })
             });
             if (!resp.ok) {
@@ -433,9 +435,11 @@ class TrainerApp {
             return;
         }
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (api.apiKey) headers['X-API-Key'] = api.apiKey;
             const resp = await fetch('/api/bulk-export', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ participant_ids: ids, format: 'pdf', language: 'de' })
             });
             if (!resp.ok) {
