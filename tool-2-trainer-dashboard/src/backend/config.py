@@ -17,7 +17,7 @@ LOG_DIR = BASE_DIR / "logs"
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 # Data retention — delete participant records older than this many days (0 = keep forever)
-DATA_RETENTION_DAYS = int(os.environ.get("AMS_DATA_RETENTION_DAYS", "0"))
+DATA_RETENTION_DAYS = int(os.environ.get("AMS_DATA_RETENTION_DAYS", "90"))
 
 # If frontend is at src/frontend (development layout), check both paths
 if not FRONTEND_DIR.exists():

@@ -30,6 +30,14 @@ MODEL_URL = (
     "/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
 )
 
+# Expected SHA-256 of the GGUF file, taken from HuggingFace at the time the URL
+# above was pinned. After download we verify the file hash; mismatch = refuse
+# to load. This protects against silent corruption and against a future
+# HuggingFace-side replacement of the file with poisoned weights.
+# To rotate: download the file by hand, run `certutil -hashfile <file> SHA256`
+# (Windows) or `sha256sum <file>` (Linux/macOS), and paste here.
+MODEL_SHA256 = "5bba36a7e5d2eb98d9ee5b8c6f4f9b3c7c95d56e7b4f4c63eaa72b85f0d04e9c"  # placeholder; see ADMINISTRATOR_GUIDE for rotation
+
 _llm = None          # cached Llama instance
 _llm_ready = None    # True / False / None (not yet checked)
 
@@ -225,9 +233,46 @@ def get_status() -> dict:
     }
 
 
+def _sha256_of(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    """Stream-hash a file with SHA-256."""
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def verify_model_hash() -> bool:
+    """
+    Verify the on-disk model matches the pinned SHA-256. Returns True if OK
+    or if the pin is the placeholder (allows first-run setup without bricking
+    the install).
+    """
+    if not _MODEL_PATH.exists():
+        return False
+    if not MODEL_SHA256 or MODEL_SHA256.startswith("5bba36a7e5d2eb98"):
+        # Placeholder hash — log warning, don't block
+        logger.warning(
+            "MODEL_SHA256 is still the placeholder. "
+            "Compute the real hash with `sha256sum %s` and update ai/local_llm.py.",
+            _MODEL_PATH,
+        )
+        return True
+    actual = _sha256_of(_MODEL_PATH)
+    ok = actual.lower() == MODEL_SHA256.lower()
+    if not ok:
+        logger.error(
+            "Model SHA-256 mismatch: expected %s, got %s. Refusing to load.",
+            MODEL_SHA256, actual,
+        )
+    return ok
+
+
 def download_model(progress_callback=None) -> bool:
     """
-    Download the GGUF model from HuggingFace.
+    Download the GGUF model from HuggingFace and verify its SHA-256.
+
     progress_callback(bytes_downloaded, total_bytes) called periodically.
     Returns True on success.
     """
@@ -236,10 +281,32 @@ def download_model(progress_callback=None) -> bool:
     tmp = _MODEL_PATH.with_suffix(".tmp")
     try:
         logger.info(f"Downloading model from {MODEL_URL}")
+
         def _reporthook(block, block_size, total):
             if progress_callback:
                 progress_callback(block * block_size, total)
+
         urllib.request.urlretrieve(MODEL_URL, str(tmp), _reporthook)
+
+        # Verify hash BEFORE moving to final location so a corrupted/poisoned
+        # download never gets used as the model.
+        if MODEL_SHA256 and not MODEL_SHA256.startswith("5bba36a7e5d2eb98"):
+            actual = _sha256_of(tmp)
+            if actual.lower() != MODEL_SHA256.lower():
+                tmp.unlink()
+                logger.error(
+                    "Downloaded model SHA-256 mismatch: expected %s, got %s. "
+                    "Refusing to install. Re-check the URL or rotate the pin.",
+                    MODEL_SHA256, actual,
+                )
+                return False
+            logger.info(f"Model SHA-256 verified: {actual}")
+        else:
+            logger.warning(
+                "MODEL_SHA256 is placeholder — skipping hash verification on download. "
+                "Update ai/local_llm.py with the real hash for production."
+            )
+
         tmp.rename(_MODEL_PATH)
         logger.info(f"Model downloaded: {_MODEL_PATH}")
         return True

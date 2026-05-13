@@ -16,8 +16,10 @@ DB_DIR = Path(_custom_data) if _custom_data else BASE_DIR / "data"
 LOG_DIR = BASE_DIR / "logs"
 FRONTEND_DIR = BASE_DIR / "src" / "frontend"
 
-# Data retention — delete sessions older than this many days (0 = keep forever)
-DATA_RETENTION_DAYS = int(os.environ.get("AMS_DATA_RETENTION_DAYS", "0"))
+# Data retention — delete incomplete sessions older than this many days.
+# DSGVO requires purpose-limited retention. Default: 90 days (one AMS course cycle).
+# Set AMS_DATA_RETENTION_DAYS=0 to keep forever (not recommended for production).
+DATA_RETENTION_DAYS = int(os.environ.get("AMS_DATA_RETENTION_DAYS", "90"))
 
 # Database
 DATABASE_URL = os.environ.get(

@@ -285,6 +285,12 @@
                     </div>
                 </div>
 
+                <!-- Mid-interview encouragement — shown at the halfway point -->
+                <div id="midwayBanner" class="midway-banner" style="display:none;" role="status" aria-live="polite">
+                    <span class="midway-icon" aria-hidden="true">🌟</span>
+                    <span id="midwayText">Sie haben den schwierigsten Teil bereits geschafft.</span>
+                </div>
+
                 <!-- Action buttons -->
                 <div class="action-buttons">
                     <button class="btn btn-secondary" id="skipBtn">Frage überspringen</button>
@@ -292,6 +298,15 @@
                 </div>
                 <!-- A3: short-input hint shown below submit button -->
                 <p id="submitHint" class="submit-hint" aria-live="polite"></p>
+
+                <!-- Save and finish later — autosave runs every answer, but
+                     this gives the participant explicit reassurance + exit. -->
+                <div class="finish-later-row">
+                    <button class="btn btn-ghost btn-sm" id="finishLaterBtn" type="button">
+                        💾 <span id="finishLaterLabel">Später weitermachen</span>
+                    </button>
+                    <span id="finishLaterHint" class="finish-later-hint">Ihr Fortschritt ist gespeichert. Sie können jederzeit zurückkehren.</span>
+                </div>
 
                 <!-- Re-ask message -->
                 <div id="reaskMessage" class="reask-message" style="display:none;">
@@ -378,13 +393,20 @@
                     <p id="profileSummaryText"></p>
                 </div>
 
-                <!-- Export buttons -->
+                <!-- Export buttons — primary action prominent, everything else
+                     collapsed under "More options" to reduce decision overload -->
                 <div class="completion-actions">
-                    <button class="btn btn-primary btn-large" id="exportBtn">⬇ PDF herunterladen</button>
-                    <button class="btn btn-secondary" id="exportDocxBtn">⬇ Word herunterladen (.docx)</button>
-                    <button class="btn btn-secondary" id="exportJsonBtn">⬇ Daten exportieren (für Trainer)</button>
-                    <button class="btn btn-ghost btn-sm" id="myDataBtn" title="DSGVO Art. 20 — alle Ihre gespeicherten Daten">🔒 Meine Daten herunterladen</button>
+                    <button class="btn btn-primary btn-large btn-completion-primary" id="exportBtn">⬇ PDF herunterladen</button>
                 </div>
+
+                <details class="completion-more">
+                    <summary id="completionMoreSummary">Weitere Optionen</summary>
+                    <div class="completion-actions completion-actions-secondary">
+                        <button class="btn btn-secondary" id="exportDocxBtn">⬇ Word herunterladen (.docx)</button>
+                        <button class="btn btn-secondary" id="exportJsonBtn">⬇ Daten exportieren (für Trainer)</button>
+                        <button class="btn btn-ghost btn-sm" id="myDataBtn" title="DSGVO Art. 20 — alle Ihre gespeicherten Daten">🔒 Meine Daten herunterladen</button>
+                    </div>
+                </details>
 
                 <!-- #4 Export feedback — replaces alert() -->
                 <div class="export-feedback" id="exportFeedback" style="display:none;">

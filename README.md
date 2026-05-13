@@ -5,7 +5,7 @@
 # AMS JobAssist
 
 **An offline CV builder for AMS course participants — with a trainer dashboard for supervision.**
-Built for AMS Wien classroom use. Runs entirely on the trainer's laptop. No cloud, no data leaves the device.
+Built for AMS Wien classroom use — currently a polished demonstrator awaiting pilot validation. Runs entirely on the trainer's laptop. No cloud, no data leaves the device.
 
 ![Status](https://img.shields.io/badge/Status-Demo--ready-brightgreen)
 ![Tests](https://img.shields.io/badge/Tests-725%20passing-brightgreen)
@@ -193,6 +193,24 @@ python -m pytest tests/ -q
 | [PLAN.md](PLAN.md) | Maintainers | Living checklist of everything done / pending |
 | [PROGRESS.md](PROGRESS.md) | Maintainers | Phase milestones |
 | [docs/screenshots/README.md](docs/screenshots/README.md) | Anyone running the demo | Screenshot capture checklist |
+
+---
+
+## Known limitations
+
+Honest about what this is and isn't:
+
+- **Desktop only.** Windows 10/11 is the target platform. The UI is touch-friendly (44 px targets, RTL Arabic) but designed for keyboard + mouse. Tablet form factor is not optimised yet.
+- **No multi-trainer real-time collaboration.** Tool 2 is single-trainer-at-a-time on one machine. There is no central server, no shared state across laptops.
+- **No central admin server.** Each laptop is independent. Backups are per-machine (one-click via `GET /api/admin/backup`).
+- **Interview examples are placeholders.** The good/bad example chips next to each question contain Mina-authored sample text. Real AMS sign-off and anonymised real-cohort samples are needed before classroom pilot.
+- **12 UI translations have not been native-speaker reviewed.** German and English are author-quality. The other 10 are LLM-assisted and unverified by native speakers.
+- **The optional Qwen2.5-1.5B LLM is not bundled** in the `.exe` artifacts (model is ~1.1 GB). Download is a one-time explicit action; rule-based fallback covers everything offline if the model is absent.
+- **Authenticode code-signing is not yet applied** to the `.exe` artifacts. Windows SmartScreen will warn on first run. A signing certificate is on the to-do list.
+- **Full WCAG 2.1 AA automated audit (axe-core / Lighthouse) has not been run.** The CSS scaffolding (focus rings, touch targets, prefers-reduced-motion / prefers-contrast / RTL / print stylesheet, skip-link) is in place but not externally verified. Screen-reader testing with NVDA / JAWS is pending.
+- **Cohort creation UI and per-participant trainer-notes UI are pending** in Tool 2. The backend supports both (cohort filters, `trainer_notes` column); the frontend table view doesn't yet expose them.
+- **Conversational LLM interview is not implemented.** It was a 501-skeleton placeholder; that placeholder has been removed and will return when the feature is actually built.
+- **The maintainer is one person** (MIT license, no organisation backing). For a real AMS deployment, expect either a service contract with the maintainer or an AMS-internal fork.
 
 ---
 

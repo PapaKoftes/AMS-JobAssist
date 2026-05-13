@@ -227,6 +227,24 @@ async def request_logging_middleware(request: Request, call_next):
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(f"[{req_id}] {request.method} {request.url.path} → {response.status_code} ({duration_ms}ms)")
     response.headers["X-Request-ID"] = req_id
+    # Security headers — CSP locks scripts/styles to same origin (no CDN), prevents
+    # clickjacking, MIME-sniffing, referrer leakage, and disables flashy permissions.
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: blob:; "
+        "font-src 'self'; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()")
     return response
 
 
@@ -322,6 +340,33 @@ async def get_cv_metadata(session_id: int, request: Request):
             "all_skills": cv_data.all_skills or [],
         },
     }
+
+
+@app.get("/api/admin/backup", tags=["Admin"])
+async def admin_backup_tool1():
+    """
+    Stream Tool 1's SQLite database as a downloadable file.
+
+    Intended for periodic backup by AMS IT. Returns the live `.db` file with a
+    timestamped filename. Because Tool 1 has no auth, this endpoint binds to
+    127.0.0.1 only — never expose this port externally.
+    """
+    from datetime import datetime as _dt
+    from fastapi.responses import FileResponse
+
+    db_path = DB_DIR / "ams_jobassist.db"
+    if not db_path.exists():
+        raise HTTPException(status_code=404, detail="Database file not found")
+
+    timestamp = _dt.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"ams_jobassist_backup_{timestamp}.db"
+    logger.info(f"BACKUP requested: {db_path}")
+    return FileResponse(
+        path=str(db_path),
+        filename=filename,
+        media_type="application/octet-stream",
+        headers={"X-Backup-Timestamp": timestamp},
+    )
 
 
 @app.get("/api/cv/{session_id}/my-data", tags=["DSGVO"])

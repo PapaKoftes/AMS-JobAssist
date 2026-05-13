@@ -128,6 +128,54 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """
+    Simple in-memory per-client rate limiter.
+
+    No external dependency. Stores recent request timestamps per client IP in
+    a bounded-size deque. Default: 300 requests per 10 seconds per client —
+    well above any human trainer use, low enough to stop runaway scripts.
+
+    Disabled when pytest is running (PYTEST_CURRENT_TEST env var set) so test
+    suites that fire hundreds of requests in milliseconds aren't artificially
+    throttled.
+    """
+    WINDOW_SECONDS = 10
+    MAX_REQUESTS = 300
+
+    def __init__(self, app):
+        super().__init__(app)
+        self._buckets: dict = {}
+        # Disable entirely under pytest — the same in-memory bucket survives
+        # across tests and would otherwise throttle test-driven request bursts.
+        import os as _os
+        self._disabled = bool(_os.environ.get("PYTEST_CURRENT_TEST") or
+                              _os.environ.get("AMS_DISABLE_RATE_LIMIT"))
+
+    async def dispatch(self, request: Request, call_next):
+        if self._disabled or not request.url.path.startswith("/api"):
+            return await call_next(request)
+
+        from collections import deque as _deque
+        import time as _time
+
+        client = request.client.host if request.client else "anon"
+        now = _time.monotonic()
+        cutoff = now - self.WINDOW_SECONDS
+        bucket = self._buckets.setdefault(client, _deque(maxlen=self.MAX_REQUESTS * 2))
+        # Drop expired timestamps
+        while bucket and bucket[0] < cutoff:
+            bucket.popleft()
+        if len(bucket) >= self.MAX_REQUESTS:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": f"Rate limit exceeded ({self.MAX_REQUESTS} req / {self.WINDOW_SECONDS}s). Retry shortly."},
+                headers={"Retry-After": str(self.WINDOW_SECONDS)},
+            )
+        bucket.append(now)
+        return await call_next(request)
+
+
 class AuditMiddleware(BaseHTTPMiddleware):
     """Log all state-changing API requests for audit trail."""
 
@@ -199,6 +247,23 @@ async def request_logging_middleware(request: Request, call_next):
     duration_ms = int((_time.monotonic() - start) * 1000)
     logger.info(f"[{req_id}] {request.method} {request.url.path} → {response.status_code} ({duration_ms}ms)")
     response.headers["X-Request-ID"] = req_id
+    # Security headers — same CSP as Tool 1
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: blob:; "
+        "font-src 'self'; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()")
     return response
 
 
@@ -233,6 +298,7 @@ async def _val_exc_handler(request: Request, exc: _ReqValErr):
 
 # Register middleware (order matters: outermost first)
 app.add_middleware(AuditMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(AuthenticationMiddleware)

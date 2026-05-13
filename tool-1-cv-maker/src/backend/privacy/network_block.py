@@ -4,6 +4,21 @@ HARD-ENFORCED NETWORK BLOCKING FOR AMS JOBASSIST
 Blocks all *external* network access while leaving loopback (127.0.0.1, ::1,
 localhost) intact so the FastAPI server itself can bind and accept connections.
 
+⚠️  IMPORT ORDER WARNING  ⚠️
+============================================================================
+`enable_offline_mode()` monkey-patches `socket.socket`, `socket.getaddrinfo`,
+`urllib.request.urlopen`, and `http.client.HTTP[S]Connection`. ANY module
+that imported these names BEFORE `enable_offline_mode()` runs will still
+hold references to the unblocked originals.
+
+→ Call `enable_offline_mode()` BEFORE importing fastapi, uvicorn, requests,
+  urllib3, or anything else that may pre-cache socket primitives.
+
+→ In `app.py` this is enforced by placing the call near the top of the file
+  (before fastapi / uvicorn imports). If you add new top-level imports
+  earlier than line ~20 of `app.py`, audit them for socket caching.
+============================================================================
+
 Enforcement points:
 1. Python socket layer  — blocks all non-loopback TCP/UDP connections
 2. DNS resolution       — only `localhost` / loopback IPs resolve

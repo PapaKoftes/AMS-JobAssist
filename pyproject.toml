@@ -1,0 +1,12 @@
+# Root pyproject.toml — minimal, exists only to provide repo-wide tooling
+# configuration. Each tool has its own pyproject.toml for packaging metadata.
+#
+# Running tests:
+#   python run_tests.py       — runs both suites in isolated subprocesses
+#   pytest tool-1-cv-maker    — runs Tool 1 only
+#   pytest tool-2-trainer-dashboard
+#
+# Running both with a single `pytest` invocation is not supported because each
+# tool's `tests/` directory has its own `conftest.py` and pytest's plugin
+# manager registers them under the same `tests.conftest` module name. The
+# `run_tests.py` script side-steps this by spawning two subprocesses.

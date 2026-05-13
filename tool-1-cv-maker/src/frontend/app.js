@@ -32,8 +32,14 @@ const TRANSLATIONS = {
         wordSingular:         'Wort',
         wordPlural:           'Wörter',
         qualityShort:         'Etwas kurz — fügen Sie noch ein Detail hinzu',
+        qualityShortA:        'Ein wenig knapp — was haben Sie konkret gemacht?',
+        qualityShortB:        'Vielleicht ein Beispiel oder ein Werkzeug ergänzen?',
         qualityOk:            'Guter Anfang — ein bisschen mehr würde helfen',
+        qualityOkA:           'Schön — vielleicht noch ein Detail dazu?',
+        qualityOkB:           'Gut so weit — eine Aufgabe oder ein Werkzeug erwähnen?',
         qualityGood:          'Sehr gut, das reicht!',
+        qualityGoodA:         'Stark — genug Information für den Lebenslauf!',
+        qualityGoodB:         'Ausgezeichnet — wir haben genug zum Verbessern.',
         langNote:             'Sie können immer mehrsprachig schreiben — das System erkennt jede Sprache automatisch.',
         step1Text:            'Was beschreibt Ihre aktuelle Situation am besten?',
         step2Text:            'Wie heißen Sie?',
@@ -148,6 +154,10 @@ const TRANSLATIONS = {
         confirmDiscard:        'Wirklich neu beginnen?',
         previewPlaceholderHint:'Schreiben Sie weiter — hier sehen Sie das Ergebnis',
         typeMoreHint:          'Bitte etwas mehr schreiben…',
+        midwayEncouragement:   'Sie haben den schwierigsten Teil bereits geschafft.',
+        finishLaterBtn:        'Später weitermachen',
+        finishLaterHint:       'Ihr Fortschritt ist gespeichert. Sie können jederzeit zurückkehren.',
+        completionMoreSummary: 'Weitere Optionen',
     },
     en: {
         answerLabel:          'Your answer — write in any language you like:',
@@ -161,8 +171,14 @@ const TRANSLATIONS = {
         wordSingular:         'word',
         wordPlural:           'words',
         qualityShort:         'A bit short — add one more detail',
+        qualityShortA:        'Slightly brief — what exactly did you do?',
+        qualityShortB:        'Could you add an example or a tool you used?',
         qualityOk:            'Good start — a little more would help',
+        qualityOkA:           'Nice — maybe one more detail?',
+        qualityOkB:           'Looking good — a task or tool to mention?',
         qualityGood:          'Great — that\'s enough!',
+        qualityGoodA:         'Strong — plenty for the CV!',
+        qualityGoodB:         'Excellent — we have enough to polish.',
         langNote:             'You can always write in multiple languages — the system detects each language automatically.',
         step1Text:            'What best describes your current situation?',
         step2Text:            'What is your name?',
@@ -273,6 +289,10 @@ const TRANSLATIONS = {
         confirmDiscard:        'Really start fresh?',
         previewPlaceholderHint:'Keep writing — you\'ll see the result here',
         typeMoreHint:          'Please write a bit more…',
+        midwayEncouragement:   'You\'re past the hardest part already.',
+        finishLaterBtn:        'Continue later',
+        finishLaterHint:       'Your progress is saved. You can return any time.',
+        completionMoreSummary: 'More options',
     },
     bs: {
         answerLabel:          'Vaš odgovor — pišite na bilo kom jeziku:',
@@ -1503,6 +1523,11 @@ function applyTranslations() {
     setText('exportDocxBtn',      'exportDocx');
     setText('exportJsonBtn',      'exportJson');
     setText('exportRetryBtn',     'exportRetry');
+    setText('completionMoreSummary', 'completionMoreSummary');
+
+    // --- Finish-later row ---
+    setText('finishLaterLabel', 'finishLaterBtn');
+    setText('finishLaterHint',  'finishLaterHint');
     setText('atsHeading',         'atsHeading');
     setText('atsMatchedLabel',    'atsMatchedLabel');
     setText('atsMissingLabel',    'atsMissingLabel');
@@ -1946,13 +1971,27 @@ class UIManager {
             return;
         }
 
+        // Rotate the label per question so the participant doesn't see the
+        // exact same encouragement 5 times in a row. Seed by current question
+        // index so the same question always shows the same phrasing.
+        const seed = (state.currentQuestionIndex ?? 0);
+        const pickVariant = (baseKey) => {
+            const variants = [baseKey, baseKey + 'A', baseKey + 'B'];
+            // Pick a variant that exists in the active translation, fall back to base
+            for (const v of [variants[seed % 3], variants[0]]) {
+                const val = t(v);
+                if (val && val !== v) return val;  // t() returns key when missing
+            }
+            return t(baseKey);
+        };
+
         let quality, icon, label;
         if (words < 5) {
-            quality = 'weak';     icon = '⚠'; label = t('qualityShort');
+            quality = 'weak';     icon = '⚠'; label = pickVariant('qualityShort');
         } else if (words < 15) {
-            quality = 'adequate'; icon = '◎'; label = t('qualityOk');
+            quality = 'adequate'; icon = '◎'; label = pickVariant('qualityOk');
         } else {
-            quality = 'strong';   icon = '✓'; label = t('qualityGood');
+            quality = 'strong';   icon = '✓'; label = pickVariant('qualityGood');
         }
 
         this.qualityIndicator.style.display = 'flex';
@@ -1965,6 +2004,26 @@ class UIManager {
         clearTimeout(state.previewDebounceTimer);
         state.previewDebounceTimer = null;
         if (this.qualityIndicator) this.qualityIndicator.style.display = 'none';
+
+        // Mid-interview encouragement banner — shown once, near the halfway point
+        try {
+            const banner = document.getElementById('midwayBanner');
+            const idx    = (state.currentQuestionIndex ?? 0);
+            const total  = (state.totalQuestions ?? 0);
+            if (banner && total > 4) {
+                const half = Math.floor(total / 2);
+                const shouldShow = (idx === half) && !sessionStorage.getItem('ams_midway_shown');
+                if (shouldShow) {
+                    const txt = document.getElementById('midwayText');
+                    if (txt) txt.textContent = t('midwayEncouragement') || 'Sie haben den schwierigsten Teil bereits geschafft.';
+                    banner.style.display = 'flex';
+                    sessionStorage.setItem('ams_midway_shown', '1');
+                    setTimeout(() => { banner.style.display = 'none'; }, 6000);
+                } else if (idx !== half) {
+                    banner.style.display = 'none';
+                }
+            }
+        } catch (_e) { /* non-critical UI sugar */ }
 
         if (this.questionText) this.questionText.textContent  = question.text  ?? '';
 
@@ -3317,14 +3376,23 @@ class AICoachWidget {
             sk: '💬 Pomôžem vám s otázkami — kliknite tu!',
         };
         tip.textContent = msgs[lang] || msgs.de;
+
+        // Add a close button — WCAG 2.2.1 (Timing Adjustable): no auto-dismiss
+        const close = document.createElement('button');
+        close.className = 'ai-coach-intro-tooltip__close';
+        close.setAttribute('aria-label', 'Hinweis schliessen');
+        close.textContent = '✕';
+        tip.appendChild(close);
+
         this._widget.appendChild(tip);
-        // Dismiss on click, mark as seen
-        tip.addEventListener('click', () => { tip.remove(); localStorage.setItem('ams_coach_seen', '1'); });
-        // Auto-dismiss after 8 seconds
-        setTimeout(() => {
-            tip.style.opacity = '0';
-            setTimeout(() => { tip.remove(); localStorage.setItem('ams_coach_seen', '1'); }, 600);
-        }, 8000);
+
+        const dismiss = () => {
+            tip.remove();
+            localStorage.setItem('ams_coach_seen', '1');
+        };
+        // Click anywhere on the tooltip (or its close button) dismisses
+        tip.addEventListener('click', dismiss);
+        // Persists until the user actively dismisses — no setTimeout auto-close.
     }
 
     /** Hide the widget (called when leaving interview screen) */
@@ -3530,6 +3598,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     document.getElementById('startOverBtn')?.addEventListener('click',  () => interview.handleStartOver());
+
+    // Save & finish later — autosave already ran on every answer; this button
+    // gives explicit reassurance + an obvious exit. Returns to welcome screen,
+    // resume banner shows the in-progress session.
+    document.getElementById('finishLaterBtn')?.addEventListener('click', () => {
+        try {
+            ui.showStatus(t('statusSaved') || 'Gespeichert ✓', 'success');
+            ui.showScreen('welcome');
+            // Trigger the resume-banner check so the participant sees the
+            // welcome-back message immediately on return.
+            interview.checkForResumeSession();
+        } catch (_e) { /* never block exit */ }
+    });
     document.getElementById('reviewBtn')?.addEventListener('click',     () => interview.showReview());
     // §5 ATS score — two-step flow
     document.getElementById('atsBtn')?.addEventListener('click',    () => interview.handleATSScore());

@@ -81,6 +81,32 @@ router = APIRouter(prefix="/api", tags=["Trainer Dashboard"])
 
 VALID_APPROVAL_STATUSES = {"pending", "approved", "rejected", "needs_changes"}
 VALID_EXPORT_FORMATS = {"pdf", "docx", "json"}
+
+# JSON-bomb defence: bound depth and total key count on imported CV JSON.
+# A legitimate Tool 1 CV has depth ~6 and ~150 keys; bomb payloads explode
+# either depth or breadth.
+_JSON_MAX_DEPTH = 20
+_JSON_MAX_KEYS  = 2000
+
+
+def _validate_json_payload(obj, *, _depth: int = 0, _counter: list | None = None) -> None:
+    """Raise ValueError if the JSON tree exceeds depth or total-key budgets."""
+    if _counter is None:
+        _counter = [0]
+    if _depth > _JSON_MAX_DEPTH:
+        raise ValueError(f"JSON nested deeper than {_JSON_MAX_DEPTH} levels — refusing to parse")
+    if isinstance(obj, dict):
+        _counter[0] += len(obj)
+        if _counter[0] > _JSON_MAX_KEYS:
+            raise ValueError(f"JSON has more than {_JSON_MAX_KEYS} keys — refusing to parse")
+        for v in obj.values():
+            _validate_json_payload(v, _depth=_depth + 1, _counter=_counter)
+    elif isinstance(obj, list):
+        _counter[0] += len(obj)
+        if _counter[0] > _JSON_MAX_KEYS:
+            raise ValueError(f"JSON has more than {_JSON_MAX_KEYS} elements — refusing to parse")
+        for item in obj:
+            _validate_json_payload(item, _depth=_depth + 1, _counter=_counter)
 MAX_BULK_EXPORT = 500
 DEFAULT_PAGE_SIZE = 50
 MAX_PAGE_SIZE = 200
@@ -269,11 +295,12 @@ async def import_cvs(
             )
 
         if file.filename.endswith(".json"):
-            # Single JSON file
+            # Single JSON file — guard against JSON bombs (depth + key count)
             try:
                 cv_dict = json.loads(contents)
             except json.JSONDecodeError as e:
                 raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+            _validate_json_payload(cv_dict)
 
             participant_id = _import_single_cv(db, cohort_id, cv_dict)
             audit_logger.info(f"IMPORT single CV: cohort={cohort_id} user={cv_dict.get('user_id', 'unknown')}")
@@ -300,9 +327,10 @@ async def import_cvs(
                         try:
                             json_content = zf.read(filename)
                             cv_dict = json.loads(json_content)
+                            _validate_json_payload(cv_dict)
                             _import_single_cv(db, cohort_id, cv_dict)
                             count += 1
-                        except (json.JSONDecodeError, KeyError) as e:
+                        except (json.JSONDecodeError, KeyError, ValueError) as e:
                             errors.append(f"{filename}: {e}")
                             logger.warning(f"Skipped invalid file {filename}: {e}")
             except zipfile.BadZipFile:
@@ -1337,3 +1365,33 @@ def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict) -> int:
 
     logger.info(f"Imported CV for user {user_id} (participant {participant.id}, v{latest_version})")
     return participant.id
+
+
+# =====================================================
+# Admin: SQLite backup
+# =====================================================
+
+@router.get("/admin/backup", tags=["Admin"])
+async def admin_backup():
+    """
+    Stream the trainer SQLite database as a downloadable file.
+
+    Intended for AMS IT to run a periodic backup. Returns the live `.db` file
+    with a timestamped filename. Caller should have `AMS_TRAINER_API_KEY`
+    configured to prevent unauthorised download.
+    """
+    from config import DATABASE_URL
+
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        raise HTTPException(status_code=404, detail="Database file not found")
+
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"ams_trainer_backup_{timestamp}.db"
+    audit_logger.info(f"BACKUP requested: path={db_path}")
+    return FileResponse(
+        path=db_path,
+        filename=filename,
+        media_type="application/octet-stream",
+        headers={"X-Backup-Timestamp": timestamp},
+    )

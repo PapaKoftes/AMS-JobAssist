@@ -2326,6 +2326,90 @@ body {
     background: #f0faf4;
 }
 
+/* ── Mid-interview encouragement banner ── */
+.midway-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    background: #fff8e6;
+    border-left: 4px solid #f39c12;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #6e4f00;
+    animation: midway-fade-in 0.6s ease;
+}
+.midway-icon { font-size: 1.4rem; }
+@keyframes midway-fade-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .midway-banner { animation: none; }
+}
+
+/* ── Save and finish later ── */
+.finish-later-row {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: #666;
+}
+.finish-later-hint { color: #888; }
+
+/* ── Completion screen disclosure ── */
+.completion-more {
+    margin-top: 16px;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+.completion-more > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary, #2c3e50);
+    padding: 8px 0;
+    list-style: none;
+    user-select: none;
+}
+.completion-more > summary::before {
+    content: '▸ ';
+    transition: transform 0.2s;
+    display: inline-block;
+}
+.completion-more[open] > summary::before {
+    content: '▾ ';
+}
+.completion-actions-secondary {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* ── AI coach tooltip close button (replaces removed auto-dismiss timer) ── */
+.ai-coach-intro-tooltip {
+    position: relative;     /* anchor for absolute-positioned close button */
+    padding-right: 32px;    /* room for the × */
+}
+.ai-coach-intro-tooltip__close {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    opacity: 0.7;
+}
+.ai-coach-intro-tooltip__close:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+
 /* ============================================================================
    ACCESSIBILITY — WCAG 2.1 AA targets
    ============================================================================ */
