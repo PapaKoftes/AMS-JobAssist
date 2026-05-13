@@ -184,8 +184,18 @@ if errorlevel 1 (
     pause
     goto :END
 )
-echo     [OK] Installation abgeschlossen.
+echo     [OK] Abhaengigkeiten installiert.
 echo.
+
+:: Download AI model if not present
+if not exist "tool-1-cv-maker\data\models\qwen2.5-1.5b-instruct-q4_k_m.gguf" (
+    echo     Lade KI-Modell herunter ^(~1,1 GB -- einmalig^)...
+    echo     Bitte warten -- ca. 2-5 Minuten je nach Internetverbindung.
+    echo.
+    python -c "import sys,os; os.environ['AMS_ENFORCE_OFFLINE']='0'; sys.path.insert(0,'tool-1-cv-maker/src/backend'); from ai.local_llm import download_model; ok=download_model(); print('[OK] KI-Modell heruntergeladen.' if ok else '[!] Download fehlgeschlagen -- KI laeuft regelbasiert.')"
+    echo.
+)
+
 echo     Starte AMS JobAssist...
 echo.
 python launcher.py

@@ -180,17 +180,10 @@ if not errorlevel 1 (
     ) else (
         echo     [OK] KI-Modul erfolgreich installiert.
         echo.
-        echo     Moechten Sie das KI-Modell jetzt herunterladen? ^(~1,1 GB^)
-        echo     Sie koennen dies auch spaeter in der App tun.
+        echo     Lade KI-Modell herunter ^(~1,1 GB -- einmalig^)...
+        echo     Bitte warten -- ca. 2-5 Minuten je nach Internetverbindung.
         echo.
-        choice /c JN /n /m "     [J] Ja, jetzt herunterladen   [N] Spaeter: "
-        if not errorlevel 2 (
-            echo.
-            echo     Download laeuft... ^(Bitte warten -- ca. 2-5 Minuten^)
-            python -c "import sys; sys.path.insert(0,'tool-1-cv-maker/src/backend'); from ai.local_llm import download_model; ok=download_model(); print('[OK] Modell heruntergeladen.' if ok else '[!] Download fehlgeschlagen -- bitte spaeter in der App versuchen.')"
-        ) else (
-            echo     [OK] Modell kann spaeter in der App unter KI-Coach heruntergeladen werden.
-        )
+        python -c "import sys; sys.path.insert(0,'tool-1-cv-maker/src/backend'); from ai.local_llm import download_model; ok=download_model(); print('[OK] KI-Modell heruntergeladen.' if ok else '[!] Download fehlgeschlagen -- KI-Coach laeuft dann ohne Modell.')"
     )
 )
 echo.
