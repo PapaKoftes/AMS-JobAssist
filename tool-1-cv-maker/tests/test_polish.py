@@ -62,7 +62,12 @@ class TestPolishAnswerBasic:
         )
 
         polished = result["polished_text"]
-        assert polished[0].isupper(), "First letter should be capitalized"
+        # Find the first alphabetic character — the text may start with a
+        # number when the AI rewrites to German (e.g. "5 Jahre …").
+        first_alpha = next((c for c in polished if c.isalpha()), None)
+        assert first_alpha is None or first_alpha.isupper(), (
+            f"First letter should be capitalized, got: {polished!r}"
+        )
 
     def test_whitespace_normalization(self, db_manager, polish_engine):
         """Multiple spaces are normalized to single space."""

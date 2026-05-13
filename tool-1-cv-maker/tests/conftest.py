@@ -8,6 +8,10 @@ Provides:
 - Cleanup and isolation between tests
 """
 
+# demo_test.py is a manual integration script that connects to localhost:8000
+# at import time — pytest can't collect it without a running server.
+collect_ignore = ["demo_test.py"]
+
 import pytest
 import sqlite3
 import tempfile

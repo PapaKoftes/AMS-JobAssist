@@ -111,12 +111,12 @@ Goal: Get the artifacts and sign-offs needed to put this in front of real AMS tr
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| `TRAINER_DECISIONS_CHECKLIST.md` filled in | 🚧 Pending | Drafted, awaiting Marko sign-off on paths/skills/compliance |
+| `TRAINER_DECISIONS_CHECKLIST.md` filled in | 🚧 Pending | Drafted, awaiting trainer sign-off on paths/skills/compliance |
 | Fresh-VM smoke test | 🚧 Pending | Run all 3 .exe on a clean Windows VM, no Python installed |
 | Full WCAG AA automated scan | 🚧 Pending | axe-core / Lighthouse — accessibility CSS layer already in place |
 | Demo screenshots | 🚧 Pending | User to capture during walkthrough — 5–8 hero images for README/PITCH |
 | AMS Instructor Guide final pass | 🚧 Pending | Already drafted in `docs/AMS_INSTRUCTOR_GUIDE.md`, needs trainer review |
-| Marko feedback round | 🚧 Pending | Schedule classroom session once smoke test + checklist done |
+| Trainer feedback round | 🚧 Pending | Schedule classroom session once smoke test + checklist done |
 
 ---
 
@@ -147,7 +147,7 @@ Concrete stability wins from the recent pass — everything below landed since 2
 
 ## Next Sprint Targets (unblock AMS pilot)
 
-1. **Get Marko to sign off on `TRAINER_DECISIONS_CHECKLIST.md`** — interview paths, forbidden wording, ESCO skill subset. Blocks classroom run.
+1. **Get trainer sign-off on `TRAINER_DECISIONS_CHECKLIST.md`** — interview paths, forbidden wording, ESCO skill subset. Blocks classroom run.
 2. **Fresh-VM smoke test** — clean Windows 11 VM, no Python, run all 3 .exe end-to-end. Likely surfaces 1–2 missing hiddenimports.
 3. **Cohort creation UI + trainer notes UI** — small frontend pieces, backend is ready. Needed for a 10-participant classroom.
 4. **Capture demo screenshots** during the next walkthrough — README and PITCH still reference placeholders.
@@ -155,9 +155,6 @@ Concrete stability wins from the recent pass — everything below landed since 2
 
 ---
 
-## Contacts
+## Contributing
 
-| Person | Role | Notes |
-|--------|------|-------|
-| Mina Mikail | Builder | mmatheking99@gmail.com |
-| Marko | AMS Vienna trainer | Key feedback partner; pilot classroom gatekeeper |
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md) for contribution guidelines.

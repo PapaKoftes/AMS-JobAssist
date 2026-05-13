@@ -197,26 +197,17 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AMS JobAssist"
 echo     [OK] In "Programme und Features" registriert.
 echo.
 
-:: -- Download AI model if Python is available ---------------------------------
-set "MODEL_PATH=!DATA_DIR!\models\qwen2.5-1.5b-instruct-q4_k_m.gguf"
-if not exist "!MODEL_PATH!" (
-    python --version >nul 2>&1
-    if not errorlevel 1 (
-        echo     Lade KI-Modell herunter ^(~1,1 GB -- einmalig^)...
-        echo     Bitte warten -- ca. 2-5 Minuten je nach Internetverbindung.
-        echo     ^(Ohne Modell funktioniert alles -- nur der KI-Coach ist einfacher^)
-        echo.
-        python -c "import urllib.request,os; os.makedirs(r'!DATA_DIR!\models',exist_ok=True); urllib.request.urlretrieve('https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',r'!MODEL_PATH!')" 2>nul
-        if exist "!MODEL_PATH!" (
-            echo     [OK] KI-Modell heruntergeladen.
-        ) else (
-            echo     [!] Download fehlgeschlagen -- KI-Coach laeuft regelbasiert.
-        )
-    ) else (
-        echo     [INFO] Python nicht vorhanden -- KI-Modell kann spaeter in der App geladen werden.
-    )
-    echo.
-)
+:: -- AI model note ------------------------------------------------------------
+:: The 1.1 GB Qwen model is NOT bundled in the .exe and cannot be resolved by
+:: the frozen application (PyInstaller changes __file__ paths).  The .exe falls
+:: back to rule-based polishing automatically — everything works, just without
+:: the conversational AI coach.
+::
+:: To get the full AI experience, use the Python path instead:
+::   START.bat  or  ams_jobassist.bat  (both auto-download the model)
+echo     [INFO] KI-Modell: Die .exe-Version nutzt den regelbasierten Modus.
+echo            Fuer den vollen KI-Coach nutzen Sie START.bat mit Python.
+echo.
 
 :: -- Done ---------------------------------------------------------------------
 echo  ================================================================
