@@ -88,14 +88,16 @@ async def lifespan(app: FastAPI):
     if _repo_root not in sys.path:
         sys.path.insert(0, _repo_root)
 
-    # Configure structured logging format — includes session_id injected by
-    # the _SessionIdFilter in api/interview.py via a ContextVar.
-    # Only configure if the root logger has no handlers yet (uvicorn sets its own).
+    # Configure structured logging.
+    # NOTE: We do NOT put %(session_id)s in the root format because records
+    # emitted during startup (before any request) don't have that field and
+    # Python 3.14's logging raises KeyError.  Session ID is logged per-request
+    # in the request_logging_middleware instead.
     _root = logging.getLogger()
     if not _root.handlers:
         logging.basicConfig(
             level=logging.INFO,
-            format="%(asctime)s [%(levelname)s] [session=%(session_id)s] %(name)s: %(message)s",
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         )
 
     # Startup
