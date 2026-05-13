@@ -83,7 +83,7 @@ echo  ================================================================
 echo.
 
 :: Schritt 1 -- Python pruefen ------------------------------------------------
-echo     Schritt 1 von 6  --  Pruefe ob Python vorhanden ist...
+echo     Schritt 1 von 5  --  Pruefe ob Python vorhanden ist...
 echo.
 python --version >nul 2>&1
 if errorlevel 1 (
@@ -102,71 +102,44 @@ for /f "tokens=*" %%v in ('python --version 2^>^&1') do (
 )
 echo.
 
-:: Schritt 2 -- Tool 1 installieren ------------------------------------------
-echo     Schritt 2 von 6  --  Installiere CV-Ersteller (Tool 1)...
+:: Schritt 2 -- Tool 1 installieren/aktualisieren ----------------------------
+:: Always runs pip install (fast when already satisfied) to ensure all
+:: dependencies are resolved, including lingua-language-detector.
+echo     Schritt 2 von 5  --  Installiere CV-Ersteller (Tool 1) + Spracherkennung...
 echo.
-pip show ams-cv-maker >nul 2>&1
-if not errorlevel 1 (
-    echo     [OK] CV-Ersteller ist bereits installiert. Ueberspringe.
-) else (
-    echo          Bitte warten -- das dauert nur einen Moment...
-    python -m pip install -e "tool-1-cv-maker" -q --disable-pip-version-check
-    if errorlevel 1 (
-        echo.
-        echo     [!!] Installation von Tool 1 fehlgeschlagen.
-        echo          Pruefe die Fehlermeldung oben.
-        pause
-        goto :MENU
-    )
-    echo     [OK] CV-Ersteller erfolgreich installiert.
+echo          Bitte warten -- pruefe Abhaengigkeiten...
+python -m pip install -e "tool-1-cv-maker" -q --disable-pip-version-check
+if errorlevel 1 (
+    echo.
+    echo     [!!] Installation von Tool 1 fehlgeschlagen.
+    echo          Pruefe die Fehlermeldung oben.
+    pause
+    goto :MENU
 )
+echo     [OK] CV-Ersteller + Spracherkennung installiert.
 echo.
 
-:: Schritt 3 -- Tool 2 installieren ------------------------------------------
-echo     Schritt 3 von 6  --  Installiere Trainer-Dashboard (Tool 2)...
+:: Schritt 3 -- Tool 2 installieren/aktualisieren ----------------------------
+echo     Schritt 3 von 5  --  Installiere Trainer-Dashboard (Tool 2)...
 echo.
-pip show ams-trainer >nul 2>&1
-if not errorlevel 1 (
-    echo     [OK] Trainer-Dashboard ist bereits installiert. Ueberspringe.
-) else (
-    echo          Bitte warten...
-    python -m pip install -e "tool-2-trainer-dashboard" -q --disable-pip-version-check
-    if errorlevel 1 (
-        echo.
-        echo     [!!] Installation von Tool 2 fehlgeschlagen.
-        echo          Pruefe die Fehlermeldung oben.
-        pause
-        goto :MENU
-    )
-    echo     [OK] Trainer-Dashboard erfolgreich installiert.
+echo          Bitte warten -- pruefe Abhaengigkeiten...
+python -m pip install -e "tool-2-trainer-dashboard" -q --disable-pip-version-check
+if errorlevel 1 (
+    echo.
+    echo     [!!] Installation von Tool 2 fehlgeschlagen.
+    echo          Pruefe die Fehlermeldung oben.
+    pause
+    goto :MENU
 )
+echo     [OK] Trainer-Dashboard installiert.
 echo.
 
-:: Schritt 4 -- Spracherkennungs-Modul installieren ---------------------------
-echo     Schritt 4 von 6  --  Installiere Spracherkennungs-Modul...
-echo.
-python -c "import lingua" >nul 2>&1
-if not errorlevel 1 (
-    echo     [OK] Spracherkennungs-Modul ist bereits installiert. Ueberspringe.
-) else (
-    echo          Installiere lingua-language-detector ^(~20 MB^)...
-    python -m pip install lingua-language-detector -q --disable-pip-version-check
-    if errorlevel 1 (
-        echo.
-        echo     [!] Spracherkennungs-Modul konnte nicht installiert werden.
-        echo         Das Programm funktioniert auch ohne -- mit einfacherer Erkennung.
-    ) else (
-        echo     [OK] Spracherkennungs-Modul erfolgreich installiert.
-    )
-)
-echo.
-
-:: Schritt 5 -- KI-Modul installieren -----------------------------------------
-echo     Schritt 5 von 6  --  Installiere lokales KI-Modul ^(llama-cpp-python^)...
+:: Schritt 4 -- KI-Modul + Modell --------------------------------------------
+echo     Schritt 4 von 5  --  KI-Modul ^(llama-cpp-python^) + KI-Modell...
 echo.
 python -c "import llama_cpp" >nul 2>&1
 if not errorlevel 1 (
-    echo     [OK] KI-Modul bereits installiert. Ueberspringe.
+    echo     [OK] KI-Modul bereits installiert.
 ) else (
     echo          Installiere llama-cpp-python CPU-Version ^(~50 MB^)...
     echo          ^(Dieser Schritt kann 1-2 Minuten dauern^)
@@ -176,20 +149,25 @@ if not errorlevel 1 (
         echo.
         echo     [!] KI-Modul konnte nicht installiert werden.
         echo         Das Programm laeuft auch ohne KI -- mit regelbasierter Verbesserung.
-        echo         KI-Modell kann spaeter ueber die App heruntergeladen werden.
     ) else (
         echo     [OK] KI-Modul erfolgreich installiert.
-        echo.
-        echo     Lade KI-Modell herunter ^(~1,1 GB -- einmalig^)...
-        echo     Bitte warten -- ca. 2-5 Minuten je nach Internetverbindung.
-        echo.
-        python -c "import sys; sys.path.insert(0,'tool-1-cv-maker/src/backend'); from ai.local_llm import download_model; ok=download_model(); print('[OK] KI-Modell heruntergeladen.' if ok else '[!] Download fehlgeschlagen -- KI-Coach laeuft dann ohne Modell.')"
     )
+)
+:: Download model if not present (regardless of whether llama-cpp-python just installed)
+if not exist "tool-1-cv-maker\data\models\qwen2.5-1.5b-instruct-q4_k_m.gguf" (
+    echo.
+    echo     Lade KI-Modell herunter ^(~1,1 GB -- einmalig^)...
+    echo     Bitte warten -- ca. 2-5 Minuten je nach Internetverbindung.
+    echo     ^(Ohne Modell funktioniert alles -- nur der KI-Coach ist einfacher^)
+    echo.
+    python -c "import sys; sys.path.insert(0,'tool-1-cv-maker/src/backend'); from ai.local_llm import download_model; ok=download_model(); print('[OK] KI-Modell heruntergeladen.' if ok else '[!] Download fehlgeschlagen -- KI-Coach laeuft regelbasiert.')"
+) else (
+    echo     [OK] KI-Modell bereits vorhanden.
 )
 echo.
 
-:: Schritt 6 -- Starten -------------------------------------------------------
-echo     Schritt 6 von 6  --  Starte AMS JobAssist...
+:: Schritt 5 -- Starten -------------------------------------------------------
+echo     Schritt 5 von 5  --  Starte AMS JobAssist...
 echo.
 echo     Der Browser oeffnet sich automatisch.
 echo     Lassen Sie dieses Fenster geoeffnet, solange Sie arbeiten.
