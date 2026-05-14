@@ -134,6 +134,7 @@ All configuration is driven by environment variables. Set them in the shell that
 | `AMS_DATA_DIR` | per-tool `data/` | Override DB + exports root |
 | `AMS_TRAINER_API_KEY` | _(unset)_ | If set, Tool 2 requires this header |
 | `AMS_DATA_RETENTION_DAYS` | _(unset)_ | If set, records older than N days are purged on startup |
+| `AMS_MODEL_TIER` | _(auto-detect)_ | AI model tier: `light` (~400 MB), `medium` (~1.1 GB), `full` (~2 GB) |
 | `AMS_ENFORCE_OFFLINE` | `1` | Block outbound network at socket layer (loopback allowlisted) |
 
 If a port is occupied the launcher auto-advances to the next free port and prints the actual URL in the console — do not assume 8000/8001.
@@ -149,6 +150,7 @@ AMS-JobAssist/
 |       +-- ams_jobassist.db        # sessions, answers, polish output
 |       +-- exports/                # generated PDF / DOCX bundles
 |       +-- models/                 # optional Qwen2.5-1.5B GGUF (~1.1 GB)
+|       +-- knowledge/              # Austrian job knowledge base (berufe.json)
 +-- tool-2-trainer-dashboard/
 |   +-- data/
 |       +-- ams_trainer.db          # cohorts, approvals, audit log
@@ -301,7 +303,7 @@ taskkill /PID <pid> /F
 
 ### Missing GGUF model file
 
-If `tool-1-cv-maker/data/models/` is empty or the file is the wrong shape, Tool 1 logs a warning and falls back to the **rule-based polish layer**. All features still work; only natural-language phrasing is slightly less smooth. To enable AI: drop the Qwen2.5-1.5B-Instruct GGUF (~1.1 GB) into that folder and restart.
+If `tool-1-cv-maker/data/models/` is empty or the file is the wrong shape, Tool 1 logs a warning and runs the **rule-based polish + knowledge base** pipeline. All features still work — verb enforcement, skill normalization, ATS optimization, and Austrian job knowledge are all rule-based. The LLM only adds natural phrasing on top. To enable AI: drop the Qwen2.5-1.5B-Instruct GGUF (~1.1 GB) into that folder and restart.
 
 ### `pip install` fails on `llama-cpp-python`
 
@@ -372,8 +374,9 @@ Before opening a support ticket, gather:
 **v1.0** (2026-05-12)
 - 3 reproducible Windows `.exe` artifacts (`build_all.bat` verified end-to-end)
 - Offline mode default-on with loopback allowlist
-- 725-test suite (683 Tool 1 + 42 Tool 2)
-- 12 UI languages incl. RTL Arabic
+- 549-test suite (507 Tool 1 + 42 Tool 2)
+- 12 UI languages incl. RTL Arabic; polish pipeline detects 14+ input languages
+- Tiered AI models: light (~400 MB), medium (~1.1 GB), full (~2 GB) — local LLM primary engine
 - DSGVO Art. 17 / Art. 20 endpoints and retention env var
 - Full `export_logs` audit trail in `ams_trainer.db`
 - Optional Qwen2.5-1.5B local AI with rule-based fallback

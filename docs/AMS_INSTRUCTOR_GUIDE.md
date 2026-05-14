@@ -142,7 +142,7 @@ When you are happy, click **Approve**. The CV is now locked and ready for export
 | Question | Answer |
 |---|---|
 | Does any participant data go to the internet? | No. The program binds only to `127.0.0.1` and refuses outbound connections at the network layer. |
-| Does the AI coach call ChatGPT or any cloud? | No. It runs a small local model (Qwen2.5-1.5B, ~1.1 GB) directly on the laptop. If the model is not installed, it falls back to a rule-based coach. |
+| Does the AI coach call ChatGPT or any cloud? | No. The primary engine is a rule-based system with an Austrian job knowledge base (25 Berufe). A local AI model (3 sizes for different hardware) optionally enhances the output. Everything runs on the laptop. |
 | Where are the CVs stored? | In a single SQLite file on your laptop, in the `data/` folder next to the program. |
 | How long are they kept? | Configurable via `AMS_DATA_RETENTION_DAYS`. Default is 90 days, then auto-deleted. |
 | Can a participant download their own data? | Yes — DSGVO Article 20 endpoint built in. |
@@ -229,7 +229,7 @@ Three small programs, each a single `.exe` built from `build_all.bat`:
 - **Tool 2** — your trainer dashboard
 - **Launcher** — opens both with one click
 
-725 automated tests run before every release (683 for Tool 1, 42 for Tool 2). Accessibility built in: skip links, focus rings, 44-pixel touch targets, Arabic right-to-left support, `prefers-reduced-motion`, `prefers-contrast`, print stylesheet.
+549 automated tests run before every release (507 for Tool 1, 42 for Tool 2). Accessibility built in: skip links, focus rings, 44-pixel touch targets, Arabic right-to-left support, `prefers-reduced-motion`, `prefers-contrast`, print stylesheet.
 
 ---
 

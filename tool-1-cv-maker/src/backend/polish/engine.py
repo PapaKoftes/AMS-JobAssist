@@ -19,11 +19,18 @@ from .language import LanguageNormalizer
 from cv.models import CVSection, QuestionCategory
 
 try:
-    from ai.local_llm import polish_answer as _local_polish, get_status as _local_status
+    from ai.local_llm import (
+        polish_answer as _local_polish,
+        enhance_polished as _local_enhance,
+        is_ready as _local_ready,
+        get_status as _local_status,
+    )
     _LOCAL_AI = True
 except ImportError:
     _LOCAL_AI = False
     def _local_polish(*a, **kw): return None
+    def _local_enhance(*a, **kw): return None
+    def _local_ready(): return False
     def _local_status(): return {"local_model_available": False}
 
 try:
@@ -34,27 +41,65 @@ except ImportError:
     def _ollama_polish(*a, **kw): return None
     def _ollama_status(): return {"ollama_available": False}
 
-def ai_polish(text, category="experience", lang="de"):
-    """Priority: local model → Ollama → None (caller uses rules).
+try:
+    from ai.knowledge import find_job, get_context_for_prompt, get_verbs_for_job, get_skills_for_job
+    _HAS_KNOWLEDGE = True
+except ImportError:
+    _HAS_KNOWLEDGE = False
+    def find_job(t): return None
+    def get_context_for_prompt(t, c=""): return ""
+    def get_verbs_for_job(t, l="de"): return []
+    def get_skills_for_job(t): return []
 
-    Renamed from `polish_with_ollama` (which shadowed the imported symbol of the
-    same name) to make the AI-chain abstraction explicit. The imported
-    `_ollama_polish` is the actual Ollama backend; this wrapper picks the
-    best available engine.
+
+def ai_enhance(rule_polished_text, category="experience", lang="de", knowledge_ctx=""):
+    """Enhance ALREADY rule-polished text with LLM. Lighter task = faster + better.
+
+    Pipeline: Rules handle verbs/skills/structure FIRST → LLM only rephrases for
+    natural flow, injecting domain knowledge from the Austrian job knowledge base.
+
+    Priority chain: Local GGUF → Ollama → None (rule output used as-is).
     """
-    result = _local_polish(text, category, lang)
+    # Tier 1: local GGUF model — purpose-built enhance prompt
+    if _LOCAL_AI and _local_ready():
+        result = _local_enhance(rule_polished_text, category, lang, knowledge_ctx)
+        if result:
+            return result
+
+    # Tier 2: Ollama — fall back to full polish (no enhance endpoint)
+    result = _ollama_polish(rule_polished_text, category, lang)
     if result:
         return result
-    return _ollama_polish(text, category, lang)
+
+    # Tier 3: rule output is already good — return None so caller keeps it
+    return None
+
+
+def ai_polish(text, category="experience", lang="de"):
+    """Full LLM polish — used for non-rule-processed paths (translation, chat).
+
+    For the main polish pipeline, prefer ai_enhance() which takes rule-polished
+    text and does a lighter enhancement task.
+    """
+    if _LOCAL_AI and _local_ready():
+        result = _local_polish(text, category, lang)
+        if result:
+            return result
+    result = _ollama_polish(text, category, lang)
+    if result:
+        return result
+    return None
+
 
 def ai_get_status():
+    """Return which AI engine is active. Priority: Local LLM > Ollama > Rules."""
     local = _local_status()
-    ollama = _ollama_status()
     if local.get("local_model_available"):
-        return {**local, "mode": "Lokales KI-Modell", "ollama_available": ollama.get("ollama_available", False)}
+        return {**local, "mode": "Lokales KI-Modell", "active_engine": "local"}
+    ollama = _ollama_status()
     if ollama.get("ollama_available"):
-        return {**ollama, "mode": "Ollama", "local_model_available": False}
-    return {"mode": "Regelbasiert", "local_model_available": False, "ollama_available": False}
+        return {**ollama, "mode": "Ollama", "active_engine": "ollama"}
+    return {"mode": "Regelbasiert", "active_engine": "rules", "ollama_available": False, "local_model_available": False}
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +140,8 @@ class PolishEngine:
         self._verb_map = None       # English weak→strong verbs
         self._de_verb_map = None    # German weak→strong verbs
         self._skill_map = None      # All-language skill terms
+        self._verb_regex = None     # Compiled EN verb pattern (cached)
+        self._de_verb_regex = None  # Compiled DE verb pattern (cached)
         self._load_mappings()
 
     def _load_mappings(self):
@@ -128,11 +175,17 @@ class PolishEngine:
                 f"{len(self._skill_map)} skills (all languages)"
             )
 
+            # Pre-compile verb regex patterns (avoids recompilation on every call)
+            self._verb_regex = self._compile_verb_regex(self._verb_map)
+            self._de_verb_regex = self._compile_verb_regex(self._de_verb_map)
+
         except Exception as e:
             logger.error(f"Error loading mappings: {e}")
             self._verb_map = {}
             self._de_verb_map = {}
             self._skill_map = {}
+            self._verb_regex = None
+            self._de_verb_regex = None
 
     def polish_answer(self, answer_text: str, category: str,
                       hint_language: str = "") -> Dict[str, Any]:
@@ -170,27 +223,45 @@ class PolishEngine:
             )
             language_confidence = self.language_normalizer.get_language_confidence(answer_text)
 
-            # Try Ollama first (it handles all languages natively)
+            # ── STEP 1: RULES FIRST (always run, fast, deterministic) ────────
             normalized = self._normalize_text(answer_text)
-            ai_polished = ai_polish(normalized, category, detected_language)
-            if ai_polished:
-                with_strong_verbs = ai_polished
-                verb_changes = ["KI-Verbesserung angewendet"]
+            if detected_language == "de":
+                with_strong_verbs, verb_changes = self._enforce_german_verbs_tracked(normalized)
+            elif detected_language == "en":
+                with_strong_verbs, verb_changes = self._enforce_strong_verbs_tracked(normalized)
+            else:
+                # Other languages: minimal normalisation, no verb rewriting
+                with_strong_verbs = normalized
+                verb_changes = []
+
+            # ── STEP 2: KNOWLEDGE RETRIEVAL (augment with Austrian job data) ──
+            knowledge_ctx = ""
+            if _HAS_KNOWLEDGE:
+                knowledge_ctx = get_context_for_prompt(answer_text, category)
+
+            # ── STEP 3: LLM ENHANCEMENT (optional, on rule-polished text) ────
+            # LLM receives already-structured text + domain knowledge.
+            # Its task is simpler: natural rephrasing, not rewriting from scratch.
+            ai_enhanced = ai_enhance(with_strong_verbs, category, detected_language, knowledge_ctx)
+            if ai_enhanced:
+                with_strong_verbs = ai_enhanced
+                verb_changes.append("KI-Verbesserung angewendet")
                 ai_mode = True
             else:
                 ai_mode = False
-                if detected_language == "de":
-                    # Apply German verb enforcement directly on German text
-                    with_strong_verbs, verb_changes = self._enforce_german_verbs_tracked(normalized)
-                elif detected_language == "en":
-                    with_strong_verbs, verb_changes = self._enforce_strong_verbs_tracked(normalized)
-                else:
-                    # Other languages: minimal normalisation, no verb rewriting
-                    with_strong_verbs = normalized
-                    verb_changes = []
 
             # Skill extraction from ORIGINAL text (catches German/Turkish/Arabic terms)
             extracted_skills = self._extract_skills_multilang(answer_text)
+
+            # Also extract knowledge-based skills if available
+            if _HAS_KNOWLEDGE:
+                job = find_job(answer_text)
+                if job:
+                    for skill in get_skills_for_job(job.get("id", "")):
+                        if skill not in extracted_skills:
+                            # Only add if the skill term appears in the text
+                            if skill.lower() in answer_text.lower():
+                                extracted_skills.append(skill)
             skill_changes = [f"Fähigkeit erkannt: '{s}'" for s in extracted_skills]
 
             # Structure validation and quality scoring
@@ -290,19 +361,19 @@ class PolishEngine:
             english_text, _ = self.language_normalizer.normalize_to_language(answer_text, "en")
             normalized_en = self._normalize_text(english_text)
 
-            # Step 3: English verb enforcement (for English CV field)
-            try:
-                ai_polished = ai_polish(
-                    self._normalize_text(answer_text), category, detected_language
-                )
-            except Exception:
-                ai_polished = None
+            # ── STEP 3: RULES FIRST — verb enforcement on English field ──────
+            with_strong_verbs, verb_changes = self._enforce_strong_verbs_tracked(normalized_en)
 
-            if ai_polished:
-                with_strong_verbs = ai_polished
-                verb_changes = ["KI-Verbesserung angewendet"]
-            else:
-                with_strong_verbs, verb_changes = self._enforce_strong_verbs_tracked(normalized_en)
+            # ── STEP 3b: Knowledge retrieval ─────────────────────────────────
+            knowledge_ctx = ""
+            if _HAS_KNOWLEDGE:
+                knowledge_ctx = get_context_for_prompt(answer_text, category)
+
+            # ── STEP 3c: LLM ENHANCEMENT — on rule-polished English text ─────
+            ai_enhanced = ai_enhance(with_strong_verbs, category, detected_language, knowledge_ctx)
+            if ai_enhanced:
+                with_strong_verbs = ai_enhanced
+                verb_changes.append("KI-Verbesserung angewendet")
 
             # Step 4: Extract skills from ORIGINAL text (catches German/Turkish/Arabic terms)
             # and also from English normalised text (catches English skill terms)
@@ -317,6 +388,12 @@ class PolishEngine:
                 german_polished = self._normalize_text(answer_text)
                 german_polished, de_verb_changes = self._enforce_german_verbs_tracked(german_polished)
                 all_changes.extend(de_verb_changes)
+
+                # Optionally enhance German text too
+                de_enhanced = ai_enhance(german_polished, category, "de", knowledge_ctx)
+                if de_enhanced:
+                    german_polished = de_enhanced
+
                 score_text = german_polished      # score the actual German output
             else:
                 german_polished = self.language_normalizer.translate_to_german(with_strong_verbs)
@@ -404,6 +481,20 @@ class PolishEngine:
 
         return text
 
+    @staticmethod
+    def _compile_verb_regex(verb_map: dict):
+        """Compile a single regex matching all keys in verb_map (longest first).
+
+        Returns None if the map is empty.  Called once at init time so the
+        pattern is reused on every polish call instead of recompiling.
+        """
+        if not verb_map:
+            return None
+        return re.compile(
+            r'\b(' + '|'.join(re.escape(k) for k in sorted(verb_map, key=len, reverse=True)) + r')\b',
+            flags=re.IGNORECASE,
+        )
+
     def _enforce_strong_verbs(self, text: str) -> str:
         """Replace weak verbs with strong verbs, preserving case."""
         polished, _ = self._enforce_strong_verbs_tracked(text)
@@ -421,13 +512,9 @@ class PolishEngine:
             (polished_text, changes) where changes is a list of human-readable
             transformation descriptions like "Replaced 'did' → 'executed'".
         """
-        if not self._verb_map:
+        if not self._verb_map or not self._verb_regex:
             return text, []
 
-        combined = re.compile(
-            r'\b(' + '|'.join(re.escape(k) for k in sorted(self._verb_map, key=len, reverse=True)) + r')\b',
-            flags=re.IGNORECASE
-        )
         changes: list[str] = []
         replaced: set = set()
 
@@ -444,7 +531,7 @@ class PolishEngine:
                 return strong[0].upper() + strong[1:]
             return strong
 
-        result = combined.sub(_sub, text)
+        result = self._verb_regex.sub(_sub, text)
         return result, changes
 
     def _enforce_german_verbs_tracked(self, text: str) -> tuple:
@@ -454,13 +541,9 @@ class PolishEngine:
         Uses the same single-pass approach as _enforce_strong_verbs_tracked to
         prevent cascading replacements (e.g., A→B then B→C in the same run).
         """
-        if not self._de_verb_map:
+        if not self._de_verb_map or not self._de_verb_regex:
             return text, []
 
-        combined = re.compile(
-            r'\b(' + '|'.join(re.escape(k) for k in sorted(self._de_verb_map, key=len, reverse=True)) + r')\b',
-            flags=re.IGNORECASE
-        )
         changes: list[str] = []
         replaced: set = set()
 
@@ -477,7 +560,7 @@ class PolishEngine:
                 return strong[0].upper() + strong[1:]
             return strong
 
-        result = combined.sub(_sub, text)
+        result = self._de_verb_regex.sub(_sub, text)
         return result, changes
 
     def _score_german_verbs(self, text: str) -> float:

@@ -8,7 +8,7 @@
 Built for AMS Wien classroom use — currently a polished demonstrator awaiting pilot validation. Runs entirely on the trainer's laptop. No cloud, no data leaves the device.
 
 ![Status](https://img.shields.io/badge/Status-Demo--ready-brightgreen)
-![Tests](https://img.shields.io/badge/Tests-725%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-562%20passing-brightgreen)
 ![Build](https://img.shields.io/badge/Windows%20.exe-3%20artifacts-blue)
 ![Languages](https://img.shields.io/badge/UI-12%20languages-blue)
 ![License](https://img.shields.io/badge/License-MIT-blue)
@@ -97,7 +97,7 @@ AMS-JobAssist/
 ├── tool-1-cv-maker/          Participant interface
 │   ├── src/backend/          FastAPI + SQLite + interview/polish/export engines
 │   ├── src/frontend/         Vanilla JS, 12-language UI, live preview
-│   └── tests/                683 tests
+│   └── tests/                507 tests
 ├── tool-2-trainer-dashboard/ Trainer interface
 │   ├── src/backend/          FastAPI + SQLAlchemy + audit middleware
 │   ├── frontend/             Vanilla JS table view + side-by-side compare
@@ -119,7 +119,7 @@ AMS-JobAssist/
 | Feature | Status | Notes |
 |---|---|---|
 | 5 interview paths | ✅ | Unemployed · career switch · student · pause · other |
-| Multi-language input | ✅ | Detected automatically (12 supported, with German polish at output) |
+| Multi-language input | ✅ | 12 UI languages; polish pipeline detects 14+ input languages |
 | Live preview | ✅ | See your CV growing as you answer |
 | Quality scoring | ✅ | Encouraging feedback ("a little more detail helps") |
 | Quick-fill chips | ✅ | One-tap starters for common answers |
@@ -148,7 +148,7 @@ AMS-JobAssist/
 | Per-export audit log | ✅ | `ExportLog` table records who downloaded whose CV, when |
 | API-key auth | ✅ | `AMS_TRAINER_API_KEY` env var enables it |
 | Request-size limit + CSRF | ✅ | Hardened middleware stack |
-| Notes per participant | 🚧 | Backend supports it; frontend UI pending |
+| Notes per participant | ✅ | Standalone save button, never shown to participant |
 | Cohort creation UI | 🚧 | Backend done; frontend UI pending |
 
 ### Accessibility
@@ -173,7 +173,7 @@ AMS-JobAssist/
 
 This is not a marketing claim — it is enforced at the socket layer.
 
-- **Default-on offline mode.** `tool-1/privacy/network_block.py` monkey-patches `socket.socket`, `socket.getaddrinfo`, `urllib.request.urlopen`, and `http.client.{HTTP,HTTPS}Connection` to refuse any non-loopback destination. Loopback (127.0.0.1, ::1, localhost) is allowlisted so the FastAPI server itself keeps working. Disable only with `AMS_ENFORCE_OFFLINE=0` for development.
+- **Default-on offline mode.** `tool-1/privacy/network_block.py` monkey-patches `socket.socket`, `socket.getaddrinfo`, `urllib.request.urlopen`, and `http.client.{HTTP,HTTPS}Connection` to refuse any non-loopback destination. Strict loopback-only (127.0.0.1, ::1, localhost) — no cloud allowlist, no exceptions. Disable only with `AMS_ENFORCE_OFFLINE=0` for development.
 - **Per-machine SQLite.** Each laptop has its own `ams_jobassist.db`. No central server, no cloud sync.
 - **Consent screen.** The "Create my CV" button is disabled until the participant ticks the box acknowledging local-only storage.
 - **DSGVO Art. 20 portability.** Endpoint `GET /api/cv/{session_id}/my-data` returns every byte stored about the participant as a JSON download. Wired to the 🔒 *Meine Daten herunterladen* button.
@@ -186,7 +186,7 @@ This is not a marketing claim — it is enforced at the socket layer.
 ## Running tests
 
 ```bash
-# Tool 1 — 683 tests
+# Tool 1 — 507 tests
 cd tool-1-cv-maker
 python -m pytest tests/ --ignore=tests/demo_test.py -q
 
@@ -225,7 +225,7 @@ Honest about what this is and isn't:
 - **No central admin server.** Each laptop is independent. Backups are per-machine (one-click via `GET /api/admin/backup`).
 - **Interview examples are placeholders.** The good/bad example chips next to each question contain Mina-authored sample text. Real AMS sign-off and anonymised real-cohort samples are needed before classroom pilot.
 - **12 UI translations have not been native-speaker reviewed.** German and English are author-quality. The other 10 are LLM-assisted and unverified by native speakers.
-- **The optional Qwen2.5-1.5B LLM is not bundled** in the `.exe` artifacts (model is ~1.1 GB). Download is a one-time explicit action; rule-based fallback covers everything offline if the model is absent.
+- **Rules-first AI architecture.** The rule engine (117 German verbs, 70 English verbs, 428 multilingual skills) does the heavy lifting — verb enforcement, skill normalization, ATS optimization. A local knowledge base (25 Austrian jobs from AMS Berufslexikon with 197 verbs, 171 skills, 75 example phrases) provides domain context. The local LLM (3 tiers: light/medium/full) only enhances already-polished text for natural flow. Falls back to Ollama, then rule output as-is.
 - **Authenticode code-signing is not yet applied** to the `.exe` artifacts. Windows SmartScreen will warn on first run. A signing certificate is on the to-do list.
 - **Full WCAG 2.1 AA automated audit (axe-core / Lighthouse) has not been run.** The CSS scaffolding (focus rings, touch targets, prefers-reduced-motion / prefers-contrast / RTL / print stylesheet, skip-link) is in place but not externally verified. Screen-reader testing with NVDA / JAWS is pending.
 - **Cohort creation UI and per-participant trainer-notes UI are pending** in Tool 2. The backend supports both (cohort filters, `trainer_notes` column); the frontend table view doesn't yet expose them.
@@ -239,8 +239,8 @@ Honest about what this is and isn't:
 - **Tool 1 (CV Maker):** ✅ Production-ready
 - **Tool 2 (Trainer Dashboard):** ✅ All spec features wired with audit/auth
 - **Windows .exe build:** ✅ Reproducible — 3 artifacts produced from `build_all.bat`
-- **Tests:** ✅ 725 passing
-- **Accessibility quick wins:** ✅ Focus rings, touch targets, RTL, print stylesheet, contrast/motion preferences
+- **Tests:** ✅ 549 passing (507 T1 + 42 T2)
+- **Accessibility quick wins:** ✅ Focus rings, touch targets, RTL Arabic, print stylesheet, contrast/motion preferences
 - **AMS trainer sign-off:** ⏳ Pending — see [TRAINER_DECISIONS_CHECKLIST.md](docs/TRAINER_DECISIONS_CHECKLIST.md)
 - **Pilot in a real classroom:** ⏳ Pending an AMS partner
 

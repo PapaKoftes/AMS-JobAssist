@@ -1,8 +1,8 @@
 # AMS JobAssist - Frequently Asked Questions
 
-**Version**: 1.0
+**Version**: 1.1
 **Date**: 2026-05-12
-**Last Updated**: 2026-05-12
+**Last Updated**: 2026-05-14
 
 ---
 
@@ -23,7 +23,7 @@
 | sr | Srpski | ru | Русский |
 | sk | Slovenčina | ar | العربية (RTL) |
 
-Participants can answer in any language they prefer; the system normalizes content to German / English / native for the final CV. Arabic is rendered right-to-left throughout the UI.
+Participants can answer in any language they prefer; the polish pipeline detects and normalizes 14+ input languages to German / English / native for the final CV. Arabic is rendered right-to-left throughout the UI.
 
 ### Q: How long does an interview take?
 **A**: Typically **30-60 minutes**, depending on:
@@ -70,7 +70,15 @@ Custom question editing is on the v1.1 roadmap.
 **A**: The polish layer applies professional CV conventions: action verbs, consistent structure, and skill normalization (e.g., "office work" -> "Microsoft Office (Word, Excel, Outlook)"). The original raw text is preserved in the database — Tool 2 shows raw vs. improved side-by-side as a teaching aid.
 
 ### Q: Is the AI required?
-**A**: No. The local AI engine (**Qwen2.5-1.5B GGUF**, ~1.1 GB) is **optional**. Drop the model file into `tool-1-cv-maker/data/models/` to enable it. Without it, the system falls back to the deterministic rule-based polish layer. Both paths produce a valid CV; the AI just yields more natural phrasing.
+**A**: The tool uses a **rules-first architecture** — the rule engine (117 DE verbs, 70 EN verbs, 428 multilingual skills) and a local Austrian job knowledge base (25 jobs from AMS Berufslexikon) do the heavy lifting. The local AI model enhances already-polished text for more natural flow. Three tiers are available:
+
+| Tier | Model | Size | RAM needed |
+|------|-------|------|------------|
+| Light | Qwen2.5-0.5B | ~400 MB | 4 GB |
+| Medium | Qwen2.5-1.5B | ~1.1 GB | 8 GB |
+| Full | Qwen2.5-3B | ~2 GB | 16 GB |
+
+Download via the in-app button or set `AMS_MODEL_TIER=light|medium|full`. Without any model, rule-based polish + knowledge base still produce professional CVs — the LLM adds natural phrasing on top.
 
 ### Q: What if my language isn't in the UI list?
 **A**: Use the closest available language. Participant answers can still be typed in any language — the polish/translation pipeline handles input language detection. New UI languages are added based on demand.
@@ -253,7 +261,7 @@ Batch exports come as a single ZIP.
 All three PyInstaller specs are relocatable via `SPECPATH` and include the full set of `hiddenimports`. No Python install is required on target machines.
 
 ### Q: How big is the test suite?
-**A**: **725 tests** total — 683 covering Tool 1, 42 covering Tool 2. They run via `pytest` from the repo root and cover the polish layer, interview engine, exports, DSGVO endpoints, audit logging, and bulk operations.
+**A**: **549 tests** total — 507 covering Tool 1, 42 covering Tool 2. They run via `pytest` from each tool's directory and cover the polish layer, interview engine, exports, DSGVO endpoints, audit logging, and bulk operations.
 
 ### Q: What are the minimum system requirements?
 **A**:
@@ -326,6 +334,15 @@ without the AI extra. The rule-based polish layer covers all functionality; only
 
 ## Version History
 
+**v1.1** (2026-05-14)
+- Tiered AI models: light (0.5B, ~400MB), medium (1.5B, ~1.1GB), full (3B, ~2GB) — users choose per hardware
+- Local LLM is now the primary engine (not optional); falls back to Ollama, then rule-based
+- 12 UI languages restored; polish pipeline detects 14+ input languages
+- Experience block gating (yes/no before optional 2nd/3rd work entries)
+- Name auto-fill from welcome screen (skips redundant first question)
+- Demo mode (`start_demo.bat`) seeds 5 sample participants for trainer demos
+- 549 tests passing (507 Tool 1 + 42 Tool 2)
+
 **v1.0** (2026-05-12)
 - 725 tests passing (683 Tool 1 + 42 Tool 2)
 - Offline mode on by default with loopback allowlist
@@ -338,4 +355,4 @@ without the AI extra. The rule-based polish layer covers all functionality; only
 ---
 
 **Questions not answered here?**
-See `ADMINISTRATOR_GUIDE.md` (installation / IT) or `TRAINER_QUICK_START.md` (classroom use).
+See `ADMINISTRATOR_GUIDE.md` (installation / IT) or `docs/AMS_INSTRUCTOR_GUIDE.md` (classroom use).

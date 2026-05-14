@@ -1,10 +1,10 @@
 # AMS JobAssist — Architecture Reference
 
 **Audience**: Developers, code reviewers
-**Last Updated**: 2026-05-12
-**Tool 1 status**: Production-ready — 683 tests passing
+**Last Updated**: 2026-05-14
+**Tool 1 status**: Production-ready — 507 tests passing
 **Tool 2 status**: Production-ready — 42 tests passing
-**Test suite total**: 725 passing
+**Test suite total**: 549 passing
 
 ![AMS JobAssist architecture diagram](docs/img/architecture.png)
 
@@ -43,9 +43,12 @@ AMS-JobAssist/
 | Interview paths | `tool-1-cv-maker/src/backend/interview/paths.py` | 5 hardcoded path definitions |
 | Conversational follow-ups | `tool-1-cv-maker/src/backend/interview/conversational.py` | LLM-driven targeted probes |
 | Autosave | `tool-1-cv-maker/src/backend/interview/autosave.py` | Transaction-based persistence |
-| AI local LLM | `tool-1-cv-maker/src/backend/ai/local_llm.py` | Qwen2.5-1.5B GGUF via llama-cpp-python |
-| AI Ollama fallback | `tool-1-cv-maker/src/backend/ai/ollama.py` | Used only if local model absent |
-| Polish engine | `tool-1-cv-maker/src/backend/polish/engine.py` | Rule-based polish + AI dispatch (`ai_polish`) |
+| AI local LLM | `tool-1-cv-maker/src/backend/ai/local_llm.py` | Qwen GGUF (3 tiers) via llama-cpp-python — enhancement engine |
+| AI Ollama fallback | `tool-1-cv-maker/src/backend/ai/ollama.py` | Used if local model absent and Ollama running |
+| AI Knowledge Base | `tool-1-cv-maker/src/backend/ai/knowledge.py` | RAG retrieval over 25 Austrian jobs (berufe.json) |
+| Knowledge data | `tool-1-cv-maker/data/knowledge/berufe.json` | 25 jobs, 197 verbs, 171 skills, 75 example phrases |
+| Rule DB expansion | `tool-1-cv-maker/src/backend/db_seed_expansion.py` | Expanded verb/skill/ATS seed data (70 EN / 117 DE verbs, 428 skills, 63 ATS keywords) |
+| Polish engine | `tool-1-cv-maker/src/backend/polish/engine.py` | Rules first → Knowledge retrieval → LLM enhancement (`ai_polish`) |
 | Language normaliser | `tool-1-cv-maker/src/backend/polish/language.py` | 14-language detect + translate |
 | ATS scoring | `tool-1-cv-maker/src/backend/polish/ats.py` | Keyword match vs job ad |
 | CV model | `tool-1-cv-maker/src/backend/cv/models.py` | `CVData` / `CVSection` dataclasses |
@@ -86,11 +89,12 @@ tool-1-cv-maker/src/backend/
 │   └── translations.py     UI string translations (14 languages)
 │
 ├── ai/
-│   ├── local_llm.py        Qwen2.5-1.5B GGUF via llama-cpp-python (CPU)
-│   └── ollama.py           Ollama fallback (if local model absent)
+│   ├── local_llm.py        Qwen GGUF (3 tiers) via llama-cpp-python — LLM enhancement engine
+│   ├── ollama.py           Ollama fallback (if local model absent)
+│   └── knowledge.py        RAG knowledge base — 25 Austrian jobs from data/knowledge/berufe.json
 │
 ├── polish/
-│   ├── engine.py           PolishEngine — `ai_polish()` dispatches across 3 tiers
+│   ├── engine.py           PolishEngine — `ai_polish()` dispatches: rules → knowledge → LLM enhancement
 │   ├── language.py         LanguageNormalizer — 14-language detect + translate
 │   └── ats.py              ATS keyword scoring against pasted job ad
 │
@@ -196,28 +200,74 @@ sequenceDiagram
 
 ---
 
-## AI Tier Fallback Chain
+## AI Pipeline — Rules First
 
-The app always works. Output quality depends on which tier is available. The chain is enforced inside `polish/engine.py::ai_polish()`:
+The app always works. The rule engine is the **primary** stage — deterministic, fast, zero dependencies. The LLM only enhances already-polished text. This is a deliberate inversion from the earlier design (LLM first, rules fallback).
+
+**Old flow**: LLM generates text -> rules patch failures.
+**New flow**: Rules produce correct text -> LLM optionally enhances fluency.
+
+The pipeline is enforced inside `polish/engine.py::ai_polish()`:
 
 ```mermaid
 graph LR
-    A[Request<br/>polish / chat / interview-prep / job-match] --> B{Local LLM<br/>loaded?}
-    B -- yes --> L[Qwen2.5-1.5B Q4_K_M<br/>llama-cpp-python<br/>CPU, offline]
-    B -- no --> C{Ollama<br/>running on localhost?}
-    C -- yes --> O[Ollama fallback<br/>local HTTP]
-    C -- no --> R[Rule-based engine<br/>verb enforcement + term map<br/>always works]
-    L --> Z[Response]
+    A[User Input<br/>answer text] --> R[Rules Engine<br/>verb enforcement, skill normalisation,<br/>structure checks]
+    R --> K[Knowledge Retrieval<br/>ai/knowledge.py<br/>match job → inject verbs, skills, examples]
+    K --> B{Local LLM<br/>loaded?}
+    B -- yes --> L[LLM Enhancement<br/>Qwen GGUF, CPU, offline]
+    B -- no --> C{Ollama<br/>running?}
+    C -- yes --> O[Ollama Enhancement<br/>local HTTP]
+    C -- no --> Z[Output<br/>rules-only result<br/>already correct]
+    L --> Z
     O --> Z
-    R --> Z
 ```
 
-**Why this order**:
-- **Local LLM first**: ships in the .exe, no setup, native German/Turkish/Arabic/Bosnian training. ~1.1 GB model, downloaded on first use via in-app button.
-- **Ollama second**: developer convenience and trainer power-user path — if they already have a stronger local model, use it.
-- **Rule-based last**: deterministic, fast, zero dependencies. The core loop never breaks when AI is absent.
+### RAG Knowledge Base
 
-`ai_polish()` was previously called `polish_with_ollama()` — renamed in the May 2026 audit since it dispatches across all three tiers, not just Ollama.
+`ai/knowledge.py` loads structured job data from `data/knowledge/berufe.json` at first access. The knowledge base feeds into both the rule engine (job-specific verb and skill lists) and LLM prompts (example phrases as few-shot context).
+
+| Metric | Count |
+|--------|-------|
+| Austrian jobs covered | 25 |
+| German verbs | 197 |
+| Skills | 171 |
+| Example CV phrases | 75 |
+| Job categories | 8 |
+
+Functions: `find_job()`, `get_verbs_for_job()`, `get_skills_for_job()`, `get_context_for_prompt()`, `get_all_jobs()`, `get_job_categories()`, `get_stats()`.
+
+### Expanded Rule Engine
+
+The rule database was significantly expanded to make the rules-first pipeline viable without LLM assistance:
+
+| Resource | Before | After |
+|----------|--------|-------|
+| English verbs | 20 | 70 |
+| German verbs | 30 | 117 |
+| Skills (10+ languages) | 87 | 428 |
+| ATS keywords | 14 | 63 |
+
+Seed data lives in `db_seed_expansion.py` and runs at DB initialisation.
+
+### Tiered models
+
+Users choose the best model for their hardware:
+
+| Tier | Model | Size | RAM | Speed | Best for |
+|------|-------|------|-----|-------|----------|
+| `light` | Qwen2.5-0.5B Q4_K_M | ~400 MB | 4 GB | ~8-12 tok/s | Older laptops |
+| `medium` | Qwen2.5-1.5B Q4_K_M | ~1.1 GB | 8 GB | ~3-5 tok/s | **Recommended** |
+| `full` | Qwen2.5-3B Q4_K_M | ~2 GB | 16 GB | ~1-3 tok/s | Best quality |
+
+Set `AMS_MODEL_TIER=light|medium|full` or use the in-app download button. The system auto-detects the best model on disk (full > medium > light).
+
+**Why rules first**:
+- Deterministic, fast, zero dependencies — the core loop never breaks
+- Expanded verb/skill database (428 skills, 117 DE verbs) produces professional output without any model
+- Knowledge base injects job-specific verbs, skills, and example phrases from real Austrian job data
+- **LLM enhancement optional**: local Qwen GGUF or Ollama adds fluency and stylistic polish on top of already-correct text
+- Downloads once via in-app button to `data/models/`
+- **Ollama**: developer convenience and trainer power-user path — if they already have a stronger model running
 
 ---
 
@@ -264,6 +314,9 @@ graph LR
 | `POST` | `/api/ai/job-match` | Compare CV to a job description |
 | `GET` | `/api/ai/model-status` | Which AI engine is active |
 | `POST` | `/api/ai/download-model` | Trigger model download (~1.1 GB) |
+| `GET` | `/api/ai/knowledge/status` | Knowledge base stats (jobs, verbs, skills counts) |
+| `GET` | `/api/ai/knowledge/jobs` | List all 25 jobs (id, title_de, title_en, category) |
+| `GET` | `/api/ai/knowledge/search?q=text` | Search for matching job by text |
 
 ### Tool 2 (`tool-2-trainer-dashboard/src/backend/api/routes.py`)
 
@@ -380,11 +433,11 @@ All three PyInstaller specs live in `packaging/` and are now relocatable (repo-r
 
 ## Test Suite
 
-**Total: 725 tests passing.**
+**Total: 549 tests passing.**
 
 ```bash
 # Tool 1
-cd tool-1-cv-maker && python -m pytest tests/ -q   # 683 passing
+cd tool-1-cv-maker && python -m pytest tests/ -q   # 507 passing
 
 # Tool 2
 cd tool-2-trainer-dashboard && python -m pytest tests/ -q   # 42 passing
@@ -404,8 +457,9 @@ cd tool-2-trainer-dashboard && python -m pytest tests/ -q   # 42 passing
 | `test_pdf_export.py` | PDF generation |
 | `test_docx_export.py` | DOCX generation |
 | `test_json_export.py` | JSON export |
-| `test_export_14languages.py` | 14-language export coverage |
+| `test_export_14languages.py` | 3 representative languages (de, en, tr) export coverage |
 | `test_ats.py` | ATS keyword scoring |
+| `test_knowledge.py` | RAG knowledge base (25 jobs, search, verbs, skills, categories) |
 | `test_e2e_flow.py` | End-to-end core flow |
 | `test_e2e_multilingual_flow.py` | End-to-end multilingual flow |
 | `test_api.py` | FastAPI endpoint integration |

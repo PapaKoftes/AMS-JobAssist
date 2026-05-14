@@ -1,73 +1,177 @@
 """
-Local LLM engine — wraps llama-cpp-python to run Qwen2.5-1.5B offline.
+Local LLM engine — wraps llama-cpp-python to run GGUF models offline.
 
-Priority chain called by polish engine and chat API:
-  1. Local GGUF model (llama-cpp-python)  ← best quality, always offline
-  2. Ollama                               ← if trainer already has it
-  3. Rule-based                           ← always works, weakest output
+Architecture (rules-first):
+  1. Rule-based engine (PRIMARY) — verb enforcement, skill normalization, structure
+  2. Knowledge base (RAG)        — Austrian job data for domain-aware prompts
+  3. Local GGUF model            — enhances rule-polished text (lighter task = faster)
+  4. Ollama                      — fallback if trainer has a larger model running
 
-Model: Qwen2.5-1.5B-Instruct-Q4_K_M.gguf  (~1.1 GB)
-  - Native German + Turkish + Arabic + Bosnian support
-  - Runs on CPU, no GPU needed (~3-5 tok/s on a basic laptop)
-  - Downloads once via install chain to data/models/
+The LLM does NOT rewrite from scratch. The rule engine handles 80%+ of the
+polish work (verbs, skills, structure). The LLM's job is to:
+  - Make rule-polished text flow naturally
+  - Add professional framing using knowledge base context
+  - Power coach chat and job-match analysis
+
+Tiered models — users choose the best model for their hardware:
+
+  Tier   | Model                         | Size   | RAM    | Speed
+  -------|-------------------------------|--------|--------|------------------
+  light  | Qwen2.5-0.5B-Instruct Q4_K_M | ~400MB | 4 GB   | ~8-12 tok/s
+  medium | Qwen2.5-1.5B-Instruct Q4_K_M | ~1.1GB | 8 GB   | ~3-5 tok/s
+  full   | Qwen2.5-3B-Instruct Q4_K_M   | ~2.0GB | 16 GB  | ~1-3 tok/s
+
+All models:
+  - Native German + Turkish + Arabic + Bosnian + multilingual support
+  - Run on CPU, no GPU needed
+  - Download once via in-app button or install chain
+  - Verified by SHA-256 hash on download
 """
 
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
 
-# Where the model lives — relative to the data dir
-_MODEL_DIR  = Path(__file__).resolve().parents[3] / "data" / "models"
-_MODEL_NAME = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+# Where models live — relative to the data dir
+_MODEL_DIR = Path(__file__).resolve().parents[3] / "data" / "models"
+
+# ── Tiered model registry ─────────────────────────────────────────────────────
+# Each tier has: filename, HuggingFace URL, expected SHA-256, context window,
+# approximate size description, and minimum recommended RAM.
+
+MODEL_TIERS: Dict[str, dict] = {
+    "light": {
+        "name": "Qwen2.5-0.5B-Instruct Q4_K_M",
+        "filename": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "url": (
+            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+            "/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+        ),
+        "sha256": "",  # TODO: pin after first verified download
+        "n_ctx": 2048,
+        "size_mb": 400,
+        "min_ram_gb": 4,
+        "description": "Schnell — gut für ältere Laptops (4 GB RAM)",
+    },
+    "medium": {
+        "name": "Qwen2.5-1.5B-Instruct Q4_K_M",
+        "filename": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+        "url": (
+            "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF"
+            "/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+        ),
+        "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+        "n_ctx": 2048,
+        "size_mb": 1100,
+        "min_ram_gb": 8,
+        "description": "Empfohlen — beste Balance aus Qualität und Geschwindigkeit (8 GB RAM)",
+    },
+    "full": {
+        "name": "Qwen2.5-3B-Instruct Q4_K_M",
+        "filename": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "url": (
+            "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF"
+            "/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
+        ),
+        "sha256": "",  # TODO: pin after first verified download
+        "n_ctx": 4096,
+        "size_mb": 2000,
+        "min_ram_gb": 16,
+        "description": "Beste Qualität — für leistungsstarke Rechner (16 GB RAM)",
+    },
+}
+
+# Default tier and active tier (can be overridden by env var AMS_MODEL_TIER)
+DEFAULT_TIER = "medium"
+
+
+def _get_active_tier() -> str:
+    """Return the configured model tier. Falls back to whichever tier has a model on disk."""
+    preferred = os.environ.get("AMS_MODEL_TIER", "").lower()
+    if preferred in MODEL_TIERS:
+        return preferred
+    # Auto-detect: use the best available model on disk (full > medium > light)
+    for tier in ("full", "medium", "light"):
+        path = _MODEL_DIR / MODEL_TIERS[tier]["filename"]
+        if path.exists() and path.stat().st_size > 10_000_000:
+            return tier
+    return DEFAULT_TIER
+
+
+def _get_model_path() -> Path:
+    tier = _get_active_tier()
+    return _MODEL_DIR / MODEL_TIERS[tier]["filename"]
+
+
+def _get_model_config() -> dict:
+    return MODEL_TIERS[_get_active_tier()]
+
+
+# Legacy aliases for backward compatibility
+_MODEL_NAME = MODEL_TIERS[DEFAULT_TIER]["filename"]
 _MODEL_PATH = _MODEL_DIR / _MODEL_NAME
-
-# HuggingFace download URL
-MODEL_URL = (
-    "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF"
-    "/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
-)
-
-# Expected SHA-256 of the GGUF file, taken from HuggingFace at the time the URL
-# above was pinned. After download we verify the file hash; mismatch = refuse
-# to load. This protects against silent corruption and against a future
-# HuggingFace-side replacement of the file with poisoned weights.
-# To rotate: download the file by hand, run `certutil -hashfile <file> SHA256`
-# (Windows) or `sha256sum <file>` (Linux/macOS), and paste here.
-MODEL_SHA256 = "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
+MODEL_URL = MODEL_TIERS[DEFAULT_TIER]["url"]
+MODEL_SHA256 = MODEL_TIERS[DEFAULT_TIER]["sha256"]
 
 _llm = None          # cached Llama instance
 _llm_ready = None    # True / False / None (not yet checked)
+_active_tier = None  # which tier is currently loaded
 
 
 def model_exists() -> bool:
-    return _MODEL_PATH.exists() and _MODEL_PATH.stat().st_size > 100_000_000
+    """Check if any model file exists on disk (any tier)."""
+    path = _get_model_path()
+    return path.exists() and path.stat().st_size > 10_000_000
+
+
+def get_available_tiers() -> List[dict]:
+    """Return info about all tiers, including which ones have models on disk."""
+    result = []
+    for tier_id, config in MODEL_TIERS.items():
+        path = _MODEL_DIR / config["filename"]
+        on_disk = path.exists() and path.stat().st_size > 10_000_000
+        result.append({
+            "tier": tier_id,
+            "name": config["name"],
+            "description": config["description"],
+            "size_mb": config["size_mb"],
+            "min_ram_gb": config["min_ram_gb"],
+            "on_disk": on_disk,
+            "active": tier_id == _get_active_tier() and _llm_ready is True,
+        })
+    return result
 
 
 def _load():
-    global _llm, _llm_ready
+    global _llm, _llm_ready, _active_tier
     if _llm_ready is not None:
         return _llm_ready
 
     if not model_exists():
-        logger.info("Local model not found — falling back to Ollama/rules")
+        logger.info("No local model found — falling back to Ollama/rules")
         _llm_ready = False
         return False
 
+    tier = _get_active_tier()
+    config = MODEL_TIERS[tier]
+    model_path = _MODEL_DIR / config["filename"]
+
     try:
         from llama_cpp import Llama
-        logger.info(f"Loading local model: {_MODEL_PATH}")
+        logger.info(f"Loading local model [{tier}]: {model_path}")
         _llm = Llama(
-            model_path=str(_MODEL_PATH),
-            n_ctx=2048,
+            model_path=str(model_path),
+            n_ctx=config["n_ctx"],
             n_threads=max(1, (os.cpu_count() or 2) - 1),
             n_gpu_layers=0,       # CPU-only
             verbose=False,
         )
         _llm_ready = True
-        logger.info("Local model loaded OK")
+        _active_tier = tier
+        logger.info(f"Local model loaded OK [{tier}]: {config['name']}")
         return True
     except ImportError:
         logger.warning("llama-cpp-python not installed — run: pip install llama-cpp-python "
@@ -75,7 +179,7 @@ def _load():
         _llm_ready = False
         return False
     except Exception as e:
-        logger.error(f"Failed to load local model: {e}")
+        logger.error(f"Failed to load local model [{tier}]: {e}")
         _llm_ready = False
         return False
 
@@ -140,9 +244,23 @@ def polish_answer(raw_text: str, category: str = "experience",
     Rewrite a raw CV answer as a professional German sentence.
     Input can be any language — output is always German.
     Returns None if model not available (caller falls back to rules).
+
+    NOTE: For the main polish pipeline, prefer enhance_polished() which takes
+    rule-processed text and does a lighter task = faster + better results.
+    This function is used for translation paths and standalone LLM calls.
     """
     lang_name  = _LANG_NAMES.get(language, language.upper())
     cat_label  = _CATEGORY_CONTEXT.get(category, "Lebenslaufinformation")
+
+    # Inject knowledge context if available
+    knowledge_block = ""
+    try:
+        from ai.knowledge import get_context_for_prompt
+        ctx = get_context_for_prompt(raw_text, category)
+        if ctx:
+            knowledge_block = f"\nFachkontext:\n{ctx}\n"
+    except ImportError:
+        pass
 
     if language == "de":
         task = "Verbessere die Formulierung. Benutze stärkere Tätigkeitsverben."
@@ -156,18 +274,88 @@ def polish_answer(raw_text: str, category: str = "experience",
         "Schreibe rohe Antworten von Jobsuchenden in professionelle deutsche CV-Sätze um. "
         "Regeln: nur Fließtext, max 3 Sätze, keine Einleitung, Inhalt nicht erfinden."
     )
-    user = f"Kategorie: {cat_label}\n{task}\n\nAntwort des Teilnehmers:\n{raw_text}\n\nVerbesserte Version:"
+    user = f"Kategorie: {cat_label}\n{task}{knowledge_block}\n\nAntwort des Teilnehmers:\n{raw_text}\n\nVerbesserte Version:"
     return chat(system, user, max_tokens=350)
+
+
+def enhance_polished(rule_polished_text: str, category: str = "experience",
+                     language: str = "de", knowledge_ctx: str = "") -> Optional[str]:
+    """
+    Enhance ALREADY rule-polished CV text — lighter task than full rewrite.
+
+    The rule engine has already:
+    - Enforced strong verbs (gemacht → umgesetzt)
+    - Normalized skills
+    - Fixed capitalization and whitespace
+
+    This function asks the LLM to:
+    - Make the text flow naturally (remove robotic feel from rule substitutions)
+    - Add professional framing using domain knowledge
+    - Keep ALL facts, verbs, and skills intact
+
+    Because the input is already structured, this requires fewer tokens and
+    produces better results than asking the LLM to rewrite from scratch.
+
+    Args:
+        rule_polished_text: Text already processed by rule engine
+        category: CV category (experience, skills, background, etc.)
+        language: ISO-639-1 code of the text language
+        knowledge_ctx: Pre-built knowledge context string from knowledge.py
+
+    Returns:
+        Enhanced text, or None if model not available.
+    """
+    cat_label = _CATEGORY_CONTEXT.get(category, "Lebenslaufinformation")
+
+    # Build a focused, short prompt — fewer tokens = faster inference
+    system = (
+        "Du bist ein Lebenslauf-Assistent bei AMS Österreich. "
+        "Der folgende Text wurde bereits automatisch verbessert (Verben, Fähigkeiten). "
+        "Mache die Formulierung natürlicher und flüssiger. "
+        "Regeln: Behalte ALLE Fakten und starken Verben bei. Max 3 Sätze. "
+        "Nichts erfinden. Keine Einleitung."
+    )
+
+    # Inject knowledge context if provided
+    knowledge_block = ""
+    if knowledge_ctx:
+        knowledge_block = f"\n{knowledge_ctx}\n"
+
+    user = (
+        f"Kategorie: {cat_label}{knowledge_block}\n"
+        f"Automatisch verbesserter Text:\n{rule_polished_text}\n\n"
+        f"Natürlicher formuliert:"
+    )
+
+    # Use lower max_tokens — text is already structured, needs less generation
+    return chat(system, user, max_tokens=250)
 
 
 def coach_chat(user_message: str, cv_context: dict, language: str = "de") -> Optional[str]:
     """
     Respond to a chat message from the user, with awareness of their CV.
     cv_context: dict with keys target_job, name, path, sections_summary
+
+    Injects knowledge base context when a target job is known, so the coach
+    can give job-specific advice (e.g., "For a Kellner position, mention
+    Kassensystem experience").
     """
     name       = cv_context.get("name", "")
     target_job = cv_context.get("target_job", "")
     summary    = cv_context.get("sections_summary", "")
+
+    # Retrieve domain knowledge for the target job
+    knowledge_block = ""
+    if target_job:
+        try:
+            from ai.knowledge import get_context_for_prompt, find_job
+            job = find_job(target_job)
+            if job:
+                ctx = get_context_for_prompt(target_job, "experience")
+                if ctx:
+                    knowledge_block = f"Berufsdaten: {ctx} "
+        except ImportError:
+            pass
 
     system = (
         "Du bist ein freundlicher, ermutigender Lebenslauf-Coach bei AMS Österreich. "
@@ -175,6 +363,7 @@ def coach_chat(user_message: str, cv_context: dict, language: str = "de") -> Opt
         "Antworte kurz (max 3 Sätze), klar und ermutigend — nie kritisch oder überwältigend. "
         f"{'Der Teilnehmer heißt ' + name + '. ' if name else ''}"
         f"{'Zielberuf: ' + target_job + '. ' if target_job else ''}"
+        f"{knowledge_block}"
         f"{'Bisheriger Lebenslauf-Inhalt: ' + summary if summary else ''}"
     )
     return chat(system, user_message, max_tokens=400)
@@ -197,6 +386,9 @@ def match_job_description(cv_summary: str, job_text: str) -> Optional[str]:
     """
     Compare CV to a job description and give specific, actionable feedback.
 
+    Uses the knowledge base to understand what skills/verbs are expected for
+    the detected job type, giving more targeted recommendations.
+
     Current mode: job_text is pasted manually by the user.
 
     Future integration point: instead of a manual paste, this function should
@@ -207,6 +399,20 @@ def match_job_description(cv_summary: str, job_text: str) -> Optional[str]:
 
     See PHILOSOPHY.md → "Future: AMS Job Service Integration" for full context.
     """
+    # Inject knowledge about the job type from RAG
+    knowledge_block = ""
+    try:
+        from ai.knowledge import find_job
+        job = find_job(job_text)
+        if job:
+            skills = ", ".join(job.get("skills", [])[:5])
+            knowledge_block = (
+                f"\nBeruf: {job['title_de']}\n"
+                f"Typische Anforderungen: {skills}\n"
+            )
+    except ImportError:
+        pass
+
     system = (
         "Du analysierst Lebensläufe gegen Stellenausschreibungen für AMS Österreich. "
         "Antworte auf Deutsch in 3 kurzen Abschnitten:\n"
@@ -217,19 +423,26 @@ def match_job_description(cv_summary: str, job_text: str) -> Optional[str]:
     )
     user = (
         f"Lebenslauf:\n{cv_summary}\n\n"
-        f"Stellenausschreibung:\n{job_text[:1500]}"  # cap at 1500 chars
+        f"Stellenausschreibung:\n{job_text[:1500]}"
+        f"{knowledge_block}"
     )
     return chat(system, user, max_tokens=450)
 
 
 def get_status() -> dict:
     ready = is_ready()
+    tier = _active_tier or _get_active_tier()
+    config = MODEL_TIERS.get(tier, MODEL_TIERS[DEFAULT_TIER])
     return {
         "local_model_available": ready,
-        "local_model_path": str(_MODEL_PATH) if ready else None,
-        "model_name": _MODEL_NAME,
+        "local_model_path": str(_MODEL_DIR / config["filename"]) if ready else None,
+        "model_name": config["name"],
+        "model_tier": tier,
         "model_exists_on_disk": model_exists(),
-        "mode": "Lokales KI-Modell" if ready else ("Modell vorhanden, lädt…" if model_exists() else "Kein Modell"),
+        "available_tiers": get_available_tiers(),
+        "mode": f"Lokales KI-Modell ({config['name']})" if ready else (
+            "Modell vorhanden, lädt…" if model_exists() else "Kein Modell"
+        ),
     }
 
 
@@ -264,46 +477,68 @@ def verify_model_hash() -> bool:
     return ok
 
 
-def download_model(progress_callback=None) -> bool:
+def download_model(progress_callback=None, tier: str = None) -> bool:
     """
-    Download the GGUF model from HuggingFace and verify its SHA-256.
+    Download a GGUF model from HuggingFace and verify its SHA-256.
 
-    progress_callback(bytes_downloaded, total_bytes) called periodically.
+    Args:
+        progress_callback: function(bytes_downloaded, total_bytes) called periodically.
+        tier: which model tier to download ("light", "medium", "full").
+              Defaults to the active tier or DEFAULT_TIER.
     Returns True on success.
     """
     import urllib.request
+
+    if tier is None:
+        tier = _get_active_tier()
+    if tier not in MODEL_TIERS:
+        logger.error(f"Unknown model tier: {tier}")
+        return False
+
+    config = MODEL_TIERS[tier]
+    model_path = _MODEL_DIR / config["filename"]
+    model_url = config["url"]
+    expected_sha = config["sha256"]
+
     _MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = _MODEL_PATH.with_suffix(".tmp")
+    tmp = model_path.with_suffix(".tmp")
     try:
-        logger.info(f"Downloading model from {MODEL_URL}")
+        logger.info(f"Downloading model [{tier}]: {config['name']} from {model_url}")
 
         def _reporthook(block, block_size, total):
             if progress_callback:
                 progress_callback(block * block_size, total)
 
-        urllib.request.urlretrieve(MODEL_URL, str(tmp), _reporthook)
+        urllib.request.urlretrieve(model_url, str(tmp), _reporthook)
 
         # Verify hash BEFORE moving to final location so a corrupted/poisoned
         # download never gets used as the model.
-        if MODEL_SHA256:
+        if expected_sha:
             actual = _sha256_of(tmp)
-            if actual.lower() != MODEL_SHA256.lower():
+            if actual.lower() != expected_sha.lower():
                 tmp.unlink()
                 logger.error(
                     "Downloaded model SHA-256 mismatch: expected %s, got %s. "
                     "Refusing to install. Re-check the URL or rotate the pin.",
-                    MODEL_SHA256, actual,
+                    expected_sha, actual,
                 )
                 return False
             logger.info(f"Model SHA-256 verified: {actual}")
         else:
-            logger.warning("MODEL_SHA256 is empty — skipping hash verification.")
+            logger.warning(f"No SHA-256 pin for tier '{tier}' — skipping hash verification.")
 
-        tmp.rename(_MODEL_PATH)
-        logger.info(f"Model downloaded: {_MODEL_PATH}")
+        tmp.rename(model_path)
+        logger.info(f"Model downloaded [{tier}]: {model_path}")
+
+        # Reset the loaded model so next call picks up the new/better tier
+        global _llm, _llm_ready, _active_tier
+        _llm = None
+        _llm_ready = None
+        _active_tier = None
+
         return True
     except Exception as e:
-        logger.error(f"Model download failed: {e}")
+        logger.error(f"Model download failed [{tier}]: {e}")
         if tmp.exists():
             tmp.unlink()
         return False

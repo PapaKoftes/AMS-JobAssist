@@ -116,6 +116,21 @@ async def lifespan(app: FastAPI):
     app.state.docx_exporter = DOCXExporter(output_dir=str(EXPORTS_DIR))
     app.state.europass_exporter = EuropassExporter(output_dir=str(EXPORTS_DIR))
 
+    # Expand verb/skill data if the seed expansion module is available.
+    # Uses INSERT OR IGNORE — safe to run on every startup (idempotent).
+    try:
+        from db_seed_expansion import apply_expansion, apply_ats_expansion
+        counts = apply_expansion(db_manager)
+        if any(v > 0 for v in counts.values()):
+            logger.info(f"Seed expansion applied: {counts}")
+            print(f"[OK] Seed data expanded: {counts}")
+        # Also expand ATS keyword bank in memory
+        apply_ats_expansion()
+    except ImportError:
+        pass  # Module not present yet — skip
+    except Exception as _exc:
+        logger.warning(f"Seed expansion failed (non-fatal): {_exc}")
+
     init_interview_routes(db_manager)
     logger.info("Database initialized")
     logger.info("Interview routes initialized")
@@ -609,6 +624,7 @@ class InterviewPrepRequest(BaseModel):
 
 class ModelDownloadRequest(BaseModel):
     confirm: bool = False
+    tier: Optional[str] = None  # "light", "medium", or "full"
 
 class ProfileSummaryRequest(BaseModel):
     session_id: int
@@ -948,12 +964,12 @@ async def ai_job_match(body: JobMatchRequest, request: Request):
 
 @app.get("/api/ai/model-status", tags=["AI"])
 async def ai_model_status():
-    """Return AI model status: which engine is active, is model on disk, etc."""
+    """Return AI model status. Priority: Local LLM > Ollama > rule-based."""
     try:
         from ai.local_llm import get_status as local_status
         local = local_status()
     except ImportError:
-        local = {"local_model_available": False, "model_exists_on_disk": False}
+        local = {"local_model_available": False}
 
     try:
         from ai.ollama import get_status as ollama_status
@@ -961,13 +977,27 @@ async def ai_model_status():
     except ImportError:
         ollama = {"ollama_available": False}
 
-    active = "local" if local.get("local_model_available") else \
-             "ollama" if ollama.get("ollama_available") else "rules"
+    if local.get("local_model_available"):
+        active = "local"
+    elif ollama.get("ollama_available"):
+        active = "ollama"
+    else:
+        active = "rules"
+
+    # Knowledge base status
+    knowledge = {"loaded": False, "jobs": 0}
+    try:
+        from ai.knowledge import get_stats
+        knowledge = get_stats()
+    except ImportError:
+        pass
 
     return {"status": "success", "data": {
         "active_engine": active,
         "local": local,
         "ollama": ollama,
+        "knowledge": knowledge,
+        "architecture": "rules-first",  # Signal the new architecture
     }}
 
 
@@ -975,37 +1005,102 @@ async def ai_model_status():
 async def ai_download_model(body: ModelDownloadRequest):
     """
     Trigger model download in the background.
-    Returns immediately with a job ID — poll /api/ai/model-status to track.
+    Supports tiered models: "light" (~400MB), "medium" (~1.1GB), "full" (~2GB).
+    Returns immediately — poll /api/ai/model-status to track progress.
     """
-    if not body.confirm:
-        try:
-            from ai.local_llm import MODEL_URL, _MODEL_NAME
-        except ImportError:
-            raise HTTPException(status_code=503, detail="AI module not available")
-        return {"status": "confirm_required", "data": {
-            "message": f"Download {_MODEL_NAME} (~1.1 GB)?",
-            "url": MODEL_URL,
-        }}
-
-    import threading
     try:
-        from ai.local_llm import download_model, model_exists
+        from ai.local_llm import MODEL_TIERS, get_available_tiers, download_model, model_exists
     except ImportError:
         raise HTTPException(status_code=503, detail="AI module not available")
 
-    if model_exists():
-        return {"status": "success", "data": {"message": "Modell bereits vorhanden."}}
+    tier = body.tier or "medium"
+    if tier not in MODEL_TIERS:
+        raise HTTPException(status_code=400, detail=f"Unknown tier: {tier}. Choose: light, medium, full")
+
+    config = MODEL_TIERS[tier]
+
+    if not body.confirm:
+        return {"status": "confirm_required", "data": {
+            "message": f"Download {config['name']} (~{config['size_mb']} MB)?",
+            "tier": tier,
+            "tiers": get_available_tiers(),
+            "url": config["url"],
+        }}
+
+    import threading
+
+    # Check if THIS specific tier already exists
+    from pathlib import Path
+    tier_path = Path(__file__).resolve().parents[1] / "data" / "models" / config["filename"]
+    if tier_path.exists() and tier_path.stat().st_size > 10_000_000:
+        return {"status": "success", "data": {"message": f"Modell '{config['name']}' bereits vorhanden."}}
 
     def _bg_download():
-        download_model()
+        download_model(tier=tier)
 
     t = threading.Thread(target=_bg_download, daemon=True)
     t.start()
 
     return {"status": "success", "data": {
-        "message": "Download gestartet. Bitte warten Sie ca. 2-5 Minuten.",
+        "message": f"Download von '{config['name']}' gestartet (~{config['size_mb']} MB). Bitte warten.",
+        "tier": tier,
         "poll": "/api/ai/model-status",
     }}
+
+
+@app.get("/api/ai/model-tiers", tags=["AI"])
+async def ai_model_tiers():
+    """List all available model tiers with download status."""
+    try:
+        from ai.local_llm import get_available_tiers
+        return {"status": "success", "data": {"tiers": get_available_tiers()}}
+    except ImportError:
+        return {"status": "success", "data": {"tiers": []}}
+
+
+# ============================================================================
+# Knowledge Base (RAG) endpoints
+# ============================================================================
+
+@app.get("/api/ai/knowledge/status", tags=["AI"])
+async def ai_knowledge_status():
+    """Return knowledge base status — how many jobs, verbs, skills loaded."""
+    try:
+        from ai.knowledge import get_stats, is_loaded
+        return {"status": "success", "data": get_stats()}
+    except ImportError:
+        return {"status": "success", "data": {"loaded": False, "jobs": 0}}
+
+
+@app.get("/api/ai/knowledge/jobs", tags=["AI"])
+async def ai_knowledge_jobs():
+    """List all jobs in the knowledge base (for admin/debug)."""
+    try:
+        from ai.knowledge import get_all_jobs, get_job_categories
+        return {"status": "success", "data": {
+            "jobs": get_all_jobs(),
+            "categories": get_job_categories(),
+        }}
+    except ImportError:
+        return {"status": "success", "data": {"jobs": [], "categories": {}}}
+
+
+@app.get("/api/ai/knowledge/search", tags=["AI"])
+async def ai_knowledge_search(q: str = ""):
+    """Search the knowledge base for a job matching the query text."""
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Suchbegriff zu kurz (min. 2 Zeichen).")
+    try:
+        from ai.knowledge import find_job, get_context_for_prompt
+        job = find_job(q)
+        if not job:
+            return {"status": "success", "data": {"match": None}}
+        return {"status": "success", "data": {
+            "match": job,
+            "context": get_context_for_prompt(q, "experience"),
+        }}
+    except ImportError:
+        return {"status": "success", "data": {"match": None}}
 
 
 @app.post("/api/ai/profile-summary", tags=["AI"])
