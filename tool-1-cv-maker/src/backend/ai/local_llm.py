@@ -591,26 +591,38 @@ def download_model(progress_callback=None, tier: str = None) -> bool:
                             pass
         return True
 
+    # Offline mode (default-on) monkey-patches sockets to refuse non-loopback
+    # destinations, which would block the HuggingFace download. The model
+    # download is the one legitimate, user-initiated outbound request, so lift
+    # the block just for its duration. No-op if offline mode isn't active.
+    try:
+        from privacy.network_block import temporarily_allow_network as _allow_net
+    except Exception:
+        import contextlib as _ctx
+        def _allow_net():
+            return _ctx.nullcontext()
+
     # Download with resume-on-failure
-    for attempt_n in range(1, 41):
-        if _cancel_event.is_set():
-            _set_download_state(status="cancelled")
-            return False
-        try:
-            if _attempt():
-                break  # completed
-            else:
-                # cancelled inside _attempt
+    with _allow_net():
+        for attempt_n in range(1, 41):
+            if _cancel_event.is_set():
                 _set_download_state(status="cancelled")
                 return False
-        except Exception as e:
-            logger.warning(f"Download attempt {attempt_n} failed ({type(e).__name__}: {e}) — resuming")
-            _set_download_state(status="downloading", error=f"retrying ({attempt_n})")
-            time.sleep(3)
-    else:
-        logger.error("Model download failed after 40 retries")
-        _set_download_state(status="error", error="Network error after 40 retries")
-        return False
+            try:
+                if _attempt():
+                    break  # completed
+                else:
+                    # cancelled inside _attempt
+                    _set_download_state(status="cancelled")
+                    return False
+            except Exception as e:
+                logger.warning(f"Download attempt {attempt_n} failed ({type(e).__name__}: {e}) — resuming")
+                _set_download_state(status="downloading", error=f"retrying ({attempt_n})")
+                time.sleep(3)
+        else:
+            logger.error("Model download failed after 40 retries")
+            _set_download_state(status="error", error="Network error after 40 retries")
+            return False
 
     # Verify hash BEFORE moving to final location.
     _set_download_state(status="verifying")
