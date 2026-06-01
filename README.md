@@ -8,7 +8,7 @@
 Built for AMS Wien classroom use — currently a polished demonstrator awaiting pilot validation. Runs entirely on the trainer's laptop. No cloud, no data leaves the device.
 
 ![Status](https://img.shields.io/badge/Status-Demo--ready-brightgreen)
-![Tests](https://img.shields.io/badge/Tests-562%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-725%20passing-brightgreen)
 ![Build](https://img.shields.io/badge/Windows%20.exe-3%20artifacts-blue)
 ![Languages](https://img.shields.io/badge/UI-12%20languages-blue)
 ![License](https://img.shields.io/badge/License-MIT-blue)
@@ -201,6 +201,7 @@ python -m pytest tests/ -q
 
 | Document | Audience | Purpose |
 |---|---|---|
+| [FOR_MARKO.md](FOR_MARKO.md) | External reviewer | 5-min install + what to try + feedback questions |
 | [DEMO_GUIDE.md](DEMO_GUIDE.md) | You, running the demo | Step-by-step script for showing the tool |
 | [PITCH.md](PITCH.md) | AMS leadership | One-page case for adoption |
 | [docs/AMS_INSTRUCTOR_GUIDE.md](docs/AMS_INSTRUCTOR_GUIDE.md) | AMS trainers | What it does for them, plain-language |
