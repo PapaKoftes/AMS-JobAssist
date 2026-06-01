@@ -49,6 +49,7 @@ const TRANSLATIONS = {
         startHintBoth:        'Bitte wählen Sie oben Ihre Situation aus und geben Sie Ihren Namen ein.',
         startHintPath:        'Bitte wählen Sie oben Ihre Situation aus.',
         startHintName:        'Bitte geben Sie Ihren Vornamen ein.',
+        startHintConsent:     '☑ Bitte bestätigen Sie das Kästchen oben (Datenschutz).',
         progressLabel:        (cur, tot) => `Frage ${cur} von ${tot}`,
         detectedLang:         (lang) => `Erkannte Sprache: ${lang}`,
         resumeWelcomeStrong:  'Willkommen zurück!',
@@ -188,6 +189,7 @@ const TRANSLATIONS = {
         startHintBoth:        'Please select your situation above and enter your name.',
         startHintPath:        'Please select your situation above.',
         startHintName:        'Please enter your first name.',
+        startHintConsent:     '☑ Please tick the box above (data privacy).',
         progressLabel:        (cur, tot) => `Question ${cur} of ${tot}`,
         detectedLang:         (lang) => `Detected language: ${lang}`,
         resumeWelcomeStrong:  'Welcome back!',
@@ -1910,12 +1912,17 @@ class UIManager {
     // -------------------------------------------------------------------------
 
     updateStartButton() {
-        const userId = document.getElementById('userIdInput')?.value.trim();
+        const userId     = document.getElementById('userIdInput')?.value.trim();
         const hasPath    = !!state.interviewPath;
         const hasName    = !!userId;
         const hasConsent = document.getElementById('consentCheck')?.checked ?? true;
         const ready      = hasPath && hasName && hasConsent;
-        if (this.startBtn) this.startBtn.disabled = !ready;
+
+        // Button is always clickable — handleStart() shows specific feedback
+        if (this.startBtn) {
+            this.startBtn.disabled = false;
+            this.startBtn.style.opacity = ready ? '1' : '0.55';
+        }
 
         const hint = document.getElementById('startHint');
         if (hint) {
@@ -1928,9 +1935,19 @@ class UIManager {
             } else if (!hasPath) {
                 hint.textContent = t('startHintPath');
                 hint.style.color = '#f39c12';
-            } else {
+            } else if (!hasName) {
                 hint.textContent = t('startHintName');
                 hint.style.color = '#f39c12';
+            } else if (!hasConsent) {
+                hint.textContent = t('startHintConsent');
+                hint.style.color = '#e74c3c';
+                // Visually shake the consent block so user can't miss it
+                const cb = document.getElementById('consentBlock');
+                if (cb) {
+                    cb.style.outline = '2px solid #e74c3c';
+                    cb.style.borderRadius = '4px';
+                    setTimeout(() => { cb.style.outline = ''; }, 3000);
+                }
             }
         }
     }
@@ -2549,8 +2566,23 @@ class InterviewManager {
     // -------------------------------------------------------------------------
 
     async handleStart() {
-        const userId = document.getElementById('userIdInput')?.value.trim();
-        if (!userId || !state.interviewPath) return;
+        const userId     = document.getElementById('userIdInput')?.value.trim();
+        const hasConsent = document.getElementById('consentCheck')?.checked ?? true;
+
+        // Show specific feedback instead of silently doing nothing
+        if (!state.interviewPath || !userId || !hasConsent) {
+            ui.updateStartButton();  // re-run hint logic to show the right message
+            // Scroll to the first missing element
+            if (!state.interviewPath) {
+                document.querySelector('.path-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!userId) {
+                document.getElementById('userIdInput')?.focus();
+            } else if (!hasConsent) {
+                document.getElementById('consentCheck')?.focus();
+                document.getElementById('consentBlock')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
 
         try {
             ui.updateSaveStatus(t('statusStarting'));

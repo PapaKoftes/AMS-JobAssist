@@ -44,11 +44,19 @@ class AMS_Launcher:
         self.tool1_process = None
         self.tool2_process = None
         self.running = True
+        self._log_handles = []  # open child-log file handles, closed on shutdown
 
     def _start_tool(self, name: str, src_rel: str, port: int):
         """
         Start a tool from source (uvicorn).
         Source always takes priority — stale .exe files are never used.
+
+        IMPORTANT: child stdout/stderr are redirected to per-tool log files,
+        NOT subprocess.PIPE. Uvicorn logs every HTTP request; if we used PIPE
+        and never drained it, the OS pipe buffer (~64 KB on Windows) would fill
+        after a few dozen requests and the server would BLOCK FOREVER on its
+        next log write — deadlocking the whole tool. Writing to a file drains
+        naturally to disk with no buffer limit, and gives us logs for support.
         """
         print(f"  [>>] Starting {name}...")
 
@@ -60,13 +68,26 @@ class AMS_Launcher:
         env = os.environ.copy()
         env["PYTHONPATH"] = str(src_path.resolve())
 
+        # Per-tool log file (drains child output so the pipe can never fill)
+        log_dir = src_path.resolve().parents[1] / "logs"  # <tool>/logs/
+        try:
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_path = log_dir / "server.log"
+            log_handle = open(log_path, "a", buffering=1, encoding="utf-8", errors="replace")
+        except Exception:
+            # If we can't open a log file, fall back to discarding output —
+            # anything is safer than an undrained PIPE that deadlocks the server.
+            log_handle = subprocess.DEVNULL
+
+        self._log_handles.append(log_handle)
+
         return subprocess.Popen(
             [sys.executable, "-m", "uvicorn",
              "app:app", "--host", "127.0.0.1",
              "--port", str(port)],
             cwd=str(src_path.resolve()),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
             env=env,
         )
 
@@ -168,6 +189,14 @@ class AMS_Launcher:
                 print("[OK] Trainer-Dashboard beendet")
             except (subprocess.TimeoutExpired, OSError):
                 self.tool2_process.kill()
+
+        # Close child-log file handles
+        for h in self._log_handles:
+            try:
+                if h not in (subprocess.DEVNULL, None):
+                    h.close()
+            except Exception:
+                pass
 
         print("[OK] Alle Programme beendet")
 
