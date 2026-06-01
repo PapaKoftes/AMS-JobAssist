@@ -13,6 +13,36 @@ const COMPLETED_SESSION_KEY = 'ams_session_completed';
 const PREVIEW_DEBOUNCE_MS  = 600;
 const AI_CHECK_INTERVAL_MS = 60_000; // re-check AI mode every minute
 
+// Questions whose answers are legitimately short (a name, a city, a company,
+// a job title, a date). These must NOT trigger "too short" warnings or
+// follow-up probes. Keyed off the question's flags.
+const SHORT_ANSWER_FLAGS = new Set([
+    'identity', 'optional', 'employer_name', 'job_title',
+    'date_range', 'target_job', 'photo',
+]);
+
+// Whether the current question accepts a short answer (name/city/company/etc.)
+function isShortAnswerQuestion(question) {
+    const flags = question?.flags ?? [];
+    return flags.some(f => SHORT_ANSWER_FLAGS.has(f));
+}
+
+// Minimum characters before the Continue button enables, per question.
+// Short-answer questions only need 1 char (or 0 if optional). Content
+// questions use a gentle floor so people aren't blocked, while the backend
+// still does the real quality re-ask.
+function effectiveMinChars(question) {
+    const flags = question?.flags ?? [];
+    if (flags.includes('optional')) return 0;
+    if (isShortAnswerQuestion(question)) return 1;
+    return 3; // content questions: just require a few characters, not a full sentence
+}
+
+// Automatic follow-up probes after each answer. They interrupt the flow and
+// feel naggy in a quick 15-question interview, so they are OFF by default.
+// (Set to true to re-enable AI/rule-based probing.)
+const ENABLE_FOLLOWUPS = false;
+
 // ============================================================================
 // i18n — UI label translations for 12 languages
 // Interview questions come from the backend already translated.
@@ -1957,18 +1987,24 @@ class UIManager {
     // -------------------------------------------------------------------------
 
     updateSubmitButton() {
-        const isPhotoQuestion = (state.currentQuestion?.flags ?? []).includes('photo');
+        const q = state.currentQuestion;
+        const isPhotoQuestion = (q?.flags ?? []).includes('photo');
+        const len = this.answerInput?.value.trim().length ?? 0;
+        const minChars = effectiveMinChars(q);
+
         if (isPhotoQuestion) {
-            // Photo is optional — always allow submission (button submits base64 or empty)
+            // Photo is optional — always allow submission (base64 or empty)
             if (this.submitBtn) this.submitBtn.disabled = false;
         } else {
-            if (this.submitBtn) this.submitBtn.disabled = (this.answerInput?.value.trim().length ?? 0) < 5;
+            if (this.submitBtn) this.submitBtn.disabled = len < minChars;
         }
-        // A3: Show hint below the button when it's disabled due to short input
+
+        // Hint below the button only when genuinely empty on a required field —
+        // never nag short-answer questions (name, city, company, date).
         const submitHint = document.getElementById('submitHint');
         if (submitHint) {
-            const tooShort = !isPhotoQuestion && (this.answerInput?.value.trim().length ?? 0) < 5;
-            submitHint.textContent = tooShort ? (t('typeMoreHint') || 'Bitte schreiben Sie etwas…') : '';
+            const showHint = !isPhotoQuestion && len < minChars && minChars > 0;
+            submitHint.textContent = showHint ? t('typeMoreHint') : '';
         }
     }
 
@@ -1985,6 +2021,15 @@ class UIManager {
 
         if (!text) {
             this.qualityIndicator.style.display = 'none';
+            return;
+        }
+
+        // Short-answer questions (name, city, company, job title, date) are
+        // valid when short — show a calm "✓ OK" instead of a length warning.
+        if (isShortAnswerQuestion(state.currentQuestion)) {
+            this.qualityIndicator.style.display = 'flex';
+            this.qualityIndicator.className = 'quality-indicator strong';
+            this.qualityIndicator.innerHTML = `<span>✓</span><span>${t('qualityGood')}</span>`;
             return;
         }
 
@@ -2686,7 +2731,7 @@ class InterviewManager {
             answerText = state.photoDataUrl || 'photo_skipped';
         } else {
             answerText = ui.answerInput?.value.trim() ?? '';
-            if (answerText.length < 5) return;
+            if (answerText.length < effectiveMinChars(state.currentQuestion)) return;
         }
 
         try {
@@ -2727,13 +2772,13 @@ class InterviewManager {
             // Show brief encouraging toast (message comes from backend quality score)
             if (data.message) ui.showEncouragement(data.message);
 
-            // Conversational follow-up — ask one targeted probe (unless it's a
-            // structural question like name/location/dates/employer/title)
-            const skipFollowUpFlags = ['identity', 'employer_name', 'job_title', 'date_range', 'target_job', 'photo'];
+            // Conversational follow-up — OFF by default (see ENABLE_FOLLOWUPS).
+            // Probing after every answer interrupts the flow and feels naggy in
+            // a quick interview. The structured questions already gather enough.
             const currentFlags = state.currentQuestion?.flags ?? [];
-            const isStructural = currentFlags.some(f => skipFollowUpFlags.includes(f));
+            const isStructural = currentFlags.some(f => SHORT_ANSWER_FLAGS.has(f));
 
-            if (!isStructural) {
+            if (ENABLE_FOLLOWUPS && !isStructural) {
                 try {
                     const fuResp = await api.getFollowUp(
                         state.sessionId, questionId, answerText, state.inputLanguage
@@ -2742,12 +2787,10 @@ class InterviewManager {
                     if (followUpText) {
                         const accepted = await ui.showFollowUpPrompt(followUpText, state.inputLanguage);
                         if (accepted && accepted.trim()) {
-                            // Append follow-up response to the saved answer silently
-                            // (no re-ask loop — we accept whatever they write)
                             await api.submitAnswer(
                                 state.sessionId,
                                 questionId + '_followup',
-                                accepted   // only the follow-up addition, not original again
+                                accepted
                             ).catch(() => {}); // non-fatal
                         }
                     }

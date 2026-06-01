@@ -697,6 +697,11 @@ class InterviewEngine:
             },
             "quick_fill": question.get("quick_fill", []),
             "helper_tip": question.get("helper_tip", ""),
+            # Pass flags + min_length through so the frontend can tailor
+            # validation (short identity/structured answers are valid) and
+            # correctly skip follow-up probes on structural questions.
+            "flags": question.get("flags", []),
+            "min_length": question.get("min_length", 0),
         }
 
     def _ensure_questions_loaded(self) -> None:
