@@ -205,16 +205,48 @@ class AMS_Launcher:
 
 def main():
     """Entry point"""
+    import argparse
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--tool1-only", action="store_true",
+                        help="Start only Tool 1 (CV maker) and open its URL")
+    parser.add_argument("--open-trainer", action="store_true",
+                        help="Start both tools and open the trainer dashboard URL")
+    args, _ = parser.parse_known_args()
+
     launcher = AMS_Launcher()
 
-    # Handle Ctrl+C
     def signal_handler(sig, frame):
         launcher.shutdown()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    # Run launcher
+    if args.tool1_only:
+        # Participant shortcut: start Tool 1 only, open CV maker URL
+        if not launcher.start_tool1():
+            sys.exit(1)
+        if launcher._wait_for_ready(TOOL1_PORT, "Tool 1"):
+            print(f"  [OK] CV-Ersteller bereit: http://localhost:{TOOL1_PORT}")
+            webbrowser.open(f"http://localhost:{TOOL1_PORT}")
+        launcher.show_launcher_menu()
+        launcher.monitor_processes()
+        launcher.shutdown()
+        return
+
+    if args.open_trainer:
+        # Trainer shortcut: start both, open trainer dashboard URL
+        launcher.start_tool1()
+        launcher.start_tool2()
+        if launcher._wait_for_ready(TOOL1_PORT, "Tool 1"):
+            print(f"  [OK] CV-Ersteller bereit: http://localhost:{TOOL1_PORT}")
+        if launcher._wait_for_ready(TOOL2_PORT, "Tool 2"):
+            print(f"  [OK] Trainer-Dashboard bereit: http://localhost:{TOOL2_PORT}")
+            webbrowser.open(f"http://localhost:{TOOL2_PORT}")
+        launcher.show_launcher_menu()
+        launcher.monitor_processes()
+        launcher.shutdown()
+        return
+
     exit_code = launcher.run()
     sys.exit(exit_code)
 

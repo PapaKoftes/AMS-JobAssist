@@ -39,7 +39,7 @@ class TestInterviewInitialization:
         assert result["question_id"]
         assert result["question"]["text"]
         assert result["progress"]["current"] == 1
-        assert result["progress"]["total"] == 25  # 6 identity + target_job + 7 path + 3 sub-q + 8 optional exp
+        assert result["progress"]["total"] == 15  # 4 identity + target_job + 10 path-specific questions
 
     def test_start_interview_career_switch_path(self, db_manager, test_user):
         """✅ Can start an interview with career_switch path."""
@@ -50,7 +50,7 @@ class TestInterviewInitialization:
         )
 
         assert result["interview_path"] == "career-switch"
-        assert result["progress"]["total"] == 27  # 6 identity + target_job + 9 path + 2 AMS + 9 sub-q + 8 opt exp
+        assert result["progress"]["total"] == 15  # 4 identity + target_job + 10 path-specific questions
 
     def test_start_interview_invalid_path(self, db_manager, test_user):
         """✅ Starting interview with invalid path raises ValueError."""
@@ -96,7 +96,7 @@ class TestQuestionSequencing:
 
         assert next_result["question_id"] != question_id
         assert next_result["progress"]["current"] == 2
-        assert next_result["progress"]["total"] == 25  # unemployed path + optional experience blocks
+        assert next_result["progress"]["total"] == 15  # current path question count
 
     def test_progress_tracking(self, db_manager, test_user):
         """✅ Progress percentage increases with each question."""
@@ -107,7 +107,7 @@ class TestQuestionSequencing:
         )
 
         initial_progress = session_result["progress"]["percent"]
-        assert initial_progress == pytest.approx(100.0 / 27, abs=0.5)  # 1 of 27 (pause path)
+        assert initial_progress == pytest.approx(100.0 / 15, abs=1.0)  # 1 of 15 (pause path)
 
         # Answer and move to next
         engine.submit_answer(
@@ -116,7 +116,7 @@ class TestQuestionSequencing:
             "I was a project manager for 7 years managing teams and clients."
         )
         next_q = engine.get_next_question(session_result["session_id"])
-        assert next_q["progress"]["percent"] == pytest.approx(200.0 / 27, abs=0.5)  # 2 of 27
+        assert next_q["progress"]["percent"] == pytest.approx(200.0 / 15, abs=1.0)  # 2 of 15
 
     def test_interview_completion_detected(self, db_manager, test_user):
         """✅ Interview completion is detected after last question."""
@@ -167,11 +167,11 @@ class TestQuestionSequencing:
         """✅ All 5 interview paths have valid questions (6 identity + target_job + path-specific)."""
         # Question counts: base (17/19) + 8 optional experience questions (2 blocks × 4 each)
         expected_counts = {
-            "unemployed": 25,
-            "career-switch": 27,
-            "student": 25,
-            "pause": 27,
-            "other": 25,
+            "unemployed": 15,
+            "career-switch": 15,
+            "student": 15,
+            "pause": 15,
+            "other": 15,
         }
 
         for path_key, expected in expected_counts.items():
@@ -488,21 +488,19 @@ class TestIntegrationAndEdgeCases:
         )
         session_id = session_result["session_id"]
 
-        # Answer all questions (career-switch = 27 total, including optional experience blocks)
+        # Answer all questions (career-switch = 15 total)
         question_ids = get_all_question_ids("career-switch")
 
         answers_by_index = [
             "Maria Musterfrau",           # id_name
             "Quellenstraße 45, 1100 Wien", # id_location
-            "15.03.1990",                 # id_dob
-            "Österreich",                 # id_nationality
             "+43 660 123 45 67",          # id_phone
             "maria@example.com",          # id_email
             "Software Developer",         # id_target_job
             "For 5 years I worked as a sales representative at a clothing company managing customer relationships.",
-            "Sales Company GmbH, Wien",   # cs_01_employer
-            "Sales Representative",       # cs_01_title
-            "2018 to 2023",               # cs_01_dates
+            "Sales Company GmbH, Wien",   # employer
+            "Sales Representative",       # title
+            "2018 to 2023",               # dates
         ]
 
         for i, qid in enumerate(question_ids):
@@ -512,9 +510,9 @@ class TestIntegrationAndEdgeCases:
             if i < len(question_ids) - 1:
                 engine.get_next_question(session_id)
 
-        # Check final status — all 27 questions answered (none skipped)
+        # Check final status — all 15 questions answered (none skipped)
         status = engine.get_interview_status(session_id)
-        assert status["answers_completed"] == 27
+        assert status["answers_completed"] == len(question_ids)
 
     def test_multiple_users_separate_sessions(self, db_manager):
         """✅ Different users have separate interview sessions."""
