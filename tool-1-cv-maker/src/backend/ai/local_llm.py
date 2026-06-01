@@ -120,6 +120,44 @@ _llm = None          # cached Llama instance
 _llm_ready = None    # True / False / None (not yet checked)
 _active_tier = None  # which tier is currently loaded
 
+# ── Background download manager state ─────────────────────────────────────────
+# Shared so /api/ai/download-status can report progress and /api/ai/download-cancel
+# can stop an in-flight download. Guarded by _download_lock.
+import threading as _threading
+
+_download_lock = _threading.Lock()
+_cancel_event = _threading.Event()
+_download_state: Dict = {
+    "status": "idle",   # idle | downloading | verifying | done | error | cancelled
+    "tier": None,
+    "downloaded": 0,
+    "total": 0,
+    "error": None,
+}
+
+
+def _set_download_state(**kw) -> None:
+    with _download_lock:
+        _download_state.update(kw)
+
+
+def get_download_status() -> Dict:
+    """Snapshot of the current/last download for the frontend to poll."""
+    with _download_lock:
+        s = dict(_download_state)
+    s["percent"] = round(s["downloaded"] / s["total"] * 100, 1) if s["total"] else 0.0
+    s["downloaded_mb"] = round(s["downloaded"] / 1_000_000, 1)
+    s["total_mb"] = round(s["total"] / 1_000_000, 1)
+    return s
+
+
+def cancel_download() -> bool:
+    """Signal any in-flight download to stop. The .part file is kept so a later
+    download resumes from where it left off."""
+    _cancel_event.set()
+    _set_download_state(status="cancelled")
+    return True
+
 
 def model_exists() -> bool:
     """Check if any model file exists on disk (any tier)."""
@@ -479,20 +517,32 @@ def verify_model_hash() -> bool:
 
 def download_model(progress_callback=None, tier: str = None) -> bool:
     """
-    Download a GGUF model from HuggingFace and verify its SHA-256.
+    Download a GGUF model from HuggingFace — resumable, cancellable, and safe
+    to run in a background thread.
+
+    - Resumes from a partial `.part` file via an HTTP Range request, so an
+      interrupted download (dropped connection, app restart, user cancel) is
+      continued instead of restarted.
+    - Honours cancel_download(): checks the cancel flag between chunks and stops
+      cleanly, leaving the `.part` file in place for a later resume.
+    - Updates the shared download state so get_download_status() can report
+      live progress to the UI.
+    - Retries transient network errors with resume (up to 40 attempts).
+    - Verifies SHA-256 before installing.
 
     Args:
-        progress_callback: function(bytes_downloaded, total_bytes) called periodically.
-        tier: which model tier to download ("light", "medium", "full").
-              Defaults to the active tier or DEFAULT_TIER.
+        progress_callback: optional function(bytes_downloaded, total_bytes).
+        tier: which model tier ("light", "medium", "full"). Defaults to active.
     Returns True on success.
     """
     import urllib.request
+    import time
 
     if tier is None:
         tier = _get_active_tier()
     if tier not in MODEL_TIERS:
         logger.error(f"Unknown model tier: {tier}")
+        _set_download_state(status="error", tier=tier, error=f"Unknown tier: {tier}")
         return False
 
     config = MODEL_TIERS[tier]
@@ -500,34 +550,84 @@ def download_model(progress_callback=None, tier: str = None) -> bool:
     model_url = config["url"]
     expected_sha = config["sha256"]
 
+    # Already installed?
+    if model_path.exists() and model_path.stat().st_size > 10_000_000:
+        _set_download_state(status="done", tier=tier,
+                            downloaded=model_path.stat().st_size,
+                            total=model_path.stat().st_size, error=None)
+        return True
+
     _MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = model_path.with_suffix(".tmp")
+    part = model_path.with_suffix(".part")
+
+    _cancel_event.clear()
+    _set_download_state(status="downloading", tier=tier, downloaded=0, total=0, error=None)
+    logger.info(f"Downloading model [{tier}]: {config['name']} from {model_url}")
+
+    def _attempt() -> bool:
+        have = part.stat().st_size if part.exists() else 0
+        req = urllib.request.Request(model_url, headers={"User-Agent": "ams-jobassist"})
+        if have:
+            req.add_header("Range", f"bytes={have}-")
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            total = int(resp.headers.get("Content-Length", 0)) + have
+            _set_download_state(downloaded=have, total=total)
+            mode = "ab" if have else "wb"
+            with open(part, mode) as f:
+                while True:
+                    if _cancel_event.is_set():
+                        logger.info("Model download cancelled by user — .part kept for resume")
+                        return False
+                    chunk = resp.read(256 * 1024)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    have += len(chunk)
+                    _set_download_state(downloaded=have, total=total)
+                    if progress_callback:
+                        try:
+                            progress_callback(have, total)
+                        except Exception:
+                            pass
+        return True
+
+    # Download with resume-on-failure
+    for attempt_n in range(1, 41):
+        if _cancel_event.is_set():
+            _set_download_state(status="cancelled")
+            return False
+        try:
+            if _attempt():
+                break  # completed
+            else:
+                # cancelled inside _attempt
+                _set_download_state(status="cancelled")
+                return False
+        except Exception as e:
+            logger.warning(f"Download attempt {attempt_n} failed ({type(e).__name__}: {e}) — resuming")
+            _set_download_state(status="downloading", error=f"retrying ({attempt_n})")
+            time.sleep(3)
+    else:
+        logger.error("Model download failed after 40 retries")
+        _set_download_state(status="error", error="Network error after 40 retries")
+        return False
+
+    # Verify hash BEFORE moving to final location.
+    _set_download_state(status="verifying")
     try:
-        logger.info(f"Downloading model [{tier}]: {config['name']} from {model_url}")
-
-        def _reporthook(block, block_size, total):
-            if progress_callback:
-                progress_callback(block * block_size, total)
-
-        urllib.request.urlretrieve(model_url, str(tmp), _reporthook)
-
-        # Verify hash BEFORE moving to final location so a corrupted/poisoned
-        # download never gets used as the model.
         if expected_sha:
-            actual = _sha256_of(tmp)
+            actual = _sha256_of(part)
             if actual.lower() != expected_sha.lower():
-                tmp.unlink()
-                logger.error(
-                    "Downloaded model SHA-256 mismatch: expected %s, got %s. "
-                    "Refusing to install. Re-check the URL or rotate the pin.",
-                    expected_sha, actual,
-                )
+                part.unlink(missing_ok=True)
+                logger.error("Downloaded model SHA-256 mismatch: expected %s, got %s.",
+                             expected_sha, actual)
+                _set_download_state(status="error", error="SHA-256 mismatch — download discarded")
                 return False
             logger.info(f"Model SHA-256 verified: {actual}")
         else:
             logger.warning(f"No SHA-256 pin for tier '{tier}' — skipping hash verification.")
 
-        tmp.rename(model_path)
+        part.replace(model_path)
         logger.info(f"Model downloaded [{tier}]: {model_path}")
 
         # Reset the loaded model so next call picks up the new/better tier
@@ -536,9 +636,9 @@ def download_model(progress_callback=None, tier: str = None) -> bool:
         _llm_ready = None
         _active_tier = None
 
+        _set_download_state(status="done", tier=tier, error=None)
         return True
     except Exception as e:
-        logger.error(f"Model download failed [{tier}]: {e}")
-        if tmp.exists():
-            tmp.unlink()
+        logger.error(f"Model install failed [{tier}]: {e}")
+        _set_download_state(status="error", error=str(e))
         return False

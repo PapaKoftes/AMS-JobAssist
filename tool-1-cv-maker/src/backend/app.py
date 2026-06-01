@@ -1058,6 +1058,36 @@ async def ai_model_tiers():
         return {"status": "success", "data": {"tiers": []}}
 
 
+@app.get("/api/ai/download-status", tags=["AI"])
+async def ai_download_status():
+    """
+    Live progress of the current/last model download.
+
+    Poll this after POST /api/ai/download-model. Returns status
+    (idle/downloading/verifying/done/error/cancelled), bytes downloaded/total,
+    percent, and any error message.
+    """
+    try:
+        from ai.local_llm import get_download_status
+        return {"status": "success", "data": get_download_status()}
+    except ImportError:
+        return {"status": "success", "data": {"status": "idle", "percent": 0}}
+
+
+@app.post("/api/ai/download-cancel", tags=["AI"])
+async def ai_download_cancel():
+    """
+    Stop an in-flight model download. The partial file is kept so a later
+    download resumes from where it stopped.
+    """
+    try:
+        from ai.local_llm import cancel_download
+        cancel_download()
+        return {"status": "success", "data": {"message": "Download wird gestoppt."}}
+    except ImportError:
+        raise HTTPException(status_code=503, detail="AI module not available")
+
+
 # ============================================================================
 # Knowledge Base (RAG) endpoints
 # ============================================================================

@@ -113,3 +113,76 @@ def normalise(raw: dict[str, Any]) -> dict[str, Any]:
         "Unrecognised CV export format: expected 'user_id' at root, a "
         "'schema_version' field, or a legacy 'metadata'/'cvdata' structure."
     )
+
+
+# ── Canonical CVDocument → Tool 1 CVData dict ────────────────────────────────
+# Tool 1 exports the canonical CVDocument (basics / experience / education /
+# skills / custom_sections). Tool 1's PDF/DOCX exporters, however, render from
+# the legacy CVData shape (identity + background/experience/skills/motivation/
+# training/projects). Feeding canonical JSON straight into CVData.from_dict
+# silently drops almost everything (name + 4 of 5 sections). This mapper
+# rebuilds a faithful CVData-shaped dict so bulk PDF/DOCX export renders the
+# full CV.
+
+def _sec(category: str, entry: dict) -> dict:
+    return {
+        "category": category,
+        "german": entry.get("german", "") or "",
+        "english": entry.get("english", "") or "",
+        "native": entry.get("native", "") or "",
+        "detected_skills": entry.get("detected_skills", []) or [],
+        "quality_score": entry.get("quality_score", 0.0) or 0.0,
+    }
+
+
+def canonical_to_cvdata_dict(canon: dict) -> dict:
+    """Convert a canonical CVDocument dict into the flat CVData dict that Tool 1's
+    CVData.from_dict expects. Returns the input unchanged if it is not canonical."""
+    if not isinstance(canon, dict) or "schema_version" not in canon:
+        return canon  # not canonical — leave as-is for legacy handling
+
+    basics = canon.get("basics") or {}
+
+    experience = [_sec("experience", e) for e in (canon.get("experience") or []) if not e.get("hidden")]
+    # Canonical folds background + training into education; route them to background.
+    background = [_sec("background", e) for e in (canon.get("education") or []) if not e.get("hidden")]
+    # Canonical folds motivation + projects into custom_sections; route to motivation.
+    motivation = [_sec("motivation", e) for e in (canon.get("custom_sections") or []) if not e.get("hidden")]
+
+    # Skills: canonical SkillGroups, else synthesise one section from all_skills.
+    skills: list[dict] = []
+    for grp in (canon.get("skills") or []):
+        items = grp.get("items") or grp.get("skills") or []
+        text = ", ".join(items) if items else (grp.get("german") or grp.get("name") or "")
+        if text:
+            skills.append({"category": "skills", "german": text, "english": text, "native": ""})
+    all_skills = canon.get("all_skills") or []
+    if not skills and all_skills:
+        text = ", ".join(all_skills)
+        skills.append({"category": "skills", "german": text, "english": text, "native": ""})
+
+    return {
+        "session_id": canon.get("session_id", 0),
+        "user_id": canon.get("user_id", ""),
+        "interview_path": canon.get("interview_path", "other"),
+        "language_input": canon.get("language_input", "de"),
+        "language_output_primary": canon.get("language_output_primary", "de"),
+        "identity": {
+            "full_name": basics.get("full_name", "") or "",
+            "location": basics.get("location", "") or "",
+            "contact_email": basics.get("email"),
+            "contact_phone": basics.get("phone"),
+            "date_of_birth": basics.get("date_of_birth"),
+            "nationality": basics.get("nationality"),
+            "photo": basics.get("photo"),
+        },
+        "background": background,
+        "experience": experience,
+        "skills": skills,
+        "motivation": motivation,
+        "training": [],
+        "projects": [],
+        "all_skills": all_skills,
+        "overall_quality": canon.get("overall_quality", 0.0) or 0.0,
+        "ready_for_export": canon.get("ready_for_export", True),
+    }

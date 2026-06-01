@@ -32,7 +32,7 @@ from sqlalchemy.orm import Session
 from db import get_db
 from models import Participant, CVSubmission, TrainerFeedback, ExportLog, CohortMetrics
 from config import MAX_UPLOAD_SIZE_BYTES
-from services.cv_mapper import normalise as normalise_cv
+from services.cv_mapper import normalise as normalise_cv, canonical_to_cvdata_dict
 
 # ---------------------------------------------------------------------------
 # Tool 1 exporter lazy loader.
@@ -1065,7 +1065,7 @@ async def bulk_export(
                     continue
 
                 try:
-                    cv_data = _CVData.from_dict(latest_sub.cv_data_json)
+                    cv_data = _CVData.from_dict(canonical_to_cvdata_dict(latest_sub.cv_data_json))
                 except Exception as exc:
                     errors.append(f"Participant {p.id}: CVData parse error — {exc}")
                     continue
@@ -1240,7 +1240,7 @@ async def export_all_participants(
                 continue
 
             try:
-                cv_data = _CVData2.from_dict(latest_sub.cv_data_json)
+                cv_data = _CVData2.from_dict(canonical_to_cvdata_dict(latest_sub.cv_data_json))
             except Exception as exc:
                 errors.append(f"Participant {p.id}: CVData parse error — {exc}")
                 continue

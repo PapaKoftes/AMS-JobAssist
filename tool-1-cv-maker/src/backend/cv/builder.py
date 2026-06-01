@@ -225,9 +225,16 @@ class CVBuilder:
         else:
             cv_data.overall_quality = 0.0
 
-        # Mark ready for export if quality threshold met (0.5+)
-        cv_data.ready_for_export = cv_data.overall_quality >= 0.5
-        logger.info(f"Ready for export: {cv_data.ready_for_export}")
+        # Ready for export when the CV is actually COMPLETE, not when it hits a
+        # quality number. The quality scorer is biased toward English verbs/skills,
+        # so a perfectly valid German CV legitimately scores below 0.5 — gating
+        # export on that score wrongly blocked real participants. Instead require
+        # an identity name plus at least one content section. The quality score is
+        # still reported for encouraging feedback, just not as an export gate.
+        has_name = bool(getattr(cv_data, "identity", None) and getattr(cv_data.identity, "full_name", ""))
+        has_content = len(cv_sections) >= 1
+        cv_data.ready_for_export = has_name and has_content
+        logger.info(f"Ready for export: {cv_data.ready_for_export} (name={has_name}, sections={len(cv_sections)})")
 
         logger.info(f"Built CVData with {len(cv_sections)} sections, overall quality {cv_data.overall_quality:.2f}")
         return cv_data
@@ -254,7 +261,7 @@ class CVBuilder:
                 FROM answers a
                 LEFT JOIN interview_questions q ON a.question_id = q.question_id
                 WHERE a.session_id = ?
-                ORDER BY a.question_id
+                ORDER BY COALESCE(q.question_order, 9999), a.id
                 """,
                 (session_id,)
             )
@@ -276,8 +283,11 @@ class CVBuilder:
                 answer_text = row["answer_text"]
                 category = row["category"]
 
-                # Skip identity questions — handled separately by _extract_identity()
-                if question_id in ("id_name", "id_location", "id_phone", "id_email"):
+                # Skip identity questions — handled separately by _extract_identity().
+                # id_target_job is skipped here too: it is captured separately as
+                # cv_data.target_job, so including it as a motivation section would
+                # make the target job appear twice in the exported CV.
+                if question_id in ("id_name", "id_location", "id_phone", "id_email", "id_target_job"):
                     continue
 
                 # Skip skipped/empty answers

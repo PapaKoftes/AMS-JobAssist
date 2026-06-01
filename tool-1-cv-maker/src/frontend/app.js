@@ -120,6 +120,9 @@ const TRANSLATIONS = {
         coverLetterHeading:   '✉️ Ihr Anschreiben',
         coverLetterBtn:       '✉️ Anschreiben erstellen',
         coverLetterCreating:  'Wird erstellt...',
+        downloadTxt:          'Als .txt speichern',
+        copyToClipboard:      'Kopieren',
+        copied:               'Kopiert!',
         reviewBtn:            '📋 Vorher & Nachher ansehen',
         startOverBtn:         'Neuen Lebenslauf beginnen',
         reviewHeading:        'Vorher & Nachher — Ihre Antworten verbessert',
@@ -260,6 +263,9 @@ const TRANSLATIONS = {
         coverLetterHeading:   '✉️ Your cover letter',
         coverLetterBtn:       '✉️ Create cover letter',
         coverLetterCreating:  'Creating...',
+        downloadTxt:          'Save as .txt',
+        copyToClipboard:      'Copy',
+        copied:               'Copied!',
         reviewBtn:            '📋 View Before & After',
         startOverBtn:         'Start a new CV',
         reviewHeading:        'Before & After — Your answers improved',
@@ -1706,6 +1712,10 @@ class APIClient {
         return this._request(url, 'POST', data);
     }
 
+    get(url) {
+        return this._request(url, 'GET');
+    }
+
     startInterview(userId, path, language = 'de') {
         return this._request(`${this.interviewBase}/start`, 'POST', {
             user_id: userId,
@@ -1926,13 +1936,29 @@ class UIManager {
         const banner = document.getElementById('completedBanner');
         if (!banner) return;
         banner.style.display = 'block';
-        // Wire the re-download button to restore the session and show completion screen
+        // Wire the re-download button to RE-HYDRATE the completion screen.
+        // Just toggling the screen would show empty quality/stats fields because
+        // that state was lost on reload — so we re-fetch status + CV metadata.
         const btn = document.getElementById('completedRedownloadBtn');
         if (btn) {
             btn.onclick = async () => {
                 state.sessionId = parseInt(sessionId, 10);
-                ui.showScreen('completion');
                 banner.style.display = 'none';
+                try {
+                    const statusResp = await api.getStatus(state.sessionId);
+                    const stats = statusResp?.data ?? {};
+                    ui.showCompletion(stats);
+                    // CV metadata carries the real overall_quality for the badge
+                    let quality = stats.overall_quality ?? null;
+                    try {
+                        const cvResp = await api.get(`/api/cv/${state.sessionId}`);
+                        quality = cvResp?.data?.overall_quality ?? quality;
+                    } catch { /* metadata is best-effort */ }
+                    ui.renderQualityCard(quality);
+                } catch (e) {
+                    console.warn('Re-download hydration failed:', e);
+                }
+                ui.showScreen('completion');
             };
         }
     }
@@ -2111,6 +2137,10 @@ class UIManager {
 
         if (this.answerInput)  this.answerInput.value = '';
         if (this.reaskMessage) this.reaskMessage.style.display = 'none';
+        // Clear the detected-language badge so it doesn't carry a stale language
+        // ("Detected: TR") onto the next, possibly-German, question.
+        const _langBadge = document.getElementById('detectedLangBadge');
+        if (_langBadge) _langBadge.style.display = 'none';
 
         // Helper tip
         const helperTipEl = document.getElementById('helperTip');
@@ -3679,7 +3709,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // resume banner shows the in-progress session.
     document.getElementById('finishLaterBtn')?.addEventListener('click', () => {
         try {
-            ui.showStatus(t('statusSaved') || 'Gespeichert ✓', 'success');
+            ui.updateSaveStatus(t('statusSaved'));
             ui.showScreen('welcome');
             // Trigger the resume-banner check so the participant sees the
             // welcome-back message immediately on return.

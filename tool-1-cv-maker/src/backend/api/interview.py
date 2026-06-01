@@ -957,6 +957,16 @@ async def complete_interview(
         except Exception as _exc:
             logger.debug(f"AI skill surfacing skipped: {_exc}")
 
+        # Mark the session completed so retention cleanup never purges a
+        # finished CV (cleanup_old_sessions only spares completed = 1).
+        try:
+            engine.db.execute_update(
+                "UPDATE sessions SET completed = 1, updated_at = datetime('now') WHERE id = ?",
+                (int(session_id),),
+            )
+        except Exception as _exc:
+            logger.warning(f"Could not mark session completed (non-fatal): {_exc}")
+
         quality_interpretation = interpret_quality(
             score=cv_data.overall_quality or 0.0,
             language=language,

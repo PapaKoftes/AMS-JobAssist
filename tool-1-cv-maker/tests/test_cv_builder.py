@@ -218,9 +218,28 @@ class TestCVBuilder:
         # Quality is 0.80, threshold is 0.50
         assert cv_data.ready_for_export is True
 
-    def test_build_cv_marks_not_ready_when_quality_low(self, builder):
-        """Test that ready_for_export is False when quality < 0.5."""
-        # Create low-quality sections
+    def test_build_cv_empty_is_not_exportable(self, builder):
+        """ready_for_export is based on COMPLETENESS, not a quality score.
+
+        The quality scorer is biased toward English verbs/skills, so a valid
+        German CV legitimately scores low — gating export on that score wrongly
+        blocked real participants. Export readiness now requires a name plus at
+        least one content section. An empty interview yields no CV at all
+        (None), which is the real "nothing to export" state.
+        """
+        cv_data = builder.build_cv_from_answers_dict(
+            session_id=1,
+            user_id="test_user",
+            interview_path="unemployed",
+            language_input="en",
+            answers_dict={}  # no answers at all
+        )
+
+        # No content → no CV to export (or, if built, not export-ready)
+        assert cv_data is None or cv_data.ready_for_export is False
+
+    def test_build_cv_ready_for_low_quality_but_complete(self, builder):
+        """A complete-but-low-quality CV (e.g. terse German) is still exportable."""
         low_quality = CVSection(
             german="OK",
             english="OK",
@@ -229,7 +248,7 @@ class TestCVBuilder:
             question_id="bg_001",
             detected_input_language="en",
             user_native_language="en",
-            quality_score=0.30,  # Below threshold
+            quality_score=0.30,
             confidence_level="low",
             detected_skills=[]
         )
@@ -242,7 +261,8 @@ class TestCVBuilder:
             answers_dict={"bg_001": low_quality}
         )
 
-        assert cv_data.ready_for_export is False
+        # Has a name (from user) + a content section → exportable despite low score
+        assert cv_data.ready_for_export is True
 
     def test_build_cv_handles_empty_answers(self, builder):
         """Test building CV from empty answers dictionary."""
