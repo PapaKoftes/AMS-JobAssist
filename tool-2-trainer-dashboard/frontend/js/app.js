@@ -627,7 +627,43 @@ class TrainerApp {
         // may have flat keys like background/experience/skills.
         const sections = [];
 
-        if (Array.isArray(cvData.sections) && cvData.sections.length > 0) {
+        // Canonical CVDocument: basics + experience/education/skills/custom_sections.
+        // Entries store text under german/english and have no question_id, so we
+        // key each editable section by "<list>.<index>" (e.g. "experience.0").
+        const isCanonical = cvData.schema_version !== undefined ||
+            Array.isArray(cvData.experience) || Array.isArray(cvData.education) ||
+            Array.isArray(cvData.custom_sections);
+
+        if (isCanonical && !Array.isArray(cvData.sections)) {
+            const LABELS = {
+                experience: 'Berufserfahrung',
+                education: 'Ausbildung',
+                custom_sections: 'Weitere Angaben',
+            };
+            ['experience', 'education', 'custom_sections'].forEach(listName => {
+                (cvData[listName] || []).forEach((entry, i) => {
+                    if (entry && entry.hidden) return;
+                    const polishedText = entry.german || entry.english ||
+                        (entry.bullets || []).join(' · ') || '';
+                    const raw = entry.raw_text || entry.native || entry.english || '';
+                    const heading = entry.heading || entry.title || LABELS[listName] || listName;
+                    sections.push({ q: heading, key: `${listName}.${i}`, raw, polishedText });
+                });
+            });
+            // Skills: canonical SkillGroups, else all_skills list.
+            const skillGroups = cvData.skills || [];
+            if (Array.isArray(skillGroups) && skillGroups.length &&
+                typeof skillGroups[0] === 'object') {
+                skillGroups.forEach((grp, i) => {
+                    const items = grp.items || grp.skills || [];
+                    const text = items.length ? items.join(', ') : (grp.german || grp.name || '');
+                    if (text) sections.push({ q: grp.name || 'Fähigkeiten', key: `skills.${i}`, raw: text, polishedText: text });
+                });
+            } else if (Array.isArray(cvData.all_skills) && cvData.all_skills.length) {
+                const text = cvData.all_skills.join(', ');
+                sections.push({ q: 'Fähigkeiten', key: '', raw: text, polishedText: text });
+            }
+        } else if (Array.isArray(cvData.sections) && cvData.sections.length > 0) {
             // Canonical shape: [{category, german, english, bullets, period, quality_score, ...}]
             cvData.sections.forEach(sec => {
                 const label = sec.category || sec.question_id || 'Abschnitt';

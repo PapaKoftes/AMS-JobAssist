@@ -525,6 +525,89 @@ class TestE2E:
         assert data["completed"] == 1
 
 
+def _canonical_cv(user_id="canon_user"):
+    """A canonical CVDocument as Tool 1 exports it (basics + typed section lists)."""
+    return {
+        "schema_version": "1.0",
+        "user_id": user_id,
+        "interview_path": "career-switch",
+        "basics": {
+            "full_name": "Canonical Tester",
+            "location": "Wien",
+            "email": "c@example.com",
+            "phone": "+43 1 234",
+        },
+        "experience": [
+            {"german": "Verkäufer bei BILLA, 2018-2023", "english": "Salesperson at BILLA", "native": ""},
+        ],
+        "education": [
+            {"german": "Lehre Einzelhandel", "english": "Retail apprenticeship", "native": ""},
+        ],
+        "custom_sections": [
+            {"german": "Motiviert für einen Neuanfang", "english": "Motivated for a fresh start", "native": ""},
+        ],
+        "all_skills": ["Kassenführung", "Kundenberatung"],
+        "overall_quality": 0.6,
+        "ready_for_export": True,
+        "language_output_primary": "de",
+    }
+
+
+class TestCanonicalEdit:
+    """Trainer inline edits must persist for canonical CVDocument imports."""
+
+    def _import(self, client, cv):
+        resp = client.post(
+            "/api/import-cvs?cohort_id=CanonEdit",
+            files={"file": ("cv.json", json.dumps(cv))},
+        )
+        assert resp.status_code == 200
+        return resp.json()["participant_id"]
+
+    def test_canonical_inline_edit_persists(self, client, db_session):
+        pid = self._import(client, _canonical_cv())
+
+        # Edit experience.0 (canonical list.index key) in German
+        resp = client.patch(
+            f"/api/participants/{pid}/cv-section",
+            json={"question_id": "experience.0", "edited_text": "GEÄNDERT durch Trainer", "language": "de"},
+        )
+        assert resp.status_code == 200, resp.text
+
+        # Verify it persisted into the canonical experience[0].german field
+        sub = (
+            db_session.query(CVSubmission)
+            .filter(CVSubmission.participant_id == pid)
+            .order_by(CVSubmission.version.desc())
+            .first()
+        )
+        assert sub.cv_data_json["experience"][0]["german"] == "GEÄNDERT durch Trainer"
+        assert sub.cv_data_json["experience"][0]["trainer_edited"] is True
+
+    def test_canonical_edit_custom_section_english(self, client, db_session):
+        pid = self._import(client, _canonical_cv("canon_user2"))
+        resp = client.patch(
+            f"/api/participants/{pid}/cv-section",
+            json={"question_id": "custom_sections.0", "edited_text": "Edited motivation", "language": "en"},
+        )
+        assert resp.status_code == 200, resp.text
+        sub = (
+            db_session.query(CVSubmission)
+            .filter(CVSubmission.participant_id == pid)
+            .order_by(CVSubmission.version.desc())
+            .first()
+        )
+        assert sub.cv_data_json["custom_sections"][0]["english"] == "Edited motivation"
+
+    def test_canonical_edit_bad_index_404(self, client):
+        pid = self._import(client, _canonical_cv("canon_user3"))
+        resp = client.patch(
+            f"/api/participants/{pid}/cv-section",
+            json={"question_id": "experience.99", "edited_text": "x", "language": "de"},
+        )
+        assert resp.status_code == 404
+
+
 # ========================================
 # Run
 # ========================================

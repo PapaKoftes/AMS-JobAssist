@@ -631,21 +631,44 @@ async def update_cv_section(
     if not submission:
         raise HTTPException(status_code=404, detail="No CV submission found")
 
-    # Work on a mutable copy of the JSON blob
-    cv_json = dict(submission.cv_data_json or {})
+    # Work on a DEEP copy of the JSON blob. A shallow dict() copy would share
+    # the nested lists/dicts with the stored value, so mutating a section would
+    # also mutate the original — and SQLAlchemy's change detection would then see
+    # no difference on reassignment and silently skip the UPDATE.
+    import copy as _copy
+    cv_json = _copy.deepcopy(submission.cv_data_json or {})
     CATEGORIES = ("background", "experience", "skills", "motivation", "training", "projects")
     updated = False
 
+    # Canonical CVDocument shape: the frontend keys editable sections as
+    # "<list>.<index>" (e.g. "experience.0", "custom_sections.1"). Canonical
+    # entries store text under german/english, so map the UI language to the
+    # right field. This must run first because canonical entries have no
+    # question_id for the legacy lookups below to match.
+    if "." in request.question_id:
+        list_name, _, idx_str = request.question_id.partition(".")
+        try:
+            idx = int(idx_str)
+        except ValueError:
+            idx = -1
+        lst = cv_json.get(list_name)
+        if isinstance(lst, list) and 0 <= idx < len(lst) and isinstance(lst[idx], dict):
+            field = {"de": "german", "en": "english"}.get(request.language, "german")
+            lst[idx][field] = request.edited_text
+            lst[idx]["trainer_edited"] = True
+            updated = True
+
     # Check per-category lists (standard CVData shape)
-    for cat in CATEGORIES:
-        for sec in cv_json.get(cat, []):
-            if sec.get("question_id") == request.question_id:
-                sec[request.language] = request.edited_text
-                sec["trainer_edited"] = True
-                updated = True
+    if not updated:
+        for cat in CATEGORIES:
+            for sec in cv_json.get(cat, []):
+                if sec.get("question_id") == request.question_id:
+                    sec[request.language] = request.edited_text
+                    sec["trainer_edited"] = True
+                    updated = True
+                    break
+            if updated:
                 break
-        if updated:
-            break
 
     # Fallback: canonical top-level "sections" array
     if not updated:
