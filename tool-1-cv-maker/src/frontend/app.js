@@ -10,6 +10,7 @@
 const SESSION_STORAGE_KEY  = 'ams_session_id';
 const USER_STORAGE_KEY     = 'ams_user_id';
 const COMPLETED_SESSION_KEY = 'ams_session_completed';
+const LANGUAGE_STORAGE_KEY = 'ams_language';
 const PREVIEW_DEBOUNCE_MS  = 600;
 const AI_CHECK_INTERVAL_MS = 60_000; // re-check AI mode every minute
 
@@ -123,6 +124,8 @@ const TRANSLATIONS = {
         downloadTxt:          'Als .txt speichern',
         copyToClipboard:      'Kopieren',
         copied:               'Kopiert!',
+        cvPanelEmpty:         'Ihr Lebenslauf wird hier aufgebaut…',
+        reviewEmpty:          'Noch keine Antworten zum Überprüfen.',
         reviewBtn:            '📋 Vorher & Nachher ansehen',
         startOverBtn:         'Neuen Lebenslauf beginnen',
         reviewHeading:        'Vorher & Nachher — Ihre Antworten verbessert',
@@ -266,6 +269,8 @@ const TRANSLATIONS = {
         downloadTxt:          'Save as .txt',
         copyToClipboard:      'Copy',
         copied:               'Copied!',
+        cvPanelEmpty:         'Your CV is being built here…',
+        reviewEmpty:          'No answers to review yet.',
         reviewBtn:            '📋 View Before & After',
         startOverBtn:         'Start a new CV',
         reviewHeading:        'Before & After — Your answers improved',
@@ -2395,7 +2400,7 @@ class UIManager {
         if (!this.reviewContent) return;
         const entries = Object.entries(state.answers);
         if (entries.length === 0) {
-            this.reviewContent.innerHTML = '<p>Noch keine Antworten zum Überprüfen.</p>';
+            this.reviewContent.innerHTML = `<p>${t('reviewEmpty')}</p>`;
             return;
         }
         this.reviewContent.innerHTML = entries.map(([qId, raw]) => {
@@ -2429,7 +2434,7 @@ class UIManager {
         const panel = document.getElementById('liveCVPanel');
         if (!panel) return;
         if (!entries || entries.length === 0) {
-            panel.innerHTML = '<p class="cv-panel-empty">Ihr Lebenslauf wird hier aufgebaut…</p>';
+            panel.innerHTML = `<p class="cv-panel-empty">${t('cvPanelEmpty')}</p>`;
             return;
         }
         // Group: identity at top, rest as sections
@@ -3383,7 +3388,8 @@ class AIChatManager {
                     clearInterval(poll);
                     if (statusEl) statusEl.textContent = '🟢 Modell bereit!';
                     this.aiReady = true;
-                    document.getElementById('aiChatBadge').style.display = 'none';
+                    const _b = document.getElementById('aiChatBadge');
+                    if (_b) _b.style.display = 'none';
                 }
             }, 15000);
         } catch {
@@ -3631,9 +3637,26 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('selected');
             state.inputLanguage = btn.dataset.lang;
             state.language      = btn.dataset.lang;   // also pass chosen language to the interview engine
+            try { localStorage.setItem(LANGUAGE_STORAGE_KEY, btn.dataset.lang); } catch {}
             applyTranslations();
         });
     });
+
+    // Restore a previously chosen language (so resume / re-download keep it
+    // instead of snapping back to German).
+    try {
+        const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        if (savedLang) {
+            state.inputLanguage = savedLang;
+            state.language = savedLang;
+            const activeBtn = document.querySelector(`.lang-btn[data-lang="${savedLang}"]`);
+            if (activeBtn) {
+                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected'));
+                activeBtn.classList.add('selected');
+            }
+            applyTranslations();
+        }
+    } catch {}
 
     // Path selection
     document.querySelectorAll('.path-button').forEach(btn => {

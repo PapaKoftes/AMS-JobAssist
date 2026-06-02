@@ -734,11 +734,24 @@ class InterviewEngine:
                         question.get("min_length", 20)  # min_length
                     ))
 
-            # Batch insert all questions (INSERT OR IGNORE so adding new questions to existing DB works)
+            # Upsert: insert new questions AND keep existing ones in sync with
+            # paths.py. INSERT OR IGNORE left stale text/category/order/min_length
+            # in the DB forever, so an edit in paths.py (e.g. a category change)
+            # never took effect and the CV builder kept routing sections to the
+            # wrong bucket. ON CONFLICT DO UPDATE refreshes the metadata.
             sql = """
-            INSERT OR IGNORE INTO interview_questions
+            INSERT INTO interview_questions
             (question_id, question_text, category, interview_path, question_order, hint, good_example, bad_example, min_length)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(question_id) DO UPDATE SET
+                question_text  = excluded.question_text,
+                category       = excluded.category,
+                interview_path = excluded.interview_path,
+                question_order = excluded.question_order,
+                hint           = excluded.hint,
+                good_example   = excluded.good_example,
+                bad_example    = excluded.bad_example,
+                min_length     = excluded.min_length
             """
 
             self.db.execute_batch(sql, questions_to_insert)
