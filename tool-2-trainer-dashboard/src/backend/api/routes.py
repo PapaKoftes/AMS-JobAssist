@@ -565,7 +565,10 @@ async def approve_submission(
 
     # Update participant status
     participant.status = request.approval_status
-    participant.trainer_notes = request.feedback or ""
+    # Only overwrite notes when feedback was actually provided — an approval
+    # with empty feedback must NOT wipe notes the trainer saved earlier.
+    if request.feedback:
+        participant.trainer_notes = request.feedback
     participant.last_updated_at = datetime.now()
 
     if request.approval_status == "approved":
@@ -745,7 +748,9 @@ async def bulk_approve(
         submission.approval_timestamp = datetime.now()
         submission.approved_by = request.approved_by
         participant.status = request.approval_status
-        participant.trainer_notes = request.feedback or ""
+        # Don't wipe existing notes on an empty-feedback bulk approve.
+        if request.feedback:
+            participant.trainer_notes = request.feedback
         participant.last_updated_at = datetime.now()
 
         if request.approval_status == "approved":
