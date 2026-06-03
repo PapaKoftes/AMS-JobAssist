@@ -2508,3 +2508,192 @@ a:focus-visible,
     }
     a { text-decoration: none; color: #000; }
 }
+
+/* ============================================================================
+   ChatGPT-style interview — conversation thread + single input box.
+   Folds the old busy form (question card, example cards, split preview) into
+   a clean chat. Also fixes the interview-screen scaling (was squished into the
+   800px .screen cap while its layout wanted ~1100px).
+   ============================================================================ */
+
+/* Let the interview use a comfortable app width instead of the 800px cap. */
+#interviewScreen.screen { max-width: 1080px; }
+
+.main-content { padding: var(--spacing-lg); }
+
+.interview-layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    max-width: 1080px;
+}
+/* The CV panel is FIRST in the DOM but must sit in the narrow right column;
+   the chat must take the wide column. Order the grid items explicitly. */
+.interview-layout .interview-container { order: 1; }
+.interview-layout .cv-panel-column { order: 2; }
+@media (max-width: 900px) {
+    .interview-layout { grid-template-columns: 1fr; }
+    .cv-panel-column { display: none; }   /* keep the chat clean on small screens */
+}
+
+/* The interview becomes a tall chat panel with a scrolling thread. */
+.interview-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    min-height: 500px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    padding: 0;
+}
+
+/* Slim progress strip at the top of the panel. */
+.interview-container .progress-section {
+    margin: 0;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    background: white;
+}
+
+/* Hide the static form bits — they're rendered as chat bubbles now. */
+.question-section,
+.examples-container,
+.preview-section,
+.helper-tip,
+.answer-label,
+.midway-banner { display: none !important; }
+
+/* The conversation thread (scrolls). */
+.chat-thread {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 22px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--bg);
+    scroll-behavior: smooth;
+}
+
+.chat-row { display: flex; gap: 10px; align-items: flex-end; }
+.chat-row--assistant { justify-content: flex-start; }
+.chat-row--user { justify-content: flex-end; }
+
+.chat-avatar {
+    width: 30px; height: 30px; flex-shrink: 0;
+    border-radius: 50%;
+    background: white; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+}
+
+.chat-bubble {
+    max-width: 78%;
+    padding: 12px 15px;
+    border-radius: 16px;
+    line-height: 1.5;
+    font-size: 15px;
+    box-shadow: var(--shadow-sm);
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    animation: chatPop 0.18s ease-out;
+}
+@keyframes chatPop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.chat-bubble--assistant {
+    background: white;
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--text);
+}
+.chat-bubble--user {
+    background: var(--secondary);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+.chat-bubble--muted { font-size: 14px; opacity: 0.9; }
+
+.chat-q { font-weight: 600; font-size: 16px; }
+.chat-q-hint { color: #6b7280; font-size: 13.5px; margin-top: 5px; }
+.chat-example { margin-top: 9px; font-size: 13px; }
+.chat-example summary { cursor: pointer; color: var(--secondary); font-weight: 600; list-style: none; }
+.chat-example summary::-webkit-details-marker { display: none; }
+.chat-example summary::before { content: "💡 "; }
+.chat-example span { display: block; margin-top: 5px; color: #555; font-style: italic; }
+
+.chat-polished-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--success); font-weight: 700; margin-bottom: 4px;
+}
+.chat-polished { font-size: 15px; }
+.chat-encourage { color: var(--success); font-size: 13.5px; }
+.chat-reask { color: #b9770e; }
+.chat-reask-sugg { color: #6b7280; font-size: 13px; }
+
+/* ---- Composer (the single input box at the bottom) ---- */
+.interview-container .quick-fill-container {
+    padding: 10px 18px 0;
+    margin: 0;
+    background: white;
+    border-top: 1px solid var(--border);
+}
+.interview-container .answer-section {
+    padding: 10px 18px 4px;
+    margin: 0;
+    background: white;
+}
+.interview-container .quick-fill-container + .answer-section { border-top: none; }
+.interview-container .answer-section:first-of-type,
+.interview-container .answer-section { border-top: 1px solid var(--border); }
+.interview-container .quick-fill-container ~ .answer-section { border-top: none; }
+
+.answer-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 15px;
+    resize: none;
+    min-height: 52px;
+    max-height: 160px;
+    transition: border-color 0.15s;
+}
+.answer-input:focus { border-color: var(--secondary); outline: none; }
+
+.answer-meta { padding: 4px 2px 0; }
+
+.interview-container .action-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 18px 14px;
+    margin: 0;
+    background: white;
+}
+.interview-container .action-buttons .btn-secondary {
+    /* "skip" as a quiet link, not a heavy button */
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    padding: 8px 6px;
+    font-size: 14px;
+}
+.interview-container .action-buttons .btn-secondary:hover {
+    background: transparent; color: var(--secondary); text-decoration: underline; box-shadow: none;
+}
+.interview-container .action-buttons .btn-primary {
+    border-radius: 12px;
+    padding: 11px 22px;
+}
+
+.interview-container .submit-hint,
+.interview-container .finish-later-row {
+    padding-left: 18px; padding-right: 18px; background: white; margin: 0;
+}
+.interview-container .finish-later-row { padding-bottom: 12px; }
+
+/* CV panel: a live "document" canvas beside the chat, full panel height. */
+.interview-layout .cv-panel-column { align-self: stretch; }
+.interview-container .reask-message { margin: 0 18px 12px; }

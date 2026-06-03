@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tool1",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "tool-1-cv-maker/src/backend",
+      "port": 8000
+    }
+  ]
+}

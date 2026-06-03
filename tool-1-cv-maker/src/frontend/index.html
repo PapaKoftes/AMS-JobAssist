@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMS JobAssist - Lebenslauf-Ersteller</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css?v=chat1">
 </head>
 <body>
 <!-- Skip navigation link for keyboard / screen reader users -->
@@ -188,7 +188,11 @@
                     </div>
                 </div>
 
-                <!-- Question -->
+                <!-- Chat conversation thread (assistant questions + user answers
+                     + polished replies). Replaces the static question/preview UI. -->
+                <div id="chatThread" class="chat-thread" aria-live="polite" aria-atomic="false"></div>
+
+                <!-- Question (kept for controller state; hidden — rendered as chat) -->
                 <div class="question-section">
                     <h2 id="questionText">Frage kommt gleich</h2>
                     <p id="questionGermanSubtitle" class="question-german-subtitle" style="display:none;"></p>
@@ -678,6 +682,6 @@
     <div id="aiModelStatus" class="ai-model-status"></div>
 </div>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=chat1"></script>
 </body>
 </html>

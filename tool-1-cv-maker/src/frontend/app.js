@@ -50,6 +50,79 @@ const FOLLOWUP_MAX_WORDS = 9;      // only probe answers shorter than this (vagu
 const FOLLOWUP_SESSION_CAP = 2;    // never probe more than this many times total
 
 // ============================================================================
+// Chat thread — turns the interview into a ChatGPT-style conversation.
+// The assistant "asks" each question as a bubble, the participant's answer
+// appears as a user bubble, and the polished result comes back as the
+// assistant's reply ("here's how that reads in your CV"). Reuses the existing
+// interview controller — these helpers only render the conversation.
+// ============================================================================
+function _chatThreadEl() { return document.getElementById('chatThread'); }
+
+function _escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => (
+        {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+    ));
+}
+
+function _scrollChatToBottom() {
+    const t = _chatThreadEl();
+    if (t) requestAnimationFrame(() => { t.scrollTop = t.scrollHeight; });
+}
+
+/** Append a message bubble. role: 'assistant' | 'user'. Returns the element. */
+function chatPush(role, html, opts = {}) {
+    const thread = _chatThreadEl();
+    if (!thread) return null;
+    const row = document.createElement('div');
+    row.className = `chat-row chat-row--${role}`;
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble chat-bubble--${role}` + (opts.muted ? ' chat-bubble--muted' : '');
+    bubble.innerHTML = html;
+    if (role === 'assistant') {
+        const av = document.createElement('div');
+        av.className = 'chat-avatar';
+        av.textContent = '🤖';
+        row.appendChild(av);
+    }
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    _scrollChatToBottom();
+    return bubble;
+}
+
+/** Assistant asks a question (optionally with a folded "example" hint). */
+function chatAskQuestion(question) {
+    let html = `<div class="chat-q">${_escapeHtml(question.text ?? '')}</div>`;
+    if (question.hint) html += `<div class="chat-q-hint">${_escapeHtml(question.hint)}</div>`;
+    const ex = question.examples?.good;
+    if (ex) {
+        html += `<details class="chat-example"><summary>${_escapeHtml(t('exampleGoodTitle') || 'Beispiel')}</summary>` +
+                `<span>${_escapeHtml(ex)}</span></details>`;
+    }
+    return chatPush('assistant', html);
+}
+
+/** Participant's raw answer bubble. */
+function chatPushUser(text) {
+    return chatPush('user', _escapeHtml(text));
+}
+
+/** Assistant reply showing the polished CV line. */
+function chatPushPolished(polished, encouragement) {
+    const lead = encouragement ? `<div class="chat-encourage">${_escapeHtml(encouragement)}</div>` : '';
+    const body = polished
+        ? `<div class="chat-polished-label">${_escapeHtml(t('previewPolishedLabel') || 'In Ihrem Lebenslauf')}</div>` +
+          `<div class="chat-polished">${_escapeHtml(polished)}</div>`
+        : '';
+    return chatPush('assistant', lead + body, { muted: !polished });
+}
+
+function chatClear() {
+    const t = _chatThreadEl();
+    if (t) t.innerHTML = '';
+}
+
+// ============================================================================
 // i18n — UI label translations for 12 languages
 // Interview questions come from the backend already translated.
 // This covers all static UI chrome: buttons, labels, placeholders, hints.
@@ -2125,6 +2198,9 @@ class UIManager {
 
         if (this.questionText) this.questionText.textContent  = question.text  ?? '';
 
+        // Chat experience: the assistant "asks" the question as a bubble.
+        chatAskQuestion(question);
+
         // Update AI coach context when a new question loads
         if (typeof aiCoach !== 'undefined') aiCoach.reset();
 
@@ -2682,6 +2758,7 @@ class InterviewManager {
             state.currentQuestionIndex = 0;
             state.followUpsShown       = 0;   // reset gentle-probe counter per interview
             state.totalQuestions       = data.progress.total;
+            chatClear();                       // fresh conversation thread
             state.currentQuestion      = data.question;
 
             // Persist for resume
@@ -2786,6 +2863,9 @@ class InterviewManager {
             const data = response.data;
             state.answers[questionId] = answerText;
 
+            // Chat: show the participant's answer as their message.
+            chatPushUser(answerText);
+
             // Capture polished version for review panel
             const polishedPreview = ui.previewPolished?.textContent?.trim();
             const hasPolished = polishedPreview && !ui.previewPolished?.querySelector?.('.preview-loading');
@@ -2795,6 +2875,10 @@ class InterviewManager {
 
             if (data.status === 're_ask') {
                 ui.showReaskMessage(data.message, data.suggestion);
+                // Chat: gentle re-ask as an assistant message.
+                chatPush('assistant', `<div class="chat-reask">${_escapeHtml(data.message || '')}` +
+                    (data.suggestion ? `<br><span class="chat-reask-sugg">${_escapeHtml(data.suggestion)}</span>` : '') +
+                    `</div>`);
                 ui.updateSaveStatus(t('statusReady'));
                 return;
             }
@@ -2809,6 +2893,13 @@ class InterviewManager {
                 skills: data.extracted_skills || [],
             });
             ui.updateCVPanel(state.cvEntries);
+
+            // Chat: assistant shows how the answer reads in the CV (the "oh, I
+            // actually did stuff" moment). Only show the polished line when it
+            // meaningfully differs from the raw answer (skip for name/city/etc.).
+            const polishedDiffers = data.polished_text &&
+                data.polished_text.trim().toLowerCase() !== answerText.trim().toLowerCase();
+            chatPushPolished(polishedDiffers ? data.polished_text : '', data.message);
 
             // Show brief encouraging toast (message comes from backend quality score)
             if (data.message) ui.showEncouragement(data.message);
