@@ -477,10 +477,21 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
 
     # Never lose the participant's experience. Small models often fill NAME/ORT/
     # SKILLS but leave ERFAHRUNG empty — in that case keep the original dump as a
-    # single experience entry (the polish layer cleans it up). The structured
-    # identity/skills/education fields the model DID find still apply.
+    # single experience entry (the polish layer cleans it up). Strip the bits we
+    # already captured (email/phone, and a leading "Ich bin/heisse <name>" intro)
+    # so the experience line doesn't repeat the contact details.
     if not result["experiences"]:
-        result["experiences"] = [text.strip()[:600]]
+        leftover = text.strip()
+        if result["email"]:
+            leftover = leftover.replace(result["email"], " ")
+        if result["phone"]:
+            leftover = leftover.replace(result["phone"], " ")
+        leftover = _re.sub(
+            r"^\s*(ich\s+(?:bin|heisse|heiße|heisst|wohne|komme)[^.,;]*[.,;]\s*)",
+            "", leftover, flags=_re.IGNORECASE,
+        )
+        leftover = _re.sub(r"\s{2,}", " ", leftover).strip(" ,;.-")
+        result["experiences"] = [leftover[:600]] if len(leftover) > 4 else [text.strip()[:600]]
     return result
 
 

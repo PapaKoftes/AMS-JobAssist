@@ -33,6 +33,18 @@ Then open:
 - **http://localhost:8000** — participant CV maker (Tool 1)
 - **http://localhost:8001** — trainer dashboard (Tool 2)
 
+(If ports 8000/8001 are busy, the launcher automatically picks the next free ports and prints them in its window — just use those.)
+
+### Verify everything works first (optional, ~3 min)
+
+Before trying it by hand, you can run the full automated check:
+
+```bash
+python run_full_test.py
+```
+
+It starts both tools on free ports, exercises the entire product **including the AI** (dump extraction, chat coach, interview prep, all exports, the trainer handoff), and opens a single **`TEST_REPORT.html`** with a green/red result for every feature. Green = ready to use.
+
 ---
 
 ## What to try (in order)
@@ -41,13 +53,16 @@ Then open:
 
 Open **http://localhost:8000**.
 
-1. Change the language — click any flag on the welcome screen. Every label should update immediately, including RTL layout for Arabic.
-2. Tick the consent checkbox, pick **"Berufswechsel"** (career switch), click Start.
-3. Answer at least 3 questions. Try a deliberately rough answer like:
-   > *"i worked in bakery, made bread and cake, helped customers sometimes"*
-4. Watch the live CV preview on the right update as you type.
-5. Finish all questions and look at the completion screen: quality score, PDF/DOCX/Europass download, ATS job-match panel, cover letter generator.
-6. Download the PDF and open it.
+1. Change the language — click any flag on the welcome screen. Every label updates immediately, including right-to-left layout for Arabic.
+2. Tick the consent checkbox, pick **"Berufswechsel"** (career switch), enter a name, click Start.
+3. You land in a **split screen**: top = your CV (empty at first), bottom = a chat with the AMS assistant. It says **"Erzählen Sie mir alles über sich."**
+4. **Just dump everything** in one go — any language, rough is fine. Try:
+   > *"Ich bin Maria Horvat aus Wien, +43 660 1234567, maria@example.com. Fünf Jahre Bäckerei: Brot gebacken, Kasse geführt, Kunden beraten. Pflichtschulabschluss, Staplerschein. Pünktlich, spreche Deutsch und Bosnisch. Suche Bürokauffrau oder Verkauf."*
+5. Watch the **AI structure it onto the CV above** — name, contact, target job, experience, education, skills all sort themselves into the right sections. Then the assistant asks about whatever's missing. Add more, or click **"✓ Lebenslauf erstellen"**.
+6. On the completion screen: quality score, PDF/DOCX/Europass download, ATS job-match, cover letter, and the **AI chat coach** (ask it "Ist mein Lebenslauf gut genug?").
+7. Download the PDF and open it.
+
+> The AI's first response takes ~20–30 seconds the very first time (it loads the 1 GB model into memory); after that it's quick.
 
 ### 2 · The trainer flow (~5 min)
 
