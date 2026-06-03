@@ -287,7 +287,7 @@ class CVBuilder:
                 # id_target_job is skipped here too: it is captured separately as
                 # cv_data.target_job, so including it as a motivation section would
                 # make the target job appear twice in the exported CV.
-                if question_id in ("id_name", "id_location", "id_phone", "id_email", "id_target_job"):
+                if question_id in ("id_name", "id_contact", "id_location", "id_phone", "id_email", "id_target_job"):
                     continue
 
                 # Skip skipped/empty answers
@@ -317,9 +317,10 @@ class CVBuilder:
     def _extract_identity(self, session_id: int, user_id: str) -> 'CVIdentity':
         """Extract CVIdentity from identity question answers."""
         from cv.models import CVIdentity
+        import re as _re
         try:
             rows = self.db.execute_query(
-                "SELECT question_id, answer_text FROM answers WHERE session_id = ? AND question_id IN ('id_name', 'id_location', 'id_phone', 'id_email')",
+                "SELECT question_id, answer_text FROM answers WHERE session_id = ? AND question_id IN ('id_name', 'id_contact', 'id_location', 'id_phone', 'id_email')",
                 (session_id,)
             )
         except Exception as e:
@@ -329,18 +330,40 @@ class CVBuilder:
         location = ""
         phone = ""
         email = ""
+
+        def _parse_contact(blob: str):
+            """Pull e-mail / phone / city out of one combined contact line."""
+            loc, ph, em = "", "", ""
+            m = _re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", blob)
+            if m:
+                em = m.group(0)
+                blob = blob.replace(em, " ")
+            m = _re.search(r"(?<!\w)(\+?\d[\d\s/().\-]{6,}\d)", blob)
+            if m:
+                ph = m.group(1).strip()
+                blob = blob.replace(m.group(1), " ")
+            # Remaining text → city (first non-empty comma/whitespace chunk).
+            rest = [p.strip(" ,;·") for p in _re.split(r"[,\n;]", blob)]
+            rest = [p for p in rest if p]
+            if rest:
+                loc = rest[0]
+            return loc, ph, em
+
         for row in (rows or []):
             qid = row.get("question_id", "")
             text = (row.get("answer_text") or "").strip()
-            if text and text != ANSWER_SKIPPED:
-                if qid == "id_name":
-                    full_name = text
-                elif qid == "id_location":
-                    location = text
-                elif qid == "id_phone":
-                    phone = text
-                elif qid == "id_email":
-                    email = text
+            if not text or text == ANSWER_SKIPPED:
+                continue
+            if qid == "id_name":
+                full_name = text
+            elif qid == "id_contact":
+                location, phone, email = _parse_contact(text)
+            elif qid == "id_location":   # legacy sessions
+                location = text
+            elif qid == "id_phone":
+                phone = text
+            elif qid == "id_email":
+                email = text
         return CVIdentity(
             full_name=full_name,
             location=location,

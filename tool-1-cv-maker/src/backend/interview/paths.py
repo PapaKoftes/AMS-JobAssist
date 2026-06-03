@@ -37,49 +37,22 @@ _IDENTITY_QUESTIONS = [
         "flags": ["identity"]
     },
     {
-        "id": "id_location",
+        # Combined contact step — one question instead of three (city + phone +
+        # email). The engine parses city / phone / e-mail out of the single
+        # answer, so the participant isn't asked three trivial questions in a row.
+        "id": "id_contact",
         "order": 1,
         "category": "identity",
-        "text": "In welcher Stadt wohnen Sie?",
-        "hint": "Zum Beispiel: Wien, Graz, Linz, Salzburg, Wels",
+        "text": "Wo wohnen Sie, und wie kann man Sie erreichen?",
+        "hint": "Stadt, Telefon und E-Mail — alles in einer Zeile. Telefon und E-Mail sind optional.",
         "examples": {
-            "good": "Wien, 1100",
+            "good": "Wien, +43 660 123 45 67, maria.horvat@gmail.com",
             "bad": "in Österreich"
         },
-        "quick_fill": ["Wien", "Graz", "Linz", "Salzburg", "Innsbruck", "Wels", "Klagenfurt"],
-        "helper_tip": "Ihr Wohnort wird für den Lebenslauf benötigt — kein Stressthema!",
+        "quick_fill": [],
+        "helper_tip": "Schreiben Sie einfach Ihre Stadt und — wenn Sie möchten — Telefon und E-Mail. Wir ordnen es für den Lebenslauf.",
         "min_length": 2,
         "flags": ["identity"]
-    },
-    {
-        "id": "id_phone",
-        "order": 1.2,
-        "category": "identity",
-        "text": "Wie lautet Ihre Telefonnummer?",
-        "hint": "Optional — Sie können diese Frage überspringen, wenn Sie möchten.",
-        "examples": {
-            "good": "+43 660 123 45 67",
-            "bad": "mein Handy"
-        },
-        "quick_fill": [],
-        "helper_tip": "Ihre Nummer erscheint im Kontaktbereich Ihres Lebenslaufs. Kein Pflichtfeld.",
-        "min_length": 0,
-        "flags": ["identity", "optional"]
-    },
-    {
-        "id": "id_email",
-        "order": 1.4,
-        "category": "identity",
-        "text": "Wie lautet Ihre E-Mail-Adresse?",
-        "hint": "Optional — falls Sie eine haben. Sie können diese Frage auch überspringen.",
-        "examples": {
-            "good": "maria.horvat@gmail.com",
-            "bad": "meine E-Mail"
-        },
-        "quick_fill": [],
-        "helper_tip": "Eine E-Mail-Adresse erleichtert es Arbeitgebern, Sie zu kontaktieren.",
-        "min_length": 0,
-        "flags": ["identity", "optional"]
     },
 ]
 

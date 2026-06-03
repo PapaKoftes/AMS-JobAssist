@@ -196,6 +196,13 @@ function cvDocAddAnswer(question, rawText, polishedText) {
         if (e) e.textContent = rawText || text;
         return;
     }
+    if (qid === 'id_contact') {
+        // One combined contact line (city, phone, email) — show it as-is,
+        // tidied to " · " separators.
+        const e = document.getElementById('cvDocContact');
+        if (e) e.textContent = (rawText || text).split(/[,\n;]+/).map(s => s.trim()).filter(Boolean).join(' · ');
+        return;
+    }
     if (qid === 'id_location' || qid === 'id_phone' || qid === 'id_email') {
         const e = document.getElementById('cvDocContact');
         if (e) {

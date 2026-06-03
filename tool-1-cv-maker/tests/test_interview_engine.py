@@ -39,7 +39,7 @@ class TestInterviewInitialization:
         assert result["question_id"]
         assert result["question"]["text"]
         assert result["progress"]["current"] == 1
-        assert result["progress"]["total"] == 15  # 4 identity + target_job + 10 path-specific questions
+        assert result["progress"]["total"] == 13  # 2 identity (name + combined contact) + target_job + 10 path-specific
 
     def test_start_interview_career_switch_path(self, db_manager, test_user):
         """✅ Can start an interview with career_switch path."""
@@ -50,7 +50,7 @@ class TestInterviewInitialization:
         )
 
         assert result["interview_path"] == "career-switch"
-        assert result["progress"]["total"] == 15  # 4 identity + target_job + 10 path-specific questions
+        assert result["progress"]["total"] == 13  # 2 identity (name + combined contact) + target_job + 10 path-specific
 
     def test_start_interview_invalid_path(self, db_manager, test_user):
         """✅ Starting interview with invalid path raises ValueError."""
@@ -96,7 +96,7 @@ class TestQuestionSequencing:
 
         assert next_result["question_id"] != question_id
         assert next_result["progress"]["current"] == 2
-        assert next_result["progress"]["total"] == 15  # current path question count
+        assert next_result["progress"]["total"] == 13  # current path question count
 
     def test_progress_tracking(self, db_manager, test_user):
         """✅ Progress percentage increases with each question."""
@@ -107,7 +107,7 @@ class TestQuestionSequencing:
         )
 
         initial_progress = session_result["progress"]["percent"]
-        assert initial_progress == pytest.approx(100.0 / 15, abs=1.0)  # 1 of 15 (pause path)
+        assert initial_progress == pytest.approx(100.0 / 13, abs=1.0)  # 1 of 13 (pause path)
 
         # Answer and move to next
         engine.submit_answer(
@@ -116,7 +116,7 @@ class TestQuestionSequencing:
             "I was a project manager for 7 years managing teams and clients."
         )
         next_q = engine.get_next_question(session_result["session_id"])
-        assert next_q["progress"]["percent"] == pytest.approx(200.0 / 15, abs=1.0)  # 2 of 15
+        assert next_q["progress"]["percent"] == pytest.approx(200.0 / 13, abs=1.0)  # 2 of 13
 
     def test_interview_completion_detected(self, db_manager, test_user):
         """✅ Interview completion is detected after last question."""
@@ -167,11 +167,11 @@ class TestQuestionSequencing:
         """✅ All 5 interview paths have valid questions (6 identity + target_job + path-specific)."""
         # Question counts: base (17/19) + 8 optional experience questions (2 blocks × 4 each)
         expected_counts = {
-            "unemployed": 15,
-            "career-switch": 15,
-            "student": 15,
-            "pause": 15,
-            "other": 15,
+            "unemployed": 13,
+            "career-switch": 13,
+            "student": 13,
+            "pause": 13,
+            "other": 13,
         }
 
         for path_key, expected in expected_counts.items():
