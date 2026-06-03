@@ -2509,143 +2509,162 @@ a:focus-visible,
     a { text-decoration: none; color: #000; }
 }
 
+
 /* ============================================================================
-   ChatGPT-style interview — conversation thread + single input box.
-   Folds the old busy form (question card, example cards, split preview) into
-   a clean chat. Also fixes the interview-screen scaling (was squished into the
-   800px .screen cap while its layout wanted ~1100px).
+   Living CV page (typewriter) — the interview happens ON a growing CV sheet.
+   The participant's answers are "typed" onto a sheet of paper that grows as
+   they go: photo + name in the header, sections filling in below, and the
+   current question shown as a warm AMS-advisor prompt at the active line.
    ============================================================================ */
 
-/* Let the interview use a comfortable app width instead of the 800px cap. */
-#interviewScreen.screen { max-width: 1080px; }
-
+#interviewScreen.screen { max-width: 940px; }
 .main-content { padding: var(--spacing-lg); }
 
-.interview-layout {
-    grid-template-columns: minmax(0, 1fr) 340px;
-    max-width: 1080px;
-}
-/* The CV panel is FIRST in the DOM but must sit in the narrow right column;
-   the chat must take the wide column. Order the grid items explicitly. */
-.interview-layout .interview-container { order: 1; }
-.interview-layout .cv-panel-column { order: 2; }
-@media (max-width: 900px) {
-    .interview-layout { grid-template-columns: 1fr; }
-    .cv-panel-column { display: none; }   /* keep the chat clean on small screens */
-}
+/* The old side CV panel is replaced by the sheet itself. */
+.interview-layout { display: block; max-width: 940px; margin: 0 auto; }
+.interview-layout .cv-panel-column { display: none !important; }
 
-/* The interview becomes a tall chat panel with a scrolling thread. */
+/* App frame holding the scrolling sheet + the composer footer. */
 .interview-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 200px);
-    min-height: 500px;
-    background: white;
+    height: calc(100vh - 184px);
+    min-height: 520px;
+    background: #e9ebf1;          /* desk behind the paper */
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     overflow: hidden;
     padding: 0;
 }
-
-/* Slim progress strip at the top of the panel. */
 .interview-container .progress-section {
     margin: 0;
-    padding: 12px 18px;
-    border-bottom: 1px solid var(--border);
+    padding: 11px 18px;
     background: white;
+    border-bottom: 1px solid var(--border);
 }
 
-/* Hide the static form bits — they're rendered as chat bubbles now. */
+/* Hide the old static form bits — folded into the sheet / advisor prompt. */
 .question-section,
 .examples-container,
 .preview-section,
 .helper-tip,
 .answer-label,
-.midway-banner { display: none !important; }
+.midway-banner,
+.reask-message { display: none !important; }
 
-/* The conversation thread (scrolls). */
-.chat-thread {
+/* The growing paper sheet (scrolls inside the frame). */
+.cv-sheet {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: 22px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    background: var(--bg);
+    padding: 26px 0 14px;
     scroll-behavior: smooth;
 }
+/* Header + body + active line stack into one continuous white sheet. */
+.cv-sheet-header,
+.cv-sheet-body,
+.cv-active-prompt {
+    width: min(680px, 92%);
+    margin-left: auto;
+    margin-right: auto;
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+}
+.cv-sheet-header {
+    border-radius: 10px 10px 0 0;
+    padding: 22px 30px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    border-bottom: 3px solid var(--secondary);
+    box-shadow: var(--shadow-md);
+}
 
-.chat-row { display: flex; gap: 10px; align-items: flex-end; }
-.chat-row--assistant { justify-content: flex-start; }
-.chat-row--user { justify-content: flex-end; }
-
-.chat-avatar {
-    width: 30px; height: 30px; flex-shrink: 0;
-    border-radius: 50%;
-    background: white; border: 1px solid var(--border);
+/* Photo slot (Austrian CV expects a photo; click to add any time). */
+.cv-photo-slot {
+    flex-shrink: 0;
+    width: 88px; height: 112px;
+    border: 2px dashed var(--border);
+    border-radius: 6px;
+    background: #fafafa;
+    cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
+    overflow: hidden;
+    transition: border-color 0.15s, background 0.15s;
 }
+.cv-photo-slot:hover { border-color: var(--secondary); background: #f5f0fa; }
+.cv-photo-slot img { width: 100%; height: 100%; object-fit: cover; }
+.cv-photo-plus { color: #9aa0a6; font-size: 13px; font-weight: 600; text-align: center; line-height: 1.3; }
 
-.chat-bubble {
-    max-width: 78%;
-    padding: 12px 15px;
-    border-radius: 16px;
-    line-height: 1.5;
-    font-size: 15px;
-    box-shadow: var(--shadow-sm);
-    word-wrap: break-word;
-    overflow-wrap: anywhere;
-    animation: chatPop 0.18s ease-out;
+.cv-id { min-width: 0; }
+.cv-doc-name {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 27px; font-weight: 700; letter-spacing: 0.01em;
+    color: #b9c0cb;                 /* placeholder grey until filled */
 }
-@keyframes chatPop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.cv-sheet-header.has-name .cv-doc-name { color: var(--primary); }
+.cv-doc-subtitle { font-size: 16px; color: var(--secondary); font-weight: 600; margin-top: 3px; }
+.cv-doc-contact { font-size: 13.5px; color: #6b7280; margin-top: 6px; }
 
-.chat-bubble--assistant {
-    background: white;
-    border: 1px solid var(--border);
-    border-bottom-left-radius: 4px;
-    color: var(--text);
+/* Body: the CV sections that fill in as the participant answers. */
+.cv-sheet-body { padding: 4px 30px; }
+.cv-doc-section { padding: 14px 0 4px; }
+.cv-doc-section + .cv-doc-section { border-top: 1px solid #eef0f3; }
+.cv-doc-heading {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--secondary); margin-bottom: 9px;
 }
-.chat-bubble--user {
-    background: var(--secondary);
-    color: white;
-    border-bottom-right-radius: 4px;
+.cv-doc-entry {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 15.5px; line-height: 1.6; color: #2b3440;
+    padding: 4px 0 4px 16px; position: relative;
 }
-.chat-bubble--muted { font-size: 14px; opacity: 0.9; }
-
-.chat-q { font-weight: 600; font-size: 16px; }
-.chat-q-hint { color: #6b7280; font-size: 13.5px; margin-top: 5px; }
-.chat-example { margin-top: 9px; font-size: 13px; }
-.chat-example summary { cursor: pointer; color: var(--secondary); font-weight: 600; list-style: none; }
-.chat-example summary::-webkit-details-marker { display: none; }
-.chat-example summary::before { content: "💡 "; }
-.chat-example span { display: block; margin-top: 5px; color: #555; font-style: italic; }
-
-.chat-polished-label {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--success); font-weight: 700; margin-bottom: 4px;
+.cv-doc-entry::before { content: "▪"; position: absolute; left: 0; color: var(--secondary); }
+/* Typewriter caret while a line is being typed in. */
+.cv-doc-entry.cv-typing::after {
+    content: "▍"; color: var(--secondary);
+    animation: cvCaret 0.7s steps(1) infinite;
 }
-.chat-polished { font-size: 15px; }
-.chat-encourage { color: var(--success); font-size: 13.5px; }
-.chat-reask { color: #b9770e; }
-.chat-reask-sugg { color: #6b7280; font-size: 13px; }
+@keyframes cvCaret { 50% { opacity: 0; } }
 
-/* ---- Composer (the single input box at the bottom) ---- */
+/* The active "typing line": a warm, human AMS-advisor prompt. */
+.cv-active-prompt {
+    border-radius: 0 0 10px 10px;
+    margin-bottom: 20px;
+    padding: 16px 30px 22px;
+    display: flex; gap: 12px; align-items: flex-start;
+    border-top: 1px dashed #e3e6eb;
+    box-shadow: var(--shadow-md);
+}
+.advisor-avatar {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: #f5f0fa;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-top: 2px;
+}
+.advisor-bubble { min-width: 0; flex: 1; }
+.advisor-text { font-size: 17px; font-weight: 600; color: var(--primary); line-height: 1.45; }
+.advisor-hint { font-size: 14px; color: #6b7280; margin-top: 5px; }
+.advisor-example {
+    font-size: 13.5px; color: #555; font-style: italic;
+    margin-top: 8px; padding: 7px 11px; background: #f6f3fb; border-radius: 8px;
+}
+.cv-active-prompt.cv-prompt-reask { background: #fffaf2; }
+.cv-active-prompt.cv-prompt-reask .advisor-text { color: #b9770e; }
+.cv-active-prompt.cv-prompt-reask .advisor-avatar { background: #fdebcf; }
+
+/* ---- Composer footer (the single input where you "type onto the page") ---- */
 .interview-container .quick-fill-container {
-    padding: 10px 18px 0;
-    margin: 0;
-    background: white;
-    border-top: 1px solid var(--border);
+    padding: 10px 18px 0; margin: 0;
+    background: white; border-top: 1px solid var(--border);
 }
 .interview-container .answer-section {
-    padding: 10px 18px 4px;
-    margin: 0;
-    background: white;
+    padding: 10px 18px 4px; margin: 0; background: white;
+    border-top: 1px solid var(--border);
 }
-.interview-container .quick-fill-container + .answer-section { border-top: none; }
-.interview-container .answer-section:first-of-type,
-.interview-container .answer-section { border-top: 1px solid var(--border); }
 .interview-container .quick-fill-container ~ .answer-section { border-top: none; }
 
 .answer-input {
@@ -2653,47 +2672,37 @@ a:focus-visible,
     border: 1.5px solid var(--border);
     border-radius: 14px;
     padding: 12px 14px;
-    font-size: 15px;
-    resize: none;
-    min-height: 52px;
-    max-height: 160px;
+    font-size: 15px; resize: none;
+    min-height: 52px; max-height: 150px;
     transition: border-color 0.15s;
 }
 .answer-input:focus { border-color: var(--secondary); outline: none; }
-
 .answer-meta { padding: 4px 2px 0; }
 
 .interview-container .action-buttons {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 18px 14px;
-    margin: 0;
-    background: white;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 6px 18px 14px; margin: 0; background: white;
 }
 .interview-container .action-buttons .btn-secondary {
-    /* "skip" as a quiet link, not a heavy button */
-    background: transparent;
-    border: none;
-    color: #6b7280;
-    padding: 8px 6px;
-    font-size: 14px;
+    background: transparent; border: none; color: #6b7280; padding: 8px 6px; font-size: 14px;
 }
 .interview-container .action-buttons .btn-secondary:hover {
     background: transparent; color: var(--secondary); text-decoration: underline; box-shadow: none;
 }
-.interview-container .action-buttons .btn-primary {
-    border-radius: 12px;
-    padding: 11px 22px;
-}
-
+.interview-container .action-buttons .btn-primary { border-radius: 12px; padding: 11px 24px; }
 .interview-container .submit-hint,
 .interview-container .finish-later-row {
     padding-left: 18px; padding-right: 18px; background: white; margin: 0;
 }
 .interview-container .finish-later-row { padding-bottom: 12px; }
 
-/* CV panel: a live "document" canvas beside the chat, full panel height. */
-.interview-layout .cv-panel-column { align-self: stretch; }
-.interview-container .reask-message { margin: 0 18px 12px; }
+/* Date helper + photo upload (special question modes) sit above the composer. */
+.interview-container .date-helper,
+.interview-container .photo-upload-container {
+    margin: 0; padding: 10px 18px; background: white; border-top: 1px solid var(--border);
+}
+
+@media (max-width: 620px) {
+    .cv-sheet-header { flex-direction: column; text-align: center; }
+    .interview-container { height: calc(100vh - 150px); }
+}

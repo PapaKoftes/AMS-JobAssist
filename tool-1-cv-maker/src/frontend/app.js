@@ -50,76 +50,167 @@ const FOLLOWUP_MAX_WORDS = 9;      // only probe answers shorter than this (vagu
 const FOLLOWUP_SESSION_CAP = 2;    // never probe more than this many times total
 
 // ============================================================================
-// Chat thread — turns the interview into a ChatGPT-style conversation.
-// The assistant "asks" each question as a bubble, the participant's answer
-// appears as a user bubble, and the polished result comes back as the
-// assistant's reply ("here's how that reads in your CV"). Reuses the existing
-// interview controller — these helpers only render the conversation.
+// Living CV document — the interview happens ON a growing sheet of paper.
+// As the participant answers, their words are "typed" onto the CV: the header
+// fills with name / target job / contact / photo, and content sections
+// (Über mich, Berufserfahrung, Ausbildung, Kenntnisse…) grow below. The current
+// question is shown as a warm AMS-advisor prompt at the active "typing line".
+// Reuses the interview engine — these helpers only render the document.
 // ============================================================================
-function _chatThreadEl() { return document.getElementById('chatThread'); }
-
 function _escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => (
         {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
     ));
 }
 
-function _scrollChatToBottom() {
-    const t = _chatThreadEl();
-    if (t) requestAnimationFrame(() => { t.scrollTop = t.scrollHeight; });
+function _scrollSheetToActive() {
+    const prompt = document.getElementById('cvActivePrompt');
+    if (prompt) requestAnimationFrame(() => prompt.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
 }
 
-/** Append a message bubble. role: 'assistant' | 'user'. Returns the element. */
-function chatPush(role, html, opts = {}) {
-    const thread = _chatThreadEl();
-    if (!thread) return null;
-    const row = document.createElement('div');
-    row.className = `chat-row chat-row--${role}`;
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble chat-bubble--${role}` + (opts.muted ? ' chat-bubble--muted' : '');
-    bubble.innerHTML = html;
-    if (role === 'assistant') {
-        const av = document.createElement('div');
-        av.className = 'chat-avatar';
-        av.textContent = '🤖';
-        row.appendChild(av);
+// Section order on the CV sheet and the heading each one shows.
+const _CV_SECTION_ORDER = ['profile', 'experience', 'education', 'skills', 'more'];
+const _CV_SECTION_TITLES = {
+    profile: 'Über mich',
+    experience: 'Berufserfahrung',
+    education: 'Ausbildung & Weiterbildung',
+    skills: 'Kenntnisse & Stärken',
+    more: 'Weitere Angaben',
+};
+
+// Map an interview question to a CV document section.
+function _cvSectionFor(question) {
+    const flags = question?.flags ?? [];
+    const cat = question?.category ?? '';
+    const has = f => flags.includes(f);
+    if (has('work_experience') || has('previous_career') || has('teamwork') || cat === 'experience') return 'experience';
+    if (has('education') || has('training') || has('internship') || cat === 'training' || cat === 'background') return 'education';
+    if (has('technical_skills') || has('practical_skills') || has('soft_skills') ||
+        has('languages') || has('interests') || cat === 'skills') return 'skills';
+    if (has('motivation') || has('future_goals') || has('stability') ||
+        has('resilience') || has('problem_solving') || cat === 'motivation') return 'profile';
+    return 'more';
+}
+
+// Ensure a section block exists in the sheet body and return its entries node.
+function _cvEnsureSection(key) {
+    const body = document.getElementById('cvSheetBody');
+    if (!body) return null;
+    let block = body.querySelector(`.cv-doc-section[data-sec="${key}"]`);
+    if (!block) {
+        block = document.createElement('section');
+        block.className = 'cv-doc-section';
+        block.dataset.sec = key;
+        block.innerHTML = `<h3 class="cv-doc-heading">${_escapeHtml(_CV_SECTION_TITLES[key] || '')}</h3>` +
+                          `<div class="cv-doc-entries"></div>`;
+        // Insert in canonical order
+        const order = _CV_SECTION_ORDER.indexOf(key);
+        const siblings = [...body.querySelectorAll('.cv-doc-section')];
+        const after = siblings.find(s => _CV_SECTION_ORDER.indexOf(s.dataset.sec) > order);
+        body.insertBefore(block, after || null);
     }
-    row.appendChild(bubble);
-    thread.appendChild(row);
-    _scrollChatToBottom();
-    return bubble;
+    return block.querySelector('.cv-doc-entries');
 }
 
-/** Assistant asks a question (optionally with a folded "example" hint). */
-function chatAskQuestion(question) {
-    let html = `<div class="chat-q">${_escapeHtml(question.text ?? '')}</div>`;
-    if (question.hint) html += `<div class="chat-q-hint">${_escapeHtml(question.hint)}</div>`;
-    const ex = question.examples?.good;
-    if (ex) {
-        html += `<details class="chat-example"><summary>${_escapeHtml(t('exampleGoodTitle') || 'Beispiel')}</summary>` +
-                `<span>${_escapeHtml(ex)}</span></details>`;
+// Type text into an element, character by character (typewriter effect).
+function _typeInto(el, text) {
+    if (!el) return;
+    const full = String(text || '');
+    el.textContent = '';
+    el.classList.add('cv-typing');
+    let i = 0;
+    const step = Math.max(6, Math.min(22, Math.round(700 / Math.max(full.length, 1))));
+    const tick = () => {
+        el.textContent = full.slice(0, i);
+        i++;
+        if (i <= full.length) {
+            setTimeout(tick, step);
+        } else {
+            el.classList.remove('cv-typing');
+            _scrollSheetToActive();   // settle the view once typing finishes
+        }
+    };
+    tick();
+    _scrollSheetToActive();
+}
+
+// Reset the whole sheet for a fresh interview.
+function cvDocReset() {
+    const body = document.getElementById('cvSheetBody');
+    if (body) body.innerHTML = '';
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('cvDocName', t('cvDocNamePlaceholder') || 'Ihr Name');
+    set('cvDocSubtitle', '');
+    set('cvDocContact', '');
+    document.getElementById('cvSheetHeader')?.classList.remove('has-name');
+    const img = document.getElementById('cvPhotoImg');
+    if (img) { img.style.display = 'none'; img.src = ''; }
+    const plus = document.getElementById('cvPhotoPlus');
+    if (plus) plus.style.display = '';
+}
+
+// Show the current question as a warm advisor prompt at the active line.
+function cvDocSetPrompt(question, opts = {}) {
+    const adv = document.getElementById('advisorText');
+    const hintEl = document.getElementById('advisorHint');
+    const exWrap = document.getElementById('advisorExample');
+    if (adv) adv.textContent = question.text ?? '';
+    if (hintEl) {
+        hintEl.textContent = question.hint ?? '';
+        hintEl.style.display = question.hint ? 'block' : 'none';
     }
-    return chatPush('assistant', html);
+    if (exWrap) {
+        const ex = question.examples?.good;
+        if (ex) {
+            exWrap.querySelector('span').textContent = ex;
+            exWrap.style.display = 'block';
+        } else {
+            exWrap.style.display = 'none';
+        }
+    }
+    const prompt = document.getElementById('cvActivePrompt');
+    if (prompt) prompt.classList.toggle('cv-prompt-reask', !!opts.reask);
+    _scrollSheetToActive();
 }
 
-/** Participant's raw answer bubble. */
-function chatPushUser(text) {
-    return chatPush('user', _escapeHtml(text));
-}
+// Commit an answer onto the CV: header fields for identity, else a typed entry.
+function cvDocAddAnswer(question, rawText, polishedText) {
+    const qid = question?.id ?? '';
+    const text = (polishedText && polishedText.trim()) ? polishedText.trim() : (rawText || '').trim();
 
-/** Assistant reply showing the polished CV line. */
-function chatPushPolished(polished, encouragement) {
-    const lead = encouragement ? `<div class="chat-encourage">${_escapeHtml(encouragement)}</div>` : '';
-    const body = polished
-        ? `<div class="chat-polished-label">${_escapeHtml(t('previewPolishedLabel') || 'In Ihrem Lebenslauf')}</div>` +
-          `<div class="chat-polished">${_escapeHtml(polished)}</div>`
-        : '';
-    return chatPush('assistant', lead + body, { muted: !polished });
-}
+    // Identity / header fields
+    if (qid === 'id_name') {
+        const e = document.getElementById('cvDocName');
+        if (e) e.textContent = rawText || text;
+        document.getElementById('cvSheetHeader')?.classList.add('has-name');
+        return;
+    }
+    if (qid === 'id_target_job') {
+        const e = document.getElementById('cvDocSubtitle');
+        if (e) e.textContent = rawText || text;
+        return;
+    }
+    if (qid === 'id_location' || qid === 'id_phone' || qid === 'id_email') {
+        const e = document.getElementById('cvDocContact');
+        if (e) {
+            const parts = e.textContent ? e.textContent.split(' · ') : [];
+            const val = (rawText || text);
+            if (val && !parts.includes(val)) parts.push(val);
+            e.textContent = parts.join(' · ');
+        }
+        return;
+    }
+    if ((question?.flags || []).includes('photo')) {
+        return; // photo handled by the header slot
+    }
 
-function chatClear() {
-    const t = _chatThreadEl();
-    if (t) t.innerHTML = '';
+    // Content → a typed CV entry under the right section.
+    const entries = _cvEnsureSection(_cvSectionFor(question));
+    if (!entries) return;
+    const entry = document.createElement('div');
+    entry.className = 'cv-doc-entry';
+    entries.appendChild(entry);
+    _typeInto(entry, text);
 }
 
 // ============================================================================
@@ -2198,8 +2289,8 @@ class UIManager {
 
         if (this.questionText) this.questionText.textContent  = question.text  ?? '';
 
-        // Chat experience: the assistant "asks" the question as a bubble.
-        chatAskQuestion(question);
+        // Living CV: show the question as a warm advisor prompt at the active line.
+        cvDocSetPrompt(question);
 
         // Update AI coach context when a new question loads
         if (typeof aiCoach !== 'undefined') aiCoach.reset();
@@ -2758,7 +2849,7 @@ class InterviewManager {
             state.currentQuestionIndex = 0;
             state.followUpsShown       = 0;   // reset gentle-probe counter per interview
             state.totalQuestions       = data.progress.total;
-            chatClear();                       // fresh conversation thread
+            cvDocReset();                      // fresh, empty CV sheet
             state.currentQuestion      = data.question;
 
             // Persist for resume
@@ -2863,9 +2954,6 @@ class InterviewManager {
             const data = response.data;
             state.answers[questionId] = answerText;
 
-            // Chat: show the participant's answer as their message.
-            chatPushUser(answerText);
-
             // Capture polished version for review panel
             const polishedPreview = ui.previewPolished?.textContent?.trim();
             const hasPolished = polishedPreview && !ui.previewPolished?.querySelector?.('.preview-loading');
@@ -2875,10 +2963,12 @@ class InterviewManager {
 
             if (data.status === 're_ask') {
                 ui.showReaskMessage(data.message, data.suggestion);
-                // Chat: gentle re-ask as an assistant message.
-                chatPush('assistant', `<div class="chat-reask">${_escapeHtml(data.message || '')}` +
-                    (data.suggestion ? `<br><span class="chat-reask-sugg">${_escapeHtml(data.suggestion)}</span>` : '') +
-                    `</div>`);
+                // Living CV: gentle re-ask shown warmly at the active line.
+                cvDocSetPrompt({
+                    text: data.message || (state.currentQuestion?.text ?? ''),
+                    hint: data.suggestion || '',
+                    examples: {},
+                }, { reask: true });
                 ui.updateSaveStatus(t('statusReady'));
                 return;
             }
@@ -2894,12 +2984,10 @@ class InterviewManager {
             });
             ui.updateCVPanel(state.cvEntries);
 
-            // Chat: assistant shows how the answer reads in the CV (the "oh, I
-            // actually did stuff" moment). Only show the polished line when it
-            // meaningfully differs from the raw answer (skip for name/city/etc.).
-            const polishedDiffers = data.polished_text &&
-                data.polished_text.trim().toLowerCase() !== answerText.trim().toLowerCase();
-            chatPushPolished(polishedDiffers ? data.polished_text : '', data.message);
+            // Living CV: type the answer onto the growing sheet (the "oh, I
+            // actually DID stuff" moment) — header for identity, a section line
+            // for content.
+            cvDocAddAnswer(state.currentQuestion, answerText, data.polished_text);
 
             // Show brief encouraging toast (message comes from backend quality score)
             if (data.message) ui.showEncouragement(data.message);
@@ -3861,15 +3949,25 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onload = ev => {
             const dataUrl = ev.target.result;
             state.photoDataUrl = dataUrl;
-            // Show preview
+            // Show preview (legacy photo question UI)
             const preview = document.getElementById('photoPreview');
             const placeholder = document.getElementById('photoPlaceholder');
             if (preview) { preview.src = dataUrl; preview.style.display = 'block'; }
             if (placeholder) placeholder.style.display = 'none';
+            // Show on the living-CV header photo slot
+            const headerImg = document.getElementById('cvPhotoImg');
+            const headerPlus = document.getElementById('cvPhotoPlus');
+            if (headerImg) { headerImg.src = dataUrl; headerImg.style.display = 'block'; }
+            if (headerPlus) headerPlus.style.display = 'none';
             // Enable submit
             ui.updateSubmitButton();
         };
         reader.readAsDataURL(file);
+    });
+
+    // Living-CV header photo slot — opens the same file picker any time.
+    document.getElementById('cvPhotoSlot')?.addEventListener('click', () => {
+        document.getElementById('photoFileInput')?.click();
     });
 
     // Photo skip button — treat as empty answer and advance

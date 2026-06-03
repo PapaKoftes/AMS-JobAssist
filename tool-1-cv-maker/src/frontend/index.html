@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMS JobAssist - Lebenslauf-Ersteller</title>
-    <link rel="stylesheet" href="/static/styles.css?v=chat1">
+    <link rel="stylesheet" href="/static/styles.css?v=type1">
 </head>
 <body>
 <!-- Skip navigation link for keyboard / screen reader users -->
@@ -188,11 +188,34 @@
                     </div>
                 </div>
 
-                <!-- Chat conversation thread (assistant questions + user answers
-                     + polished replies). Replaces the static question/preview UI. -->
-                <div id="chatThread" class="chat-thread" aria-live="polite" aria-atomic="false"></div>
+                <!-- Living CV sheet: the participant's answers are "typed" onto
+                     a growing page. Header (photo + name), then sections fill in
+                     below, and the current question shows as a warm advisor
+                     prompt at the active typing line. -->
+                <div id="cvSheet" class="cv-sheet" aria-live="polite" aria-atomic="false">
+                    <div id="cvSheetHeader" class="cv-sheet-header">
+                        <button id="cvPhotoSlot" class="cv-photo-slot" type="button" title="Foto hinzufügen">
+                            <img id="cvPhotoImg" alt="" style="display:none;">
+                            <span id="cvPhotoPlus" class="cv-photo-plus">＋<br>Foto</span>
+                        </button>
+                        <div class="cv-id">
+                            <div id="cvDocName" class="cv-doc-name">Ihr Name</div>
+                            <div id="cvDocSubtitle" class="cv-doc-subtitle"></div>
+                            <div id="cvDocContact" class="cv-doc-contact"></div>
+                        </div>
+                    </div>
+                    <div id="cvSheetBody" class="cv-sheet-body"></div>
+                    <div id="cvActivePrompt" class="cv-active-prompt">
+                        <span class="advisor-avatar" aria-hidden="true">🧑‍💼</span>
+                        <div class="advisor-bubble">
+                            <div id="advisorText" class="advisor-text"></div>
+                            <div id="advisorHint" class="advisor-hint" style="display:none;"></div>
+                            <div id="advisorExample" class="advisor-example" style="display:none;">💡 <span></span></div>
+                        </div>
+                    </div>
+                </div>
 
-                <!-- Question (kept for controller state; hidden — rendered as chat) -->
+                <!-- Question (kept for controller state; hidden — rendered as the sheet) -->
                 <div class="question-section">
                     <h2 id="questionText">Frage kommt gleich</h2>
                     <p id="questionGermanSubtitle" class="question-german-subtitle" style="display:none;"></p>
@@ -682,6 +705,6 @@
     <div id="aiModelStatus" class="ai-model-status"></div>
 </div>
 
-<script src="/static/app.js?v=chat1"></script>
+<script src="/static/app.js?v=type1"></script>
 </body>
 </html>
