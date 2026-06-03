@@ -100,8 +100,10 @@ async def lifespan(app: FastAPI):
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         )
 
-    # Startup
-    db_manager = DatabaseManager()
+    # Startup — use the ABSOLUTE db path under DB_DIR so the location is
+    # deterministic regardless of cwd, and so the /api/admin/backup endpoint
+    # (which reads DB_DIR/ams_jobassist.db) always points at the live database.
+    db_manager = DatabaseManager(str(DB_DIR / "ams_jobassist.db"))
     db_manager.initialize()
     app.state.db_manager = db_manager
     app.state.db = db_manager  # alias used by _log_export()

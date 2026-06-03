@@ -54,12 +54,13 @@ def http(method, url, body=None, timeout=60, raw=False):
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         content = r.read()
+        hdr = {k.lower(): v for k, v in dict(r.headers).items()}  # case-insensitive
         if raw:
-            return r.status, content, dict(r.headers)
+            return r.status, content, hdr
         try:
-            return r.status, json.loads(content.decode("utf-8")), dict(r.headers)
+            return r.status, json.loads(content.decode("utf-8")), hdr
         except Exception:
-            return r.status, content.decode("utf-8", "replace"), dict(r.headers)
+            return r.status, content.decode("utf-8", "replace"), hdr
 
 
 def check(group, name, fn, timeout=60):
@@ -136,7 +137,7 @@ def main():
 
         def _nocache():
             s, _, hdr = http("GET", b1 + "/", timeout=10, raw=True)
-            cc = hdr.get("Cache-Control", "")
+            cc = hdr.get("cache-control", "")
             return ("no-cache" in cc, f"Cache-Control: {cc!r} (UI changes always load)")
         check(G, "App shell sent with no-cache headers", _nocache)
 
@@ -192,7 +193,7 @@ def main():
 
         def _contact():
             sid = sid_struct[0]
-            http("POST", b1 + "/api/interview/next-question/%d" % sid, timeout=10)
+            http("GET", b1 + "/api/interview/next-question/%d" % sid, timeout=10)
             s, j, _ = http("POST", b1 + "/api/interview/submit-answer",
                            {"session_id": sid, "question_id": "id_contact",
                             "answer_text": "Wien, +43 660 1234567, max@example.com"}, timeout=15)
@@ -379,7 +380,7 @@ def main():
             check(G, "Approve participant", _approve)
 
             def _bulk():
-                s, c, hdr = http("POST", b2 + "/api/participants/bulk-export",
+                s, c, hdr = http("POST", b2 + "/api/bulk-export",
                                  {"participant_ids": [pid[0]], "format": "pdf"}, timeout=60, raw=True)
                 isz = c[:2] == b"PK"
                 # confirm the zip actually contains a non-trivial PDF
