@@ -59,7 +59,19 @@ def ai_enhance(rule_polished_text, category="experience", lang="de", knowledge_c
     natural flow, injecting domain knowledge from the Austrian job knowledge base.
 
     Priority chain: Local GGUF → Ollama → None (rule output used as-is).
+
+    OFF by default: on a CPU-only local model this LLM call runs for every CV
+    section on every build/preview, which makes "complete" take minutes (and
+    blocks the single-worker server). The rule engine already does the real work
+    — verbs, skills, structure — so AI flow-enhancement is opt-in via
+    AMS_AI_POLISH=1. The chat coach, job match, interview prep and dump
+    extraction still use the model directly; only this per-section enhance is
+    gated.
     """
+    import os as _os
+    if _os.environ.get("AMS_AI_POLISH", "0").lower() not in ("1", "true", "yes"):
+        return None
+
     # Tier 1: local GGUF model — purpose-built enhance prompt
     if _LOCAL_AI and _local_ready():
         result = _local_enhance(rule_polished_text, category, lang, knowledge_ctx)
