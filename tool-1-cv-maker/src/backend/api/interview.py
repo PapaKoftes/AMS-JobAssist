@@ -935,11 +935,15 @@ async def complete_interview(
                           len(cv_data.training) + len(cv_data.projects))
 
         # AI skill surfacing — scan all raw answers for skills the rule engine may have missed.
-        # Runs after the build so it never blocks the CV being saved.
+        # OFF by default: on a CPU-only local model this extra generation adds
+        # 30-60s to "complete", and the rule engine already extracts skills during
+        # the build. Enable with AMS_AI_SKILL_SURFACING=1 where latency is fine.
         surfaced_skills: list = []
         try:
+            import os as _os
+            _surf_on = _os.environ.get("AMS_AI_SKILL_SURFACING", "0").lower() in ("1", "true", "yes")
             from ai.local_llm import is_ready as _ai_ready, chat as _ai_chat
-            if _ai_ready():
+            if _surf_on and _ai_ready():
                 raw_answers = engine.db.execute_query(
                     "SELECT answer_text FROM answers WHERE session_id = ? AND answer_text NOT LIKE '[SKIPPED]'",
                     (session_id,)

@@ -407,6 +407,83 @@ def coach_chat(user_message: str, cv_context: dict, language: str = "de") -> Opt
     return chat(system, user_message, max_tokens=400)
 
 
+def extract_cv_fields(text: str, language: str = "de") -> dict:
+    """
+    Free-form "dump" extraction: pull structured CV fields out of one big block
+    of text the participant wrote in any language.
+
+    Strategy (rules-first, AI-assisted, never blocks):
+      - email / phone via regex (reliable, no model needed)
+      - name / city / target job / experience / education / skills via the local
+        LLM using a robust labelled-line format (easier for a small model than
+        JSON). Falls back gracefully when the model is absent or the output
+        can't be parsed.
+
+    Returns a dict:
+      {name, city, phone, email, target_job, experiences[], education[], skills[]}
+    """
+    import re as _re
+    result = {
+        "name": "", "city": "", "phone": "", "email": "",
+        "target_job": "", "experiences": [], "education": [], "skills": [],
+    }
+    if not text or not text.strip():
+        return result
+
+    m = _re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
+    if m:
+        result["email"] = m.group(0).rstrip(".,;")
+    m = _re.search(r"(?<!\w)(\+?\d[\d\s/().\-]{6,}\d)", text)
+    if m:
+        result["phone"] = m.group(1).strip()
+
+    def _split_items(val: str):
+        parts = [p.strip(" -•·\t") for p in _re.split(r"\s*\|\s*|\n", val)]
+        return [p for p in parts if len(p) > 1]
+
+    parsed = False
+    try:
+        if is_ready():
+            sys_prompt = (
+                "Du bist ein präziser Lebenslauf-Datenextraktor. Lies den Text des "
+                "Nutzers (egal welche Sprache) und gib GENAU diese Zeilen zurück, "
+                "nichts anderes. Lass eine Zeile leer, wenn die Info fehlt. Trenne "
+                "mehrere Einträge mit ' | '.\n"
+                "NAME:\nORT:\nZIELBERUF:\nERFAHRUNG:\nAUSBILDUNG:\nFAEHIGKEITEN:"
+            )
+            out = chat(sys_prompt, text[:1600], max_tokens=420) or ""
+            for line in out.splitlines():
+                if ":" not in line:
+                    continue
+                key, _, val = line.partition(":")
+                key = key.strip().upper()
+                val = val.strip()
+                if not val:
+                    continue
+                if key.startswith("NAME"):
+                    result["name"] = val[:80]; parsed = True
+                elif key.startswith("ORT"):
+                    result["city"] = val[:80]; parsed = True
+                elif key.startswith("ZIEL"):
+                    result["target_job"] = val[:120]; parsed = True
+                elif key.startswith("ERFAHRUNG"):
+                    result["experiences"] = _split_items(val); parsed = True
+                elif key.startswith("AUSBILDUNG"):
+                    result["education"] = _split_items(val); parsed = True
+                elif key.startswith("FAEHIG") or key.startswith("FÄHIG"):
+                    result["skills"] = _split_items(val); parsed = True
+    except Exception as _e:
+        logger.warning(f"extract_cv_fields LLM step failed (using fallback): {_e}")
+
+    # Never lose the participant's experience. Small models often fill NAME/ORT/
+    # SKILLS but leave ERFAHRUNG empty — in that case keep the original dump as a
+    # single experience entry (the polish layer cleans it up). The structured
+    # identity/skills/education fields the model DID find still apply.
+    if not result["experiences"]:
+        result["experiences"] = [text.strip()[:600]]
+    return result
+
+
 def generate_interview_prep(cv_summary: str, target_job: str) -> Optional[str]:
     """
     Generate likely interview questions based on the finished CV.

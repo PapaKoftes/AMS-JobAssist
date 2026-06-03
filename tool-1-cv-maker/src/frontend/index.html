@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMS JobAssist - Lebenslauf-Ersteller</title>
-    <link rel="stylesheet" href="/static/styles.css?v=split1">
+    <link rel="stylesheet" href="/static/styles.css?v=dump1">
 </head>
 <body>
 <!-- Skip navigation link for keyboard / screen reader users -->
@@ -332,6 +332,11 @@
                 </div>
                 <!-- A3: short-input hint shown below submit button -->
                 <p id="submitHint" class="submit-hint" aria-live="polite"></p>
+
+                <!-- Dump mode: finish + build the CV any time -->
+                <div id="dumpFinishRow" class="dump-finish-row" style="display:none;">
+                    <button class="btn btn-primary" id="dumpFinishBtn" type="button">✓ <span id="dumpFinishLabel">Lebenslauf erstellen</span></button>
+                </div>
 
                 <!-- Save and finish later — autosave runs every answer, but
                      this gives the participant explicit reassurance + exit. -->
@@ -713,6 +718,6 @@
     <div id="aiModelStatus" class="ai-model-status"></div>
 </div>
 
-<script src="/static/app.js?v=split1"></script>
+<script src="/static/app.js?v=dump1"></script>
 </body>
 </html>

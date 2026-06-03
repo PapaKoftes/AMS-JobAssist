@@ -238,6 +238,19 @@ const TRANSLATIONS = {
         answerLabel:          'Ihre Antwort — schreiben Sie in jeder Sprache, die Sie möchten:',
         answerPlaceholder:    'Erzählen Sie einfach drauf los — so viel Sie möchten, in jeder Sprache. Ich ordne es für Sie.',
         cvSheetEmpty:         'Ihr Lebenslauf entsteht hier, während wir uns unterhalten…',
+        dumpPrompt:           'Erzählen Sie mir alles über sich.',
+        dumpHint:             'Ihr Name, wo Sie wohnen, Ihre Arbeit, Ausbildung, Fähigkeiten — schreiben Sie so viel Sie möchten, in jeder Sprache. Ich ordne alles für Ihren Lebenslauf.',
+        dumpPlaceholder:      'z.B. Ich heiße Maria, wohne in Wien, habe 5 Jahre in einer Bäckerei gearbeitet…',
+        dumpThinking:         'Einen Moment — ich ordne das für Ihren Lebenslauf…',
+        dumpKeepGoing:        'Oder erzählen Sie einfach weiter.',
+        dumpAnythingElse:     'Super! Möchten Sie noch etwas ergänzen? Wenn nicht, klicken Sie auf „Lebenslauf erstellen".',
+        dumpError:            'Das hat nicht ganz geklappt — erzählen Sie es einfach noch einmal.',
+        dumpFinishLabel:      'Lebenslauf erstellen',
+        dumpSend:             'Senden →',
+        askName:              'Wie heißen Sie? (Vor- und Nachname)',
+        askContact:           'Wo wohnen Sie, und wie kann man Sie erreichen? (Stadt, Telefon, E-Mail)',
+        askTarget:            'Welche Stelle suchen Sie?',
+        askSkills:            'Welche Stärken oder Kenntnisse haben Sie? (z.B. Sprachen, Computer, Maschinen)',
         submitBtn:            'Weiter →',
         skipBtn:              'Frage überspringen',
         previewTitle:         'So sieht es in Ihrem Lebenslauf aus',
@@ -2007,6 +2020,13 @@ class APIClient {
         });
     }
 
+    // Free-form "dump" extraction — structure a big block of text into CV fields
+    dumpExtract(sessionId, text, language = 'de') {
+        return this._request('/api/ai/dump-extract', 'POST', {
+            session_id: sessionId, text, language,
+        });
+    }
+
     // AI Interview Coach — context-aware help during the interview
     coachMessage(message, opts = {}) {
         return this._request('/api/ai/interview-coach', 'POST', {
@@ -2206,6 +2226,14 @@ class UIManager {
         const isPhotoQuestion = (q?.flags ?? []).includes('photo');
         const len = this.answerInput?.value.trim().length ?? 0;
         const minChars = effectiveMinChars(q);
+
+        // Dump mode: enable the send button for any real text, no nagging.
+        if (state.dumpMode) {
+            if (this.submitBtn) this.submitBtn.disabled = len < 2;
+            const sh = document.getElementById('submitHint');
+            if (sh) sh.textContent = '';
+            return;
+        }
 
         if (isPhotoQuestion) {
             // Photo is optional — always allow submission (base64 or empty)
@@ -2864,16 +2892,26 @@ class InterviewManager {
             state.currentQuestionIndex = 0;
             state.followUpsShown       = 0;   // reset gentle-probe counter per interview
             state.totalQuestions       = data.progress.total;
-            cvDocReset();                      // fresh, empty CV sheet
             state.currentQuestion      = data.question;
+            state.dumpMode             = true;   // start in free-form "dump" mode
+            cvDocReset();                      // fresh, empty CV sheet
 
             // Persist for resume
             localStorage.setItem(SESSION_STORAGE_KEY, String(state.sessionId));
             localStorage.setItem(USER_STORAGE_KEY, userId);
 
-            ui.displayQuestion(data.question);
-            ui.updateProgress(1, data.progress.total);
             ui.showScreen('interview');
+            // Free-form start: invite the participant to dump everything; the AI
+            // structures it onto the CV, then we converse about any gaps.
+            cvDocSetPrompt({ text: t('dumpPrompt'), hint: t('dumpHint'), examples: {} });
+            ui.updateProgress(0, 1);
+            document.getElementById('dumpFinishRow')?.style.setProperty('display', 'flex');
+            if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
+            // Dump mode: no "skip", and the send button just sends.
+            document.getElementById('skipBtn')?.style.setProperty('display', 'none');
+            const sb = document.getElementById('submitBtn');
+            if (sb) sb.textContent = t('dumpSend') || 'Senden →';
+            ui.updateSubmitButton();
             ui.updateSaveStatus(t('statusReady'));
         } catch (err) {
             console.error('Start error:', err);
@@ -2941,11 +2979,72 @@ class InterviewManager {
     }
 
     // -------------------------------------------------------------------------
+    // Free-form dump: the participant writes everything; the AI structures it
+    // onto the CV, then we converse about what's missing.
+    // -------------------------------------------------------------------------
+    async handleDump() {
+        const text = ui.answerInput?.value.trim() ?? '';
+        if (text.length < 2) return;
+        try {
+            state.isWaitingForResponse = true;
+            if (ui.answerInput) ui.answerInput.value = '';
+            ui.updateSaveStatus(t('statusBuilding') || 'Wird strukturiert…');
+            // Show a "thinking" advisor line while the model works.
+            cvDocSetPrompt({ text: t('dumpThinking') || 'Einen Moment — ich ordne das für Ihren Lebenslauf…', hint: '', examples: {} });
+
+            const resp = await api.dumpExtract(state.sessionId, text, state.inputLanguage);
+            const cap = resp?.data?.captured ?? {};
+            const missing = resp?.data?.missing ?? [];
+
+            // Paint everything captured onto the CV (top pane).
+            if (cap.name)        cvDocAddAnswer({ id: 'id_name' }, cap.name, cap.name);
+            if (cap.target_job)  cvDocAddAnswer({ id: 'id_target_job' }, cap.target_job, cap.target_job);
+            const contact = [cap.city, cap.phone, cap.email].filter(Boolean).join(', ');
+            if (contact)         cvDocAddAnswer({ id: 'id_contact' }, contact, contact);
+            (cap.experiences || []).forEach(e =>
+                cvDocAddAnswer({ category: 'experience', flags: ['work_experience'] }, e, e));
+            (cap.education || []).forEach(e =>
+                cvDocAddAnswer({ category: 'training', flags: ['education'] }, e, e));
+            if ((cap.skills || []).length)
+                cvDocAddAnswer({ category: 'skills', flags: ['soft_skills'] }, cap.skills.join(', '), cap.skills.join(', '));
+
+            state.dumpHasContent = true;
+
+            // Ask, conversationally, about the most important missing piece.
+            const ask = {
+                name:       { text: t('askName')    || 'Wie heißen Sie? (Vor- und Nachname)' },
+                contact:    { text: t('askContact') || 'Wo wohnen Sie, und wie kann man Sie erreichen?' },
+                target_job: { text: t('askTarget')  || 'Welche Stelle suchen Sie?' },
+                skills:     { text: t('askSkills')  || 'Welche Stärken oder Kenntnisse haben Sie? (z.B. Sprachen, Computer, Maschinen)' },
+            };
+            const firstGap = missing.find(m => ask[m]);
+            if (firstGap) {
+                cvDocSetPrompt({ text: ask[firstGap].text, hint: t('dumpKeepGoing') || 'Oder erzählen Sie einfach weiter.', examples: {} });
+            } else {
+                cvDocSetPrompt({ text: t('dumpAnythingElse') || 'Super! Möchten Sie noch etwas ergänzen? Wenn nicht, klicken Sie auf „Lebenslauf erstellen".', hint: '', examples: {} });
+            }
+            ui.updateSaveStatus(t('statusReady'));
+        } catch (err) {
+            console.error('Dump error:', err);
+            cvDocSetPrompt({ text: t('dumpError') || 'Das hat nicht ganz geklappt — erzählen Sie es einfach noch einmal.', hint: '', examples: {} });
+            ui.updateSaveStatus(t('statusReady'));
+        } finally {
+            state.isWaitingForResponse = false;
+            ui.updateSubmitButton?.();
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Submit
     // -------------------------------------------------------------------------
 
     async handleSubmit() {
         if (state.isWaitingForResponse) return;
+
+        // Free-form dump mode: structure the text onto the CV, then keep talking.
+        if (state.dumpMode) {
+            return this.handleDump();
+        }
 
         const isPhotoQuestion = (state.currentQuestion?.flags ?? []).includes('photo');
         let answerText;
@@ -3101,6 +3200,7 @@ class InterviewManager {
 
     async showCompletion() {
         try {
+            state.dumpMode = false;   // leaving the conversation; build the CV
             ui.updateSaveStatus(t('statusBuilding'));
 
             let cvQuality = null;
@@ -3921,6 +4021,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('submitBtn')?.addEventListener('click', () => interview.handleSubmit());
     document.getElementById('skipBtn')?.addEventListener('click',   () => interview.handleSkip());
+    // Dump mode: build the CV from what's been gathered so far.
+    document.getElementById('dumpFinishBtn')?.addEventListener('click', () => {
+        if (state.dumpHasContent) interview.showCompletion();
+        else cvDocSetPrompt({ text: t('dumpPrompt'), hint: t('dumpHint'), examples: {} });
+    });
 
     // Completion screen
     document.getElementById('exportBtn')?.addEventListener('click',     () => interview.handleExport('pdf'));

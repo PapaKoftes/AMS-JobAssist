@@ -2771,3 +2771,10 @@ a:focus-visible,
 @media (max-width: 700px) {
     .cv-top-pane { flex: 1 1 0; }
 }
+
+/* Dump mode — "create CV" button row at the bottom of the conversation. */
+.dump-finish-row {
+    display: flex; justify-content: center;
+    padding: 4px 18px 14px; background: white;
+}
+.dump-finish-row .btn-primary { border-radius: 12px; padding: 11px 26px; }

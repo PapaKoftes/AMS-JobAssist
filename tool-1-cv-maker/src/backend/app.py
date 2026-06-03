@@ -631,6 +631,11 @@ class JobMatchRequest(BaseModel):
 class InterviewPrepRequest(BaseModel):
     session_id: int
 
+class DumpExtractRequest(BaseModel):
+    session_id: int
+    text: str
+    language: str = "de"
+
 class ModelDownloadRequest(BaseModel):
     confirm: bool = False
     tier: Optional[str] = None  # "light", "medium", or "full"
@@ -814,6 +819,74 @@ async def ai_interview_coach(body: InterviewCoachRequest, request: Request):
         reply = _general.get(language, _general["de"])
 
     return {"status": "success", "data": {"reply": reply, "source": "rules"}}
+
+
+@app.post("/api/ai/dump-extract", tags=["AI"])
+async def ai_dump_extract(body: DumpExtractRequest, request: Request):
+    """
+    Free-form "dump" mode: the participant writes everything about themselves in
+    one block (any language); we extract structured CV fields, store them as
+    answers (so the normal build/export pipeline works), and report what was
+    captured and what's still missing — so the assistant can ask only about the
+    gaps. Rules-first with AI assist; never fails the request.
+    """
+    from ai.local_llm import extract_cv_fields
+    db: DatabaseManager = request.app.state.db_manager
+    sid = body.session_id
+
+    fields = extract_cv_fields(body.text or "", body.language)
+
+    def _save(qid: str, txt: str):
+        if txt and txt.strip():
+            try:
+                db.save_answer(session_id=sid, question_id=qid, answer_text=txt.strip())
+            except Exception as _e:
+                logger.warning(f"dump-extract save {qid} failed: {_e}")
+
+    def _register_and_save(qid: str, category: str, txt: str):
+        # Register a synthetic question so the CV builder reads the right
+        # category (it joins answers→interview_questions for category).
+        try:
+            db.execute_update(
+                """INSERT INTO interview_questions
+                   (question_id, question_text, category, interview_path, question_order,
+                    hint, good_example, bad_example, min_length)
+                   VALUES (?, ?, ?, 'dump', 100, '', '', '', 0)
+                   ON CONFLICT(question_id) DO UPDATE SET category = excluded.category""",
+                (qid, "(dump)", category),
+            )
+        except Exception as _e:
+            logger.warning(f"dump-extract register {qid} failed: {_e}")
+        _save(qid, txt)
+
+    # Identity → existing identity answers
+    _save("id_name", fields["name"])
+    contact_parts = [p for p in (fields["city"], fields["phone"], fields["email"]) if p]
+    if contact_parts:
+        _save("id_contact", ", ".join(contact_parts))
+    _save("id_target_job", fields["target_job"])
+
+    # Content → synthetic categorised answers
+    for i, item in enumerate(fields["experiences"][:6]):
+        _register_and_save(f"dump_exp_{i}", "experience", item)
+    for i, item in enumerate(fields["education"][:4]):
+        _register_and_save(f"dump_edu_{i}", "background", item)
+    if fields["skills"]:
+        _register_and_save("dump_skills_0", "skills", ", ".join(fields["skills"][:12]))
+
+    missing = []
+    if not fields["name"]:
+        missing.append("name")
+    if not contact_parts:
+        missing.append("contact")
+    if not fields["target_job"]:
+        missing.append("target_job")
+    if not fields["experiences"]:
+        missing.append("experience")
+    if not fields["skills"]:
+        missing.append("skills")
+
+    return {"status": "success", "data": {"captured": fields, "missing": missing}}
 
 
 @app.post("/api/ai/interview-prep", tags=["AI"])
