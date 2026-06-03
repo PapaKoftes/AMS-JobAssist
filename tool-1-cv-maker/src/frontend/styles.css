@@ -2778,3 +2778,46 @@ a:focus-visible,
     padding: 4px 18px 14px; background: white;
 }
 .dump-finish-row .btn-primary { border-radius: 12px; padding: 11px 26px; }
+
+/* ============================================================================
+   Fix: the bottom conversation pane was overflowing — the Send / "Lebenslauf
+   erstellen" buttons got clipped. Make the composer a fixed footer that ALWAYS
+   shows in full, let the CV (top) take the remaining space, and let only the
+   message area scroll.
+   ============================================================================ */
+.cv-top-pane { flex: 1 1 auto; min-height: 120px; }
+.conv-bottom-pane {
+    flex: 0 0 auto;          /* size to the composer; never steal its space */
+    max-height: 48%;
+    overflow: visible;
+}
+.conv-messages {
+    flex: 0 1 auto;
+    max-height: 132px;       /* the advisor line scrolls if long */
+    min-height: 36px;
+    overflow-y: auto;
+    padding: 12px 20px 6px;
+}
+/* Compact composer so the input + buttons fit without clipping. */
+.conv-bottom-pane .answer-input {
+    min-height: 44px;
+    height: 52px;
+    max-height: 96px;
+    rows: 2;
+}
+.conv-bottom-pane .quick-fill-container { padding: 6px 18px 0; }
+.conv-bottom-pane .answer-section { padding: 8px 18px 2px; }
+.conv-bottom-pane .answer-meta { padding: 2px 2px 0; font-size: 12px; }
+.interview-container .action-buttons { padding: 6px 18px 8px; }
+.dump-finish-row { padding: 2px 18px 12px; }
+/* "Später weitermachen" is redundant in the conversation (autosave covers it). */
+.conv-bottom-pane .finish-later-row { display: none; }
+
+/* Short-screen robustness: use more of the viewport height for the frame (there
+   was dead space below it) and trim the message area so the composer + buttons
+   always fit, even on 720p laptops. */
+.interview-container { height: calc(100vh - 150px); min-height: 440px; }
+.conv-messages { max-height: 104px; }
+.conv-bottom-pane .answer-input { height: 48px; }
+.dump-finish-row { padding: 2px 18px 10px; }
+@media (max-width: 620px) { .interview-container { height: calc(100vh - 120px); } }
