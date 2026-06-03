@@ -2706,3 +2706,68 @@ a:focus-visible,
     .cv-sheet-header { flex-direction: column; text-align: center; }
     .interview-container { height: calc(100vh - 150px); }
 }
+
+/* ============================================================================
+   Horizontal split — TOP: the live CV that grows as you talk.
+   BOTTOM: the conversation with the AMS assistant + the input you type into.
+   ============================================================================ */
+.cv-top-pane {
+    flex: 1.25 1 0;
+    min-height: 140px;
+    overflow-y: auto;
+    background: #e9ebf1;          /* desk behind the paper */
+    padding: 22px 0 18px;
+    scroll-behavior: smooth;
+    border-bottom: 3px solid #d4d8e0;   /* the horizontal divider */
+}
+/* The sheet inside the top pane is just the paper now (the pane scrolls). */
+.cv-top-pane .cv-sheet { overflow: visible; flex: none; padding: 0; }
+.cv-sheet-empty {
+    width: min(680px, 92%); margin: 0 auto; padding: 34px 30px;
+    background: #fff; border-radius: 10px; box-shadow: var(--shadow-sm);
+    color: #9aa0a6; font-style: italic; text-align: center;
+}
+
+/* Bottom conversation pane. */
+.conv-bottom-pane {
+    flex: 1 1 0;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    overflow: hidden;
+}
+.conv-messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px 20px 8px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+/* The assistant's current question / guidance, as a warm chat message. */
+.conv-ai { display: flex; gap: 12px; align-items: flex-start; max-width: 760px; }
+.conv-ai .advisor-avatar {
+    flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+    background: #f5f0fa; display: flex; align-items: center; justify-content: center;
+    font-size: 19px; margin-top: 2px;
+}
+.conv-ai .advisor-bubble {
+    background: #f6f3fb; border: 1px solid #ece6f5; border-radius: 14px;
+    border-top-left-radius: 4px; padding: 12px 15px; min-width: 0;
+}
+.conv-ai .advisor-text { font-size: 16px; font-weight: 600; color: var(--primary); line-height: 1.45; }
+.conv-ai .advisor-hint { font-size: 13.5px; color: #6b7280; margin-top: 5px; }
+.conv-ai .advisor-example {
+    font-size: 13px; color: #555; font-style: italic; margin-top: 8px;
+    padding: 7px 11px; background: white; border-radius: 8px;
+}
+.conv-ai.cv-prompt-reask .advisor-bubble { background: #fffaf2; border-color: #fde6c4; }
+.conv-ai.cv-prompt-reask .advisor-text { color: #b9770e; }
+
+/* Composer sits at the very bottom of the conversation pane. */
+.conv-bottom-pane .quick-fill-container { border-top: 1px solid var(--border); }
+.conv-bottom-pane .answer-input { min-height: 46px; }
+
+/* On small screens the split stacks but still reads top→bottom. */
+@media (max-width: 700px) {
+    .cv-top-pane { flex: 1 1 0; }
+}

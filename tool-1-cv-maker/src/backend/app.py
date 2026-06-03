@@ -262,6 +262,15 @@ async def request_logging_middleware(request: Request, call_next):
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
     response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()")
+    # Never let the browser cache the app shell / static assets. Without this,
+    # FastAPI's StaticFiles sends no cache-control and browsers heuristic-cache
+    # styles.css / app.js / index.html — so UI changes silently don't appear
+    # until a manual hard-refresh. Force revalidation on every load.
+    _p = request.url.path
+    if _p == "/" or _p.startswith("/static"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 

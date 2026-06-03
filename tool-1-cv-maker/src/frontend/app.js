@@ -64,8 +64,14 @@ function _escapeHtml(s) {
 }
 
 function _scrollSheetToActive() {
-    const prompt = document.getElementById('cvActivePrompt');
-    if (prompt) requestAnimationFrame(() => prompt.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+    // Keep the newest CV content visible in the (scrolling) top pane.
+    const pane = document.getElementById('cvTopPane');
+    if (pane) requestAnimationFrame(() => { pane.scrollTop = pane.scrollHeight; });
+}
+
+function _hideSheetEmpty() {
+    const e = document.getElementById('cvSheetEmpty');
+    if (e) e.style.display = 'none';
 }
 
 // Section order on the CV sheet and the heading each one shows.
@@ -137,7 +143,7 @@ function _typeInto(el, text) {
 // Reset the whole sheet for a fresh interview.
 function cvDocReset() {
     const body = document.getElementById('cvSheetBody');
-    if (body) body.innerHTML = '';
+    if (body) body.innerHTML = `<p class="cv-sheet-empty" id="cvSheetEmpty">${t('cvSheetEmpty') || 'Ihr Lebenslauf entsteht hier, während wir uns unterhalten…'}</p>`;
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
     set('cvDocName', t('cvDocNamePlaceholder') || 'Ihr Name');
     set('cvDocSubtitle', '');
@@ -205,6 +211,7 @@ function cvDocAddAnswer(question, rawText, polishedText) {
     }
 
     // Content → a typed CV entry under the right section.
+    _hideSheetEmpty();
     const entries = _cvEnsureSection(_cvSectionFor(question));
     if (!entries) return;
     const entry = document.createElement('div');
@@ -222,7 +229,8 @@ function cvDocAddAnswer(question, rawText, polishedText) {
 const TRANSLATIONS = {
     de: {
         answerLabel:          'Ihre Antwort — schreiben Sie in jeder Sprache, die Sie möchten:',
-        answerPlaceholder:    'Schreiben Sie einfach drauf los — auch grobe Notizen sind in Ordnung. Wir verbessern es automatisch.',
+        answerPlaceholder:    'Erzählen Sie einfach drauf los — so viel Sie möchten, in jeder Sprache. Ich ordne es für Sie.',
+        cvSheetEmpty:         'Ihr Lebenslauf entsteht hier, während wir uns unterhalten…',
         submitBtn:            'Weiter →',
         skipBtn:              'Frage überspringen',
         previewTitle:         'So sieht es in Ihrem Lebenslauf aus',
