@@ -39,10 +39,15 @@ function effectiveMinChars(question) {
     return 3; // content questions: just require a few characters, not a full sentence
 }
 
-// Automatic follow-up probes after each answer. They interrupt the flow and
-// feel naggy in a quick 15-question interview, so they are OFF by default.
-// (Set to true to re-enable AI/rule-based probing.)
-const ENABLE_FOLLOWUPS = false;
+// Gentle follow-up probes (PHILOSOPHY.md: "If an answer is vague, the system
+// asks a follow-up — once, gently. Not three times.").
+// The old bug fired one after EVERY answer (structural questions weren't being
+// skipped because flags weren't sent to the frontend). With flags fixed, the
+// probe is gated tightly: only for genuinely vague CONTENT answers, and capped
+// per interview so it never nags.
+const ENABLE_FOLLOWUPS = true;
+const FOLLOWUP_MAX_WORDS = 9;      // only probe answers shorter than this (vague)
+const FOLLOWUP_SESSION_CAP = 2;    // never probe more than this many times total
 
 // ============================================================================
 // i18n — UI label translations for 12 languages
@@ -2675,6 +2680,7 @@ class InterviewManager {
             const data = response.data;
             state.sessionId            = data.session_id;
             state.currentQuestionIndex = 0;
+            state.followUpsShown       = 0;   // reset gentle-probe counter per interview
             state.totalQuestions       = data.progress.total;
             state.currentQuestion      = data.question;
 
@@ -2807,19 +2813,25 @@ class InterviewManager {
             // Show brief encouraging toast (message comes from backend quality score)
             if (data.message) ui.showEncouragement(data.message);
 
-            // Conversational follow-up — OFF by default (see ENABLE_FOLLOWUPS).
-            // Probing after every answer interrupts the flow and feels naggy in
-            // a quick interview. The structured questions already gather enough.
+            // Gentle follow-up (PHILOSOPHY.md: once, only for vague answers).
+            // Gate tightly so it never nags: skip structural questions (name,
+            // city, company, date…), only probe genuinely short/vague CONTENT
+            // answers, and cap the number of probes per interview.
             const currentFlags = state.currentQuestion?.flags ?? [];
             const isStructural = currentFlags.some(f => SHORT_ANSWER_FLAGS.has(f));
+            const answerWords = answerText.trim().split(/\s+/).filter(Boolean).length;
+            const isVague = answerWords > 0 && answerWords < FOLLOWUP_MAX_WORDS;
+            state.followUpsShown = state.followUpsShown ?? 0;
+            const underCap = state.followUpsShown < FOLLOWUP_SESSION_CAP;
 
-            if (ENABLE_FOLLOWUPS && !isStructural) {
+            if (ENABLE_FOLLOWUPS && !isStructural && isVague && underCap) {
                 try {
                     const fuResp = await api.getFollowUp(
                         state.sessionId, questionId, answerText, state.inputLanguage
                     );
                     const followUpText = fuResp?.data?.follow_up;
                     if (followUpText) {
+                        state.followUpsShown++;
                         const accepted = await ui.showFollowUpPrompt(followUpText, state.inputLanguage);
                         if (accepted && accepted.trim()) {
                             await api.submitAnswer(

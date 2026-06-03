@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-05-12
 **Current Phase**: AMS pilot prep (Phase 6)
-**Test Suite**: 725 tests passing (683 Tool 1 + 42 Tool 2)
+**Test Suite**: 742 tests passing (697 Tool 1 + 45 Tool 2)
 
 ---
 
@@ -136,7 +136,7 @@ Concrete stability wins from the recent pass — everything below landed since 2
 
 ## Test Suite
 
-**Total: 725 passing** — run from each tool's directory with `python -m pytest tests/ -q`.
+**Total: 742 passing** — run from each tool's directory with `python -m pytest tests/ -q`.
 
 | Tool | Tests | Test files |
 |------|-------|-----------|

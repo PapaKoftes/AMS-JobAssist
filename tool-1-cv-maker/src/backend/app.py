@@ -839,7 +839,18 @@ async def ai_interview_prep(body: InterviewPrepRequest, request: Request):
         if is_ready():
             result = generate_interview_prep(summary, target_job)
             if result:
-                return {"status": "success", "data": {"questions": result, "target_job": target_job, "source": "ai"}}
+                # The model returns a numbered block ("1. … 2. …"); split it into
+                # a clean list of questions so the UI shows them one per line
+                # (matching the rule-based fallback shape).
+                import re as _re
+                if isinstance(result, str):
+                    lines = [l.strip() for l in result.splitlines() if l.strip()]
+                    questions = [_re.sub(r"^\s*\d+[\.\)]\s*", "", l).strip() for l in lines]
+                    questions = [q for q in questions if len(q) > 5]
+                else:
+                    questions = result
+                if questions:
+                    return {"status": "success", "data": {"questions": questions, "target_job": target_job, "source": "ai"}}
     except Exception:
         pass
 

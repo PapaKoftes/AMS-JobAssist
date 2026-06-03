@@ -561,11 +561,21 @@ def _generate_follow_up(
             prompt_usr = f"Antwort des Teilnehmers:{target_clause} \"{answer_text[:300]}\""
             result = _chat(prompt_sys, prompt_usr, max_tokens=60)
             if result and 3 <= len(result.split()) <= 20:
-                # Sanitize: remove leading/trailing quotes and trailing whitespace
                 result = result.strip().strip('"\'').rstrip()
-                if result and not result.endswith("?"):
-                    result += "?"
-                return result
+                # Only accept a genuine, on-topic QUESTION. The 1.5B model often
+                # returns a statement ("Sei nicht zu ehrlich zu dir selbst") that
+                # the old code force-turned into a fake question with a trailing
+                # "?". Require it to naturally end with "?" AND contain a German/
+                # English question word; otherwise fall through to the curated
+                # rule-based probes, which are concrete and always on-topic.
+                _qwords = ("wie", "was", "welche", "welcher", "welches", "wann",
+                           "warum", "wo", "wer", "womit", "wofür", "what", "how",
+                           "which", "when", "why", "where", "who")
+                _lower = result.lower()
+                is_question = result.endswith("?") and any(w in _lower for w in _qwords)
+                if is_question:
+                    return result
+                # else: not a real question — use rule-based probe below
     except Exception:
         pass  # Fall through to rule-based
 
