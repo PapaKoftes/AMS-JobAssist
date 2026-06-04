@@ -430,21 +430,81 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
     if not text or not text.strip():
         return result
 
+    def _clean(s):
+        return _re.sub(r"\s{2,}", " ", str(s or "")).strip(" ,;.:-")
+
+    # ---- email / phone (regex) -------------------------------------------------
     m = _re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
     if m:
         result["email"] = m.group(0).rstrip(".,;")
-    m = _re.search(r"(?<!\w)(\+?\d[\d\s/().\-]{6,}\d)", text)
+    # No '.' in the phone char class, so it can't spill into the next sentence
+    # ("…7778899. 12 Jahre…" no longer captures the "12").
+    m = _re.search(r"(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)", text)
     if m:
         result["phone"] = m.group(1).strip()
 
-    # Name via regex from the literal text — more reliable than a small model,
-    # which can mis-spell it. Matches "ich bin/heisse/heiße <First [Last]>" or
-    # "mein name ist <…>". Used as the trusted name below.
+    # ---- name (regex, trimmed to first+last, stops at connector words) --------
+    _STOP = {"aus", "ich", "und", "der", "die", "das", "ist", "bin", "habe", "hab",
+             "kann", "brauche", "brauch", "wohne", "komme", "in", "von", "mit",
+             "sehr", "arbeit", "arbeite", "jahre", "jahr", "seit", "als", "bei",
+             "ein", "eine", "einen", "my", "i", "am", "name", "mein", "heisse",
+             "heiße", "heisst", "wir", "sie", "es", "auch", "oder", "nicht", "gerne",
+             "afghanistan", "wien", "graz", "linz", "wels"}
     _name_re = _re.search(
         r"\b(?:ich\s+(?:bin|heisse|heiße|heisst)|mein\s+name\s+ist|my\s+name\s+is|i\s*am|i'm)\s+"
-        r"([A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ]{2,}){0,2})",
+        r"([A-Za-zÀ-ÿ'’\-]{2,}(?:\s+[A-Za-zÀ-ÿ'’\-]{2,}){0,3})",
         text, flags=_re.IGNORECASE)
-    _regex_name = _name_re.group(1).strip() if _name_re else ""
+    _regex_name = ""
+    if _name_re:
+        _nw = []
+        for w in _name_re.group(1).split():
+            if w.lower() in _STOP:
+                break
+            _nw.append(w)
+            if len(_nw) >= 2:
+                break
+        _regex_name = " ".join(_nw)
+    if not _regex_name:
+        # Leading-name heuristic: "Maria Huber, Linz…" / "Petra Wagner, Wels…".
+        _lead = _re.match(r"\s*([A-ZÄÖÜ][a-zà-ÿ]+(?:\s+[A-ZÄÖÜ][a-zà-ÿ]+)?)\s*[,\n]", text)
+        if _lead and _lead.group(1).split()[0].lower() not in _STOP:
+            _regex_name = _lead.group(1).strip()
+
+    # ---- target job (regex from "suche/möchte/looking for") -------------------
+    _tj = _re.search(
+        r"\b(?:suche?|m[oö]chte|ich\s+suche|looking\s+for|i\s+want(?:\s+to)?|i\s+am\s+looking|seeking|such\s+wieda|such)\b[\s:]*"
+        r"((?:stelle\s+als\s+|job\s+als\s+|arbeit\s+als\s+|a\s+|als\s+|im\s+|in\s+der\s+)?[A-Za-zÀ-ÿ][^.;\n]{2,55})",
+        text, flags=_re.IGNORECASE)
+    _regex_target = ""
+    if _tj:
+        _t = _re.sub(r"^\s*(?:stelle|job|arbeit|eine?|einen|wieda|wieder|gerne|again|"
+                     r"in\s+ein\w*|im|in\s+der)\s+", "", _tj.group(1), flags=_re.IGNORECASE)
+        _t = _re.sub(r"^\s*(?:als|im|in)\s+", "", _t, flags=_re.IGNORECASE)
+        _regex_target = _clean(_t)[:60]
+
+    # ---- skills (regex from "ich kann/kenne/spreche" enumerations) ------------
+    _regex_skills = []
+    for m2 in _re.finditer(
+            r"\b(?:ich\s+kann|ich\s+kenne|kann\s+gut|spreche|ich\s+spreche|"
+            r"ich\s+bin\s+sehr|bin\s+sehr|i\s+(?:can|know|speak))\b[\s:]*"
+            r"([A-Za-zÀ-ÿ][^.;\n]{2,140})", text, flags=_re.IGNORECASE):
+        for part in _re.split(r"\s*(?:,|\bund\b|\band\b|/|\|)\s*", m2.group(1)):
+            p = _clean(part)
+            if p and p.lower() not in {"alles", "lots", "gut", "viel", "vieles", "etwas",
+                                       "ein", "bisschen", "ein bisschen"} and 1 < len(p) <= 40:
+                if p not in _regex_skills:
+                    _regex_skills.append(p)
+
+    # ---- education (regex keywords) -------------------------------------------
+    _EDU = (r"(lehre|matura|ausbildung|studium|bachelor|master|diplom|abschluss|"
+            r"schule|gymnasium|htl|hlw|hak|\bfh\b|universit|hochschule|kurs|zertifikat|"
+            r"gesellenbrief|abgeschlossen|semester|studiere|maturiert|diplomiert)")
+    _regex_edu = []
+    for clause in _re.split(r"[.,;\n]", text):
+        c = _clean(clause)
+        if c and _re.search(_EDU, c, flags=_re.IGNORECASE) and 3 < len(c) <= 90:
+            if c not in _regex_edu:
+                _regex_edu.append(c)
 
     def _split_items(val: str):
         parts = [p.strip(" -•·\t") for p in _re.split(r"\s*\|\s*|\n", val)]
@@ -484,38 +544,56 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
     except Exception as _e:
         logger.warning(f"extract_cv_fields LLM step failed (using fallback): {_e}")
 
-    # Trust the regex name over the model (which can mis-spell it). Then tidy
-    # casing so an all-lowercase name shows correctly in the CV header.
+    # ---- MERGE: prefer the trustworthy regex values over the small model -------
+    # name: regex wins (the model mis-spells / over-grabs); tidy lowercase.
     if _regex_name:
         result["name"] = _regex_name
     nm = result.get("name", "")
     if nm and nm == nm.lower():
         result["name"] = " ".join(w.capitalize() for w in nm.split())
 
-    # Never lose the participant's experience. Small models often fill NAME/ORT/
-    # SKILLS but leave ERFAHRUNG empty — keep the original dump as a single
-    # experience entry, but first strip the bits we already captured elsewhere
-    # (email/phone, a leading "ich bin/heisse <name>" intro, age phrases, and the
-    # trailing comma-separated skill list) so the experience line reads cleanly.
+    # target: prefer the participant's literal "suche X" over a model guess
+    # (which hallucinated e.g. Maurer -> "Bauingenieur").
+    if _regex_target:
+        result["target_job"] = _regex_target
+
+    # skills / education: combine regex + model, de-duplicated, regex first.
+    def _merge(primary, secondary):
+        out = []
+        for x in list(primary) + list(secondary):
+            x = _clean(x)
+            if x and x.lower() not in {y.lower() for y in out}:
+                out.append(x)
+        return out
+    result["skills"] = _merge(_regex_skills, result.get("skills") or [])[:14]
+    result["education"] = _merge(_regex_edu, result.get("education") or [])[:5]
+
+    # ---- EXPERIENCE: clean the fallback so it reads as a CV line, not the raw
+    # dump. Strip everything we captured elsewhere (name, city, email, phone,
+    # age, skills, education, the "suche …" target clause).
     if not result["experiences"]:
         leftover = text.strip()
-        if result["email"]:
-            leftover = leftover.replace(result["email"], " ")
-        if result["phone"]:
-            leftover = leftover.replace(result["phone"], " ")
-        # drop "ich bin/heisse Mina," and "ich bin 27 jahre alt," style clauses
-        leftover = _re.sub(
-            r"\bich\s+(?:bin|heisse|heiße|heisst|wohne|komme)\s+[^.,;]*[.,;]",
-            " ", leftover, flags=_re.IGNORECASE)
-        leftover = _re.sub(r"\bich\s+(?:bin|habe)\s+\d{1,2}\s*jahre?\s*(alt)?[^.,;]*[.,;]?",
+        for piece in [result.get("email"), result.get("phone"), result.get("name"),
+                      result.get("city")]:
+            if piece:
+                leftover = _re.sub(_re.escape(piece), " ", leftover, flags=_re.IGNORECASE)
+        # "ich bin/heisse/wohne …," and "ich bin 27 jahre alt," intros
+        leftover = _re.sub(r"\bich\s+(?:bin|heisse|heiße|heisst|wohne|komme)\s+[^.,;]*[.,;]",
                            " ", leftover, flags=_re.IGNORECASE)
-        # drop the captured skills from the experience text (avoid duplication)
-        for sk in (result.get("skills") or []):
-            leftover = leftover.replace(sk, " ")
-        # drop a trailing "ich kenne X, Y, Z, lots" skill enumeration
-        leftover = _re.sub(r"\bich\s+kenne\b.*$", " ", leftover, flags=_re.IGNORECASE | _re.DOTALL)
-        leftover = _re.sub(r"\s*,\s*lots\b\.?", " ", leftover, flags=_re.IGNORECASE)
-        leftover = _re.sub(r"\s{2,}", " ", leftover).strip(" ,;.-")
+        leftover = _re.sub(r"\b(?:ich\s+)?(?:bin|habe)?\s*\d{1,2}\s*jahre?\s*alt\b[^.,;]*[.,;]?",
+                           " ", leftover, flags=_re.IGNORECASE)
+        # the "ich kann/kenne/spreche … , lots" enumerations and the target clause
+        leftover = _re.sub(r"\bich\s+(?:kann|kenne|spreche)\b[^.;\n]*", " ", leftover, flags=_re.IGNORECASE)
+        leftover = _re.sub(r"\b(?:suche?|m[oö]chte|looking\s+for|i\s+want(?:\s+to)?|seeking|such)\b[^.;\n]*", " ", leftover, flags=_re.IGNORECASE)
+        leftover = _re.sub(r"\s*,?\s*lots\b\.?", " ", leftover, flags=_re.IGNORECASE)
+        # remove captured skill/education phrases to avoid duplication
+        for ph in (result.get("skills") or []) + (result.get("education") or []):
+            leftover = _re.sub(_re.escape(ph), " ", leftover, flags=_re.IGNORECASE)
+        # collapse leftover punctuation noise ("Linz, , . 6 Jahre" -> "6 Jahre")
+        leftover = _re.sub(r"[,;]\s*(?=[,;.])", " ", leftover)
+        leftover = _re.sub(r"\s*[.,;]\s*", lambda mm: ", " if mm.group(0).strip() == "," else " ", leftover)
+        leftover = _re.sub(r"(?:^|\s)[,;.]+", " ", leftover)
+        leftover = _re.sub(r"\s{2,}", " ", leftover).strip(" ,;.:-")
         result["experiences"] = [leftover[:600]] if len(leftover) > 4 else [text.strip()[:600]]
     return result
 
