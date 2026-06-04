@@ -113,8 +113,11 @@ _INTERVIEW_REQUEST_EN = (
     "Please feel free to contact me by phone or e-mail to arrange a convenient time."
 )
 
-_ATTACHMENTS_DE = "Anlagen: Lebenslauf, Zeugniskopien"
-_ATTACHMENTS_EN = "Enclosures: CV, copies of certificates"
+# Only assert what is actually enclosed. The CV is always produced; certificate
+# copies are NOT auto-attached, so we don't claim them (asserting "Zeugniskopien"
+# that aren't there is a misrepresentation — the participant adds them manually).
+_ATTACHMENTS_DE = "Anlage: Lebenslauf"
+_ATTACHMENTS_EN = "Enclosure: CV"
 
 _SKILL_INTRO = {
     "de": "Meine Stärken liegen insbesondere in",

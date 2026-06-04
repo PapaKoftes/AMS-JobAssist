@@ -52,7 +52,10 @@ where = ["src/backend"]
 # ── Pytest ───────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-asyncio_mode = "auto"
+# NOTE: pytest-asyncio is not a dependency — async endpoints are exercised via
+# Starlette's (sync) TestClient, which is sufficient. The previous
+# `asyncio_mode = "auto"` referenced an uninstalled plugin and only produced a
+# misleading "Unknown config option" warning, so it was removed.
 
 # ── Linting ──────────────────────────────────────────────────────────────────
 [tool.ruff]

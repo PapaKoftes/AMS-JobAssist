@@ -192,18 +192,51 @@ class AMS_Launcher:
         print("=" * 60 + "\n")
 
     def monitor_processes(self):
-        """Monitor running processes"""
+        """
+        Monitor running processes; auto-restart a crashed tool ONCE and write a
+        visible LAST_ERROR file so a non-technical trainer has something to send
+        for support (M18: previously a crash only printed to a console they may
+        have closed).
+        """
+        restarts = {"tool1": 0, "tool2": 0}
+
+        def _handle_crash(which, proc_attr, restart_fn):
+            proc = getattr(self, proc_attr)
+            if proc and proc.poll() is not None:
+                self._write_last_error(which)
+                if restarts[which] < 1:
+                    restarts[which] += 1
+                    print(f"[!!] {which} beendet — Neustart-Versuch {restarts[which]}…")
+                    try:
+                        restart_fn()
+                    except Exception as _e:
+                        print(f"[!!] {which} Neustart fehlgeschlagen: {_e}")
+                else:
+                    print(f"[!!] {which} ist erneut abgestürzt — kein weiterer Neustart.")
+
         while self.running:
             try:
-                if self.tool1_process and self.tool1_process.poll() is not None:
-                    print("[!!] CV-Ersteller wurde unerwartet beendet")
-
-                if self.tool2_process and self.tool2_process.poll() is not None:
-                    print("[!!] Trainer-Dashboard wurde unerwartet beendet")
-
+                _handle_crash("tool1", "tool1_process", self.start_tool1)
+                _handle_crash("tool2", "tool2_process", self.start_tool2)
                 time.sleep(5)
             except KeyboardInterrupt:
                 break
+
+    def _write_last_error(self, which: str) -> None:
+        """Write a support-friendly error file with the tail of the tool's log."""
+        try:
+            from pathlib import Path as _P
+            tool_dir = ("tool-1-cv-maker" if which == "tool1" else "tool-2-trainer-dashboard")
+            log = _P(tool_dir) / "logs" / "server.log"
+            tail = ""
+            if log.exists():
+                tail = "\n".join(log.read_text(encoding="utf-8", errors="replace").splitlines()[-40:])
+            out = _P("LAST_ERROR.txt")
+            out.write_text(
+                f"{which} wurde unerwartet beendet.\n\nLetzte Logzeilen:\n{tail}\n",
+                encoding="utf-8")
+        except Exception:
+            pass
 
     def shutdown(self):
         """Gracefully shutdown both tools"""

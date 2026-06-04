@@ -22,7 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 # ── Keyword bank ──────────────────────────────────────────────────────────────
-# Representative terms from ESCO / common ATS systems, grouped by category.
+# A SEED of ~14 common terms, expanded at startup to ~51 groups via
+# db_seed_expansion.apply_ats_expansion(). This is a curated, hand-built list —
+# NOT the full ESCO taxonomy (~13k skills). The no-job-description score divides
+# by the whole bank, so it is a rough heuristic; prefer scoring against a pasted
+# job description (score_against_job) for a meaningful result.
 # Keys are canonical terms; values are common synonyms/variants to also match.
 
 ATS_KEYWORD_BANK: dict[str, list[str]] = {
