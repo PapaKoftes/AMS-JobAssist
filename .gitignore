@@ -70,3 +70,6 @@ fix_translations_part*.py
 # OS
 .DS_Store
 desktop.ini
+
+# Local demo run data (test PII — never commit)
+demo-data/
