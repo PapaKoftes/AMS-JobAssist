@@ -186,6 +186,39 @@ def enable_global_privacy_filtering() -> bool:
         return False
 
 
+def install_privacy_filter_on_handlers(logger_names=None) -> int:
+    """
+    Attach the PrivacyFilter to the HANDLERS of the root logger (and optionally
+    named loggers such as uvicorn's).
+
+    This is the correct installation point: a logging.Filter on a *logger* is NOT
+    consulted for records that propagate up from child module loggers — only the
+    filters on the *handler* that finally emits the record are. Since every module
+    uses logging.getLogger(__name__) and propagates to the root handler, the filter
+    must live on that handler to actually redact PII.
+
+    Returns the number of handlers the filter was attached to. Idempotent.
+    """
+    global _global_privacy_filter
+    if _global_privacy_filter is None:
+        _global_privacy_filter = PrivacyFilter()
+    targets = [logging.getLogger()]
+    for name in (logger_names or ["uvicorn", "uvicorn.access", "uvicorn.error"]):
+        targets.append(logging.getLogger(name))
+    count = 0
+    seen = set()
+    for lg in targets:
+        for h in lg.handlers:
+            if id(h) in seen:
+                continue
+            seen.add(id(h))
+            if _global_privacy_filter not in h.filters:
+                h.addFilter(_global_privacy_filter)
+            count += 1
+    logging.info(f"🔒 PrivacyFilter installed on {count} log handler(s)")
+    return count
+
+
 def get_privacy_filter() -> PrivacyFilter:
     """Get global privacy filter instance (for testing/stats)."""
     return _global_privacy_filter

@@ -118,6 +118,9 @@ class StartInterviewRequest(BaseModel):
     interview_path: str  # unemployed, career-switch, student, pause, other
     language: str = "de"
     user_native_language: Optional[str] = None
+    # DSGVO Art. 7 — explicit, demonstrable consent captured at start.
+    consent_given: bool = False
+    consent_text_version: str = ""
 
     @field_validator("user_id")
     @classmethod
@@ -204,6 +207,14 @@ async def start_interview(
     try:
         logger.info(f"Starting interview: user={request.user_id}, path={request.interview_path}")
 
+        # DSGVO Art. 7: processing requires demonstrable consent. Refuse to start
+        # (and to store any answers) without it — fail closed, not open.
+        if not request.consent_given:
+            raise HTTPException(
+                status_code=403,
+                detail="Einwilligung erforderlich, um den Lebenslauf zu erstellen (DSGVO Art. 7).",
+            )
+
         result = engine.start_interview(
             user_id=request.user_id,
             interview_path=request.interview_path,
@@ -211,11 +222,26 @@ async def start_interview(
             user_native_language=request.user_native_language,
         )
 
+        # Persist a demonstrable consent record (who/when/which text/language).
+        try:
+            sid = result.get("session_id") if isinstance(result, dict) else None
+            if sid is not None:
+                engine.db.execute_update(
+                    """INSERT INTO consent_records
+                       (session_id, user_id, consent_given, consent_text_version, language)
+                       VALUES (?, ?, 1, ?, ?)""",
+                    (sid, request.user_id, request.consent_text_version or "v1", request.language),
+                )
+        except Exception as _ce:
+            logger.warning(f"consent record not persisted (non-fatal): {_ce}")
+
         return {
             "status": "success",
             "data": result
         }
 
+    except HTTPException:
+        raise
     except ValueError as e:
         logger.warning(f"Invalid interview request: {e}")
         raise HTTPException(status_code=400, detail=str(e))

@@ -96,11 +96,25 @@ class DataDeletion:
             )
             answer_count = answers[0]["count"] if answers else 0
 
-            # Step 3: Delete from database (CASCADE handles related records)
+            # Step 3: Delete EXPLICITLY in dependency order. We do not rely on
+            # ON DELETE CASCADE because SQLite's foreign_keys pragma is per-
+            # connection and off by default — relying on it risks leaving orphaned
+            # PII behind, which would defeat the erasure. Deleting children first
+            # is correct whether or not foreign_keys is enabled.
+            self.db.execute_update(
+                """DELETE FROM answers WHERE session_id IN
+                   (SELECT id FROM sessions WHERE user_id = ?)""", (user_id,))
+            for _table in ("cv_data", "exports", "cover_letters", "ats_scores", "consent_records"):
+                try:
+                    self.db.execute_update(
+                        f"""DELETE FROM {_table} WHERE session_id IN
+                            (SELECT id FROM sessions WHERE user_id = ?)""", (user_id,))
+                except Exception as _te:
+                    # Optional tables may not exist on older DBs — non-fatal.
+                    logger.debug(f"erase: skipped {_table}: {_te}")
+            self.db.execute_update("DELETE FROM sessions WHERE user_id = ?", (user_id,))
             deletion_result = self.db.execute_update(
-                "DELETE FROM users WHERE user_id = ?",
-                (user_id,)
-            )
+                "DELETE FROM users WHERE user_id = ?", (user_id,))
 
             if deletion_result == 0:
                 logger.error(f"Database deletion failed for user: {user_id}")

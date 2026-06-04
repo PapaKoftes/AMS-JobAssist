@@ -110,8 +110,22 @@ CREATE TABLE IF NOT EXISTS ats_scores (
     FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE
 );
 
+-- Consent records: DSGVO Art. 7 demonstrable consent. One row per interview
+-- start, capturing WHO consented, WHEN, to WHICH text version, in which language.
+CREATE TABLE IF NOT EXISTS consent_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    consent_given INTEGER NOT NULL,     -- 1 = given, 0 = refused (should not start)
+    consent_text_version TEXT,          -- version/hash of the consent text shown
+    language TEXT DEFAULT 'de',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_cover_letters_session ON cover_letters(session_id);
 CREATE INDEX IF NOT EXISTS idx_ats_scores_session ON ats_scores(session_id);
+CREATE INDEX IF NOT EXISTS idx_consent_session ON consent_records(session_id);
 
 -- Skills dictionary: maps user terms to normalized skills
 CREATE TABLE IF NOT EXISTS skills_dictionary (

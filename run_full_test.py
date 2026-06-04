@@ -177,7 +177,7 @@ def main():
 
         def _start():
             s, j, _ = http("POST", b1 + "/api/interview/start",
-                           {"user_id": "TestStruct", "interview_path": "career-switch", "language": "de"}, timeout=15)
+                           {"user_id": "TestStruct", "interview_path": "career-switch", "language": "de", "consent_given": True}, timeout=15)
             d = j["data"]; sid_struct[0] = d["session_id"]
             q = d["question"]
             return (d["progress"]["total"] == 13 and "identity" in (q.get("flags") or []),
@@ -206,7 +206,7 @@ def main():
 
         def _dump_de():
             s, j, _ = http("POST", b1 + "/api/interview/start",
-                           {"user_id": "TestDump", "interview_path": "career-switch", "language": "de"}, timeout=15)
+                           {"user_id": "TestDump", "interview_path": "career-switch", "language": "de", "consent_given": True}, timeout=15)
             sid_dump[0] = j["data"]["session_id"]
             dump = ("Ich bin Maria Horvat aus Wien, +43 660 1234567, maria@example.com. "
                     "Fuenf Jahre Baeckerei: Brot gebacken, Kasse gefuehrt, Kunden beraten. "
@@ -223,7 +223,7 @@ def main():
 
         def _dump_en():
             s, j, _ = http("POST", b1 + "/api/interview/start",
-                           {"user_id": "TestDumpEN", "interview_path": "unemployed", "language": "en"}, timeout=15)
+                           {"user_id": "TestDumpEN", "interview_path": "unemployed", "language": "en", "consent_given": True}, timeout=15)
             sid = j["data"]["session_id"]
             dump = ("My name is John Smith, I live in Graz, phone 0660 9999999, john@mail.com. "
                     "I worked 3 years as a warehouse worker driving a forklift and packing orders. "
@@ -311,10 +311,47 @@ def main():
 
         # ---- GROUP: DSGVO / privacy ---------------------------------------
         G = "8 · Privacy & DSGVO"
+        def _status_of(method, url):
+            """Return HTTP status even on 4xx/5xx (urllib raises otherwise)."""
+            try:
+                s, _c, _h = http(method, url, timeout=20, raw=True)
+                return s
+            except urllib.error.HTTPError as e:
+                return e.code
+
         def _mydata():
-            s, c, hdr = http("GET", b1 + "/api/cv/%d/my-data" % sid, timeout=20, raw=True)
-            return (s == 200 and len(c) > 100 and c[:1] == b"{", f"Art. 20 export: {len(c)} bytes JSON")
-        check(G, "DSGVO data download (Art. 20)", _mydata)
+            msid = sid_dump[0]
+            # IDOR must be blocked: without the owning user_id → 404.
+            s_no = _status_of("GET", b1 + "/api/cv/%d/my-data" % msid)
+            if s_no == 200:
+                return (False, "IDOR: my-data returned data WITHOUT user_id proof")
+            # With the correct owner user_id → 200 + JSON.
+            s, c, hdr = http("GET", b1 + "/api/cv/%d/my-data?user_id=TestDump" % msid, timeout=20, raw=True)
+            return (s == 200 and len(c) > 100 and c[:1] == b"{",
+                    f"Art. 20 export OK (IDOR blocked: {s_no}); {len(c)} bytes JSON")
+        check(G, "DSGVO data download (Art. 20) + IDOR blocked", _mydata)
+
+        def _erase():
+            # Art. 17: erase a throwaway session; requires the owning user_id.
+            _s0, j0, _ = http("POST", b1 + "/api/interview/start",
+                             {"user_id": "EraseMe", "interview_path": "other",
+                              "language": "de", "consent_given": True}, timeout=15)
+            esid = j0["data"]["session_id"]
+            s_bad = _status_of("DELETE", b1 + "/api/cv/%d/erase" % esid)            # no proof → 404
+            s_ok = _status_of("DELETE", b1 + "/api/cv/%d/erase?user_id=EraseMe" % esid)  # proof → 200
+            return (s_bad == 404 and s_ok == 200,
+                    f"erase refused without proof ({s_bad}), succeeded with proof ({s_ok})")
+        check(G, "DSGVO right-to-erasure (Art. 17)", _erase)
+
+        def _consent():
+            try:
+                http("POST", b1 + "/api/interview/start",
+                     {"user_id": "NoConsent", "interview_path": "other", "language": "de"},
+                     timeout=15)
+                return (False, "start succeeded WITHOUT consent")
+            except urllib.error.HTTPError as e:
+                return (e.code == 403, f"start without consent refused ({e.code})")
+        check(G, "Consent required to start (Art. 7)", _consent)
 
         def _backup():
             s, c, hdr = http("GET", b1 + "/api/admin/backup", timeout=20, raw=True)

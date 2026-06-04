@@ -28,7 +28,7 @@ if os.environ.get("AMS_ENFORCE_OFFLINE", "1").lower() not in ("0", "false", "no"
         logging.getLogger(__name__).warning(f"Could not enable offline mode: {_e}")
 
 # Then init app
-from config import HOST, PORT, FRONTEND_DIR, DEBUG, DB_DIR
+from config import HOST, PORT, FRONTEND_DIR, DEBUG, DB_DIR, API_KEY
 from db import DatabaseManager
 from cv.storage import CVStorage
 from cv.builder import CVBuilder
@@ -99,6 +99,16 @@ async def lifespan(app: FastAPI):
             level=logging.INFO,
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         )
+
+    # DSGVO Art. 5(1)(f)/32 — redact PII from logs. Install the filter on the
+    # HANDLERS (not just the root logger) so records propagated from child module
+    # loggers are also redacted. Gated off only by explicit env for debugging.
+    if os.environ.get("AMS_DISABLE_LOG_REDACTION", "").lower() not in ("1", "true", "yes"):
+        try:
+            from privacy.logging_rules import install_privacy_filter_on_handlers
+            install_privacy_filter_on_handlers()
+        except Exception as _lexc:
+            logging.getLogger(__name__).warning(f"Could not install PII log filter: {_lexc}")
 
     # Startup — use the ABSOLUTE db path under DB_DIR so the location is
     # deterministic regardless of cwd, and so the /api/admin/backup endpoint
@@ -392,17 +402,78 @@ async def get_cv_metadata(session_id: int, request: Request):
     }
 
 
-@app.get("/api/admin/backup", tags=["Admin"])
-async def admin_backup_tool1():
+# ----------------------------------------------------------------------------
+# Access-control helpers (RC-1: Tool 1 had no auth primitive at all)
+# ----------------------------------------------------------------------------
+def _is_loopback_client(request: Request) -> bool:
     """
-    Stream Tool 1's SQLite database as a downloadable file.
+    True if the request originates from the local machine. "testclient" is
+    Starlette's in-process TestClient host (never a real remote socket), so it
+    counts as local for tests.
+    """
+    host = (request.client.host if request.client else "") or ""
+    return host.startswith("127.") or host in ("::1", "localhost", "", "testclient")
 
-    Intended for periodic backup by AMS IT. Returns the live `.db` file with a
-    timestamped filename. Because Tool 1 has no auth, this endpoint binds to
-    127.0.0.1 only — never expose this port externally.
+
+def _require_local_or_key(request: Request) -> None:
     """
+    Gate administrative endpoints (full-DB backup, etc.).
+
+    Allowed when the caller is on loopback OR presents a matching X-API-Key.
+    A remote caller without the key is always refused — even if the dashboard
+    otherwise runs without a configured key.
+    """
+    if _is_loopback_client(request):
+        return
+    import secrets as _secrets
+    supplied = request.headers.get("X-API-Key", "")
+    if not API_KEY or not _secrets.compare_digest(supplied, API_KEY):
+        client = request.client.host if request.client else "unknown"
+        logger.warning(f"admin endpoint refused: non-loopback client={client} without valid key")
+        raise HTTPException(status_code=403,
+                            detail="Restricted to the local machine or an authenticated request.")
+
+
+def _authorize_session_owner(db: "DatabaseManager", session_id: int, supplied_user_id: str) -> str:
+    """
+    Capability check for data-subject endpoints (Art. 15/17/20).
+
+    A participant proves ownership of a session by presenting the session's
+    user_id (an unguessable server-generated UUID, held only in their own
+    browser). This closes the IDOR where any caller could enumerate integer
+    session_ids to read other participants' data.
+
+    Returns the verified user_id, or raises 404 (not found) / 403 (mismatch).
+    We return 404 for a non-existent session and 403 for an ownership mismatch
+    only to a loopback caller; remote callers always get 404 to avoid leaking
+    which session_ids exist.
+    """
+    rows = db.execute_query("SELECT user_id FROM sessions WHERE id = ?", (session_id,))
+    if not rows:
+        raise HTTPException(status_code=404, detail="Keine Daten für diese Sitzung gefunden.")
+    real_user_id = rows[0].get("user_id") or ""
+    if not supplied_user_id or supplied_user_id != real_user_id:
+        # Do not confirm existence to an unauthorised caller.
+        raise HTTPException(status_code=404, detail="Keine Daten für diese Sitzung gefunden.")
+    return real_user_id
+
+
+@app.get("/api/admin/backup", tags=["Admin"])
+async def admin_backup_tool1(request: Request):
+    """
+    Download a CONSISTENT snapshot of Tool 1's SQLite database.
+
+    Security: this streams ALL participant PII, so it is gated to a loopback
+    client OR a valid AMS_TOOL1_API_KEY (see _require_local_or_key). It uses
+    SQLite's online-backup API for a non-torn snapshot rather than streaming the
+    live file, and every download is audit-logged.
+    """
+    _require_local_or_key(request)
     from datetime import datetime as _dt
     from fastapi.responses import FileResponse
+    from starlette.background import BackgroundTask
+    import sqlite3 as _sqlite3
+    import tempfile as _tempfile
 
     db_path = DB_DIR / "ams_jobassist.db"
     if not db_path.exists():
@@ -410,27 +481,47 @@ async def admin_backup_tool1():
 
     timestamp = _dt.utcnow().strftime("%Y%m%d_%H%M%S")
     filename = f"ams_jobassist_backup_{timestamp}.db"
-    logger.info(f"BACKUP requested: {db_path}")
+
+    tmp_fd, tmp_path = _tempfile.mkstemp(prefix="ams_t1_backup_", suffix=".db")
+    os.close(tmp_fd)
+    try:
+        src = _sqlite3.connect(str(db_path))
+        dst = _sqlite3.connect(tmp_path)
+        with dst:
+            src.backup(dst)
+        dst.close(); src.close()
+    except Exception as _exc:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        logger.error(f"BACKUP failed: {_exc}")
+        raise HTTPException(status_code=500, detail="Backup could not be created")
+
+    client = request.client.host if request.client else "unknown"
+    logger.info(f"BACKUP served: client={client} bytes={os.path.getsize(tmp_path)}")
     return FileResponse(
-        path=str(db_path),
-        filename=filename,
-        media_type="application/octet-stream",
+        path=tmp_path, filename=filename, media_type="application/octet-stream",
         headers={"X-Backup-Timestamp": timestamp},
+        background=BackgroundTask(lambda: os.remove(tmp_path) if os.path.exists(tmp_path) else None),
     )
 
 
 @app.get("/api/cv/{session_id}/my-data", tags=["DSGVO"])
-async def download_my_data(session_id: int, request: Request):
+async def download_my_data(session_id: int, request: Request, user_id: str = ""):
     """
-    DSGVO data portability — download all raw answers and CV data as JSON.
+    DSGVO data portability (Art. 20) — download all raw answers and CV data.
 
-    Allows the participant to export everything stored about them in one file.
-    No processing: raw answers + polished CV + metadata, nothing else.
+    Ownership is proven by the session's user_id (passed as ?user_id=... or the
+    X-User-Id header). Without it the request is refused — this closes the IDOR
+    where integer session_ids could be enumerated to read others' data.
     """
     db_manager: DatabaseManager = request.app.state.db_manager
     cv_storage: CVStorage = request.app.state.cv_storage
 
-    # Get raw answers
+    supplied = user_id or request.headers.get("X-User-Id", "")
+    _authorize_session_owner(db_manager, session_id, supplied)
+
     raw_answers = db_manager.execute_query(
         "SELECT question_id, answer_text, created_at FROM answers WHERE session_id = ? ORDER BY id",
         (session_id,)
@@ -438,7 +529,6 @@ async def download_my_data(session_id: int, request: Request):
     if not raw_answers:
         raise HTTPException(status_code=404, detail="Keine Daten für diese Sitzung gefunden.")
 
-    # Get CV data if built
     cv_data = cv_storage.get_cv_data(session_id)
     cv_dict = cv_data.to_dict() if cv_data else None
 
@@ -456,6 +546,36 @@ async def download_my_data(session_id: int, request: Request):
         media_type="application/json",
         headers={"Content-Disposition": f"attachment; filename=meine-daten-{session_id}.json"},
     )
+
+
+@app.delete("/api/cv/{session_id}/erase", tags=["DSGVO"])
+async def erase_my_data(session_id: int, request: Request, user_id: str = ""):
+    """
+    DSGVO right-to-erasure (Art. 17). Permanently deletes the participant's
+    account and ALL associated data (sessions, answers, CV, export files),
+    after proving ownership via the session's user_id.
+
+    This wires the previously-unreachable DataDeletion.delete_user_data().
+    """
+    db_manager: DatabaseManager = request.app.state.db_manager
+    supplied = user_id or request.headers.get("X-User-Id", "")
+    verified_user_id = _authorize_session_owner(db_manager, session_id, supplied)
+
+    from privacy.data_deletion import DataDeletion
+    try:
+        deleter = DataDeletion(db_manager)
+        result = deleter.delete_user_data(verified_user_id, export_dir=str(EXPORTS_DIR))
+    except ValueError:
+        # Already gone (or never existed) — idempotent erasure is a success.
+        result = True
+    except Exception as _exc:
+        logger.error(f"erase failed for session {session_id}: {_exc}")
+        raise HTTPException(status_code=500, detail="Löschung fehlgeschlagen.")
+
+    logger.info(f"ERASURE completed: session={session_id} user={verified_user_id[:8]}…")
+    return {"status": "success",
+            "message": "Alle Ihre Daten wurden gelöscht (Art. 17 DSGVO).",
+            "deleted": result}
 
 
 # ============================================================================
@@ -1528,15 +1648,21 @@ async def root():
 
 
 def main():
-    """Entry point for the ams-cv-maker script."""
+    """
+    Entry point for the ams-cv-maker script AND for the bundled .exe.
+
+    When frozen (PyInstaller), pass the app OBJECT directly — uvicorn's
+    "app:app" import string fails inside a frozen binary because the module
+    cannot be re-imported by name. reload is only valid with an import string,
+    so it is disabled when frozen.
+    """
+    import sys as _sys
     import uvicorn
-    uvicorn.run(
-        "app:app",
-        host=HOST,
-        port=PORT,
-        reload=DEBUG,
-        log_level="info",
-    )
+    frozen = getattr(_sys, "frozen", False)
+    if frozen:
+        uvicorn.run(app, host=HOST, port=PORT, log_level="info")
+    else:
+        uvicorn.run("app:app", host=HOST, port=PORT, reload=DEBUG, log_level="info")
 
 
 if __name__ == "__main__":

@@ -266,15 +266,25 @@ class TestDSGVOCompliance:
         assert results["network_blocked"] == True
 
     def test_logging_filtered_check(self, db_manager):
-        """✅ Logging filter compliance check passes."""
+        """Honest check: passes ONLY when a PrivacyFilter is attached to a handler."""
+        import logging
+        from privacy.logging_rules import install_privacy_filter_on_handlers
         blocker = NetworkBlocker()
         blocker.enable_offline_mode()
-
         pf = PrivacyFilter()
         checker = ComplianceChecker(db_manager, blocker, pf)
 
-        results = checker.verify_all_requirements()
-        assert results["logging_filtered"] == True
+        # Not installed → must FAIL (the old version passed on a bare object).
+        for lg in (logging.getLogger(), logging.getLogger("uvicorn")):
+            for h in lg.handlers:
+                h.filters = [f for f in h.filters if not isinstance(f, PrivacyFilter)]
+        assert checker._verify_logging_filtered() is False
+
+        # Installed on a handler → passes.
+        if not logging.getLogger().handlers:
+            logging.basicConfig()
+        install_privacy_filter_on_handlers()
+        assert checker._verify_logging_filtered() is True
 
     def test_database_schema_check(self, db_manager):
         """✅ Database schema compliance check passes."""
@@ -288,25 +298,29 @@ class TestDSGVOCompliance:
         assert results["database_schema"] == True
 
     def test_overall_compliance(self, db_manager):
-        """✅ Overall compliance check passes when all requirements met."""
+        """The self-check reports control PRESENCE, never a legal 'COMPLIANT' verdict."""
         blocker = NetworkBlocker()
         blocker.enable_offline_mode()
-
         pf = PrivacyFilter()
         checker = ComplianceChecker(db_manager, blocker, pf)
 
         results = checker.verify_all_requirements()
-        assert results["overall_compliant"] == True
+        # The misleading "overall_compliant" key is gone; replaced by an honest one.
+        assert "overall_compliant" not in results
+        assert "all_controls_present" in results
+        # New substantive checks are present.
+        assert "consent_capture" in results
 
     def test_compliance_report_generation(self, db_manager):
-        """✅ Compliance report can be generated."""
+        """Report is an honest self-check, NOT a legal compliance certification."""
         blocker = NetworkBlocker()
         blocker.enable_offline_mode()
-
         pf = PrivacyFilter()
         checker = ComplianceChecker(db_manager, blocker, pf)
 
         report = checker.generate_compliance_report()
         assert isinstance(report, str)
-        assert "DSGVO COMPLIANCE REPORT" in report
-        assert "OVERALL RESULT" in report
+        assert "SELF-CHECK" in report
+        assert "NOT a legal" in report
+        # Must NOT falsely assert blanket compliance.
+        assert "DSGVO COMPLIANCE REPORT" not in report

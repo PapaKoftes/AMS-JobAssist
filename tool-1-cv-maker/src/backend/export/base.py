@@ -9,6 +9,7 @@ Handles:
 """
 
 import logging
+import re
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -17,6 +18,24 @@ from pathlib import Path
 from cv.models import CVData
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_filename_component(name: str) -> str:
+    """
+    Reduce an arbitrary (possibly user-supplied) string to a SAFE single filename
+    component: no directory separators, no traversal, no NUL/control chars.
+
+    Prevents path traversal when joined with an output directory and zip-entry
+    collision/escape in Tool 2's bulk export. Always returns a non-empty token.
+    """
+    name = str(name or "")
+    # Drop any path components an attacker tried to inject.
+    name = name.replace("\\", "/").split("/")[-1]
+    # Keep only a conservative allow-list; collapse everything else to '_'.
+    name = re.sub(r"[^A-Za-z0-9._-]", "_", name)
+    # Disallow leading dots / pure-dot names ("..", ".") and over-long names.
+    name = name.lstrip(".") or "cv"
+    return name[:120]
 
 
 class CVExporter(ABC):
@@ -153,12 +172,12 @@ class CVExporter(ABC):
             Filename with extension
         """
         if custom_name:
-            return f"{custom_name}.{extension}"
+            return f"{_sanitize_filename_component(custom_name)}.{extension}"
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         language_code = language if len(language) <= 2 else language[:2]
-        filename = f"{cv_data.user_id}_{cv_data.interview_path}_{language_code}_{timestamp}.{extension}"
-        return filename
+        base = f"{cv_data.user_id}_{cv_data.interview_path}_{language_code}_{timestamp}"
+        return f"{_sanitize_filename_component(base)}.{extension}"
 
     def validate_cv_data(self, cv_data: CVData) -> bool:
         """

@@ -68,14 +68,28 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        if not AUTH_ENABLED:
-            return await call_next(request)
-
         path = request.url.path
 
         # Allow static files and root page without auth
         if not path.startswith("/api"):
             return await call_next(request)
+
+        # Fail-closed: when no API key is configured, the dashboard does NOT run
+        # wide open. It serves /api only to loopback clients (the trainer's own
+        # machine) and refuses remote callers. This removes the "default-open to
+        # the LAN" posture for a tool holding aggregated participant PII.
+        if not AUTH_ENABLED:
+            client = (request.client.host if request.client else "") or ""
+            # "testclient" is Starlette's in-process TestClient host — it can only
+            # appear for same-process calls, never a real remote socket, so it is
+            # safe to treat as local.
+            if client.startswith("127.") or client in ("::1", "localhost", "", "testclient"):
+                return await call_next(request)
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "No API key configured — dashboard API is restricted "
+                                   "to the local machine. Set AMS_TRAINER_API_KEY for remote access."},
+            )
 
         # Check for API key — header only; query params expose keys in server logs
         api_key = request.headers.get("X-API-Key", "")
@@ -341,15 +355,15 @@ else:
     logger.warning(f"Frontend directory not found: {FRONTEND_DIR}")
 
 def main():
-    """Entry point for the ams-trainer script."""
+    """Entry point for the ams-trainer script and the bundled .exe."""
+    import sys as _sys
     import uvicorn
-    uvicorn.run(
-        "app:app",
-        host=HOST,
-        port=PORT,
-        reload=DEBUG,
-        log_level="info",
-    )
+    if getattr(_sys, "frozen", False):
+        # Pass the app object directly — "app:app" import strings break in a
+        # frozen PyInstaller binary; reload is invalid without an import string.
+        uvicorn.run(app, host=HOST, port=PORT, log_level="info")
+    else:
+        uvicorn.run("app:app", host=HOST, port=PORT, reload=DEBUG, log_level="info")
 
 
 if __name__ == "__main__":

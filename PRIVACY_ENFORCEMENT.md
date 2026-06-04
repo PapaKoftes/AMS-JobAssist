@@ -419,11 +419,15 @@ async def _retention_loop(engine, days):
 ```
 
 `DATA_RETENTION_DAYS` resolves from the environment variable
-`AMS_DATA_RETENTION_DAYS` (default `0`, meaning "retain forever").
-When set to a positive integer, the cleanup runs once at startup and then
-every 24 hours. `cleanup_old_sessions()` deletes whole sessions whose
-`created_at` is older than the cutoff; foreign-key cascades remove
-answers, CV data, and export records along with them.
+`AMS_DATA_RETENTION_DAYS`. **Default: `365` days** (a finite ceiling, not
+"forever"). Set it to `0` to disable automatic purging (you then take on the
+deletion obligation manually). The cleanup runs once at startup and then every
+24 hours. `cleanup_old_sessions()` enforces a **two-tier** policy: abandoned
+drafts are purged after 30 days, and **every** session — completed, approved
+and locked included — is purged once it passes the `DATA_RETENTION_DAYS`
+ceiling. Foreign-key cascades remove answers, CV data, consent records, and
+export records along with them. (Earlier versions kept approved/locked CVs
+indefinitely; that inverted storage limitation and has been fixed.)
 
 Recommended classroom settings:
 

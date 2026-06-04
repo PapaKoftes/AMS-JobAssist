@@ -2028,11 +2028,13 @@ class APIClient {
         return this._request(url, 'GET');
     }
 
-    startInterview(userId, path, language = 'de') {
+    startInterview(userId, path, language = 'de', consentGiven = false) {
         return this._request(`${this.interviewBase}/start`, 'POST', {
             user_id: userId,
             interview_path: path,
             language,
+            consent_given: !!consentGiven,
+            consent_text_version: 'v1',
         });
     }
 
@@ -2074,6 +2076,14 @@ class APIClient {
             category,
             language,
         });
+    }
+
+    // DSGVO Art. 17 — permanently erase all of the participant's data.
+    eraseMyData(sessionId, userId) {
+        return this._request(
+            `/api/cv/${sessionId}/erase?user_id=${encodeURIComponent(userId || '')}`,
+            'DELETE',
+        );
     }
 
     // Export — returns raw Response so caller can stream the blob
@@ -2296,7 +2306,7 @@ class UIManager {
         const userId     = document.getElementById('userIdInput')?.value.trim();
         const hasPath    = !!state.interviewPath;
         const hasName    = !!userId;
-        const hasConsent = document.getElementById('consentCheck')?.checked ?? true;
+        const hasConsent = document.getElementById('consentCheck')?.checked ?? false;
         const ready      = hasPath && hasName && hasConsent;
 
         // Button is always clickable — handleStart() shows specific feedback
@@ -3030,7 +3040,7 @@ class InterviewManager {
 
     async handleStart() {
         const userId     = document.getElementById('userIdInput')?.value.trim();
-        const hasConsent = document.getElementById('consentCheck')?.checked ?? true;
+        const hasConsent = document.getElementById('consentCheck')?.checked ?? false;
 
         // Show specific feedback instead of silently doing nothing
         if (!state.interviewPath || !userId || !hasConsent) {
@@ -3052,7 +3062,7 @@ class InterviewManager {
             state.isWaitingForResponse = true;
             state.userId = userId;
 
-            const response = await api.startInterview(userId, state.interviewPath, state.language);
+            const response = await api.startInterview(userId, state.interviewPath, state.language, hasConsent);
             if (response.status !== 'success') throw new Error(response.detail || 'Start failed');
 
             const data = response.data;
@@ -3542,6 +3552,41 @@ class InterviewManager {
         localStorage.removeItem(SESSION_STORAGE_KEY);
         localStorage.removeItem(USER_STORAGE_KEY);
         localStorage.removeItem(COMPLETED_SESSION_KEY);
+        location.reload();
+    }
+
+    // DSGVO Art. 17 — permanently erase ALL server-side data (not just localStorage).
+    // Two-click confirm, then calls the authenticated erase endpoint.
+    async handleEraseData() {
+        const btn = document.getElementById('eraseDataBtn');
+        if (btn && btn.dataset.confirming !== 'true') {
+            btn.dataset.confirming = 'true';
+            const original = btn.textContent;
+            btn.textContent = '⚠️ ' + (t('confirmErase') || 'Endgültig löschen? Erneut klicken.');
+            btn.classList.add('btn-danger');
+            setTimeout(() => {
+                if (btn && btn.dataset.confirming === 'true') {
+                    btn.dataset.confirming = 'false';
+                    btn.textContent = original;
+                    btn.classList.remove('btn-danger');
+                }
+            }, 4000);
+            return;
+        }
+        if (btn) btn.dataset.confirming = 'false';
+        try {
+            if (state.sessionId) {
+                await api.eraseMyData(state.sessionId, state.userId);
+            }
+        } catch (err) {
+            console.error('Erase failed:', err);
+            alert(t('eraseFailed') || 'Löschung fehlgeschlagen. Bitte erneut versuchen.');
+            return;
+        }
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(COMPLETED_SESSION_KEY);
+        alert(t('eraseDone') || 'Alle Ihre Daten wurden gelöscht.');
         location.reload();
     }
 
@@ -4269,9 +4314,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('exportJsonBtn')?.addEventListener('click', () => interview.handleExport('json'));
     document.getElementById('myDataBtn')?.addEventListener('click', () => {
         if (state.sessionId) {
-            window.location.href = `/api/cv/${state.sessionId}/my-data`;
+            // user_id proves ownership (closes the integer-session IDOR).
+            const uid = encodeURIComponent(state.userId || '');
+            window.location.href = `/api/cv/${state.sessionId}/my-data?user_id=${uid}`;
         }
     });
+    document.getElementById('eraseDataBtn')?.addEventListener('click', () => interview.handleEraseData());
     document.getElementById('startOverBtn')?.addEventListener('click',  () => interview.handleStartOver());
 
     // Save & finish later — autosave already ran on every answer; this button

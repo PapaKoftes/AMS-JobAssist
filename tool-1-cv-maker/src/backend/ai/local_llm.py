@@ -751,6 +751,18 @@ def download_model(progress_callback=None, tier: str = None) -> bool:
     model_url = config["url"]
     expected_sha = config["sha256"]
 
+    # Integrity: refuse to download a tier with no pinned SHA-256 — otherwise
+    # verification is silently skipped and a corrupted/MITM'd GGUF loads unnoticed.
+    # Only the pinned 'medium' tier ships verified; light/full must be pinned
+    # before use, or explicitly overridden by an operator who accepts the risk.
+    if not expected_sha and os.environ.get("AMS_ALLOW_UNPINNED_MODEL", "").lower() not in ("1", "true", "yes"):
+        msg = (f"Model tier '{tier}' has no pinned SHA-256 — refusing to install it "
+               f"unverified. Use the pinned 'medium' tier, or set "
+               f"AMS_ALLOW_UNPINNED_MODEL=1 to override (not recommended).")
+        logger.error(msg)
+        _set_download_state(status="error", tier=tier, error=msg)
+        return False
+
     # Already installed?
     if model_path.exists() and model_path.stat().st_size > 10_000_000:
         _set_download_state(status="done", tier=tier,

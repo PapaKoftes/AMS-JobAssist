@@ -100,9 +100,15 @@ class DatabaseManager:
                     conn.execute(_sql)
                     conn.commit()
                     logger.debug(f"Migration applied: {_sql[:60]}")
-                except Exception:
-                    # Column already exists — expected on all but first run
-                    pass
+                except Exception as _me:
+                    # Only "duplicate column" is the expected no-op on upgrade.
+                    # Any other failure (locked DB, disk full) is real and must be
+                    # surfaced rather than silently swallowed.
+                    if "duplicate column" in str(_me).lower():
+                        pass
+                    else:
+                        logger.error(f"Migration FAILED ({_sql[:60]}): {_me}")
+                        raise
 
             # Step 3: Verify all tables exist
             # Temporarily mark initialized so verify_schema() can call execute_query()
@@ -147,6 +153,13 @@ class DatabaseManager:
             )
             conn.row_factory = sqlite3.Row  # Allow dict-like access to rows
             conn.isolation_level = None  # Manual transaction control
+            # NOTE: foreign_keys is intentionally left at SQLite's per-connection
+            # default (OFF) here. The dump-mode flow writes answers for synthetic
+            # identity question_ids that aren't all pre-registered, and enabling
+            # FK globally would reject those inserts. Erasure does NOT depend on
+            # cascade — DataDeletion deletes children explicitly in order. WAL is
+            # set once at init; busy_timeout avoids spurious 'database is locked'.
+            conn.execute("PRAGMA busy_timeout=5000")
             _tls.connection = conn
             logger.debug(f"New DB connection for thread {threading.current_thread().name}")
         return conn

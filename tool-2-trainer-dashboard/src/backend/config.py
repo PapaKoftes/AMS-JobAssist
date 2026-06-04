@@ -40,16 +40,30 @@ MAX_UPLOAD_SIZE_MB = int(os.environ.get("AMS_MAX_UPLOAD_MB", "50"))
 MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 # Authentication
-# REQUIRED in production: set AMS_TRAINER_API_KEY to a strong random string (min 32 chars).
-# Without it the dashboard is accessible to anyone on the network — acceptable only for
-# single-machine offline use.
+# Set AMS_TRAINER_API_KEY to a strong random string (min 32 chars) for networked use.
+# FAIL-CLOSED: when unset, the dashboard does NOT run wide open — the API is served
+# only to loopback clients (see AuthenticationMiddleware), and binding to a
+# non-loopback interface without a key is refused at startup below.
 import warnings as _warnings
 API_KEY = os.environ.get("AMS_TRAINER_API_KEY", "")
 AUTH_ENABLED = bool(API_KEY)
+
+
+def _is_loopback_host(h: str) -> bool:
+    h = (h or "").strip().lower()
+    return h.startswith("127.") or h in ("localhost", "::1", "")
+
+
 if not AUTH_ENABLED:
+    if not _is_loopback_host(HOST):
+        raise RuntimeError(
+            f"AMS_TOOL2_HOST={HOST!r} is non-loopback but AMS_TRAINER_API_KEY is unset. "
+            "Refusing to expose aggregated participant PII to the network without an API key. "
+            "Set AMS_TRAINER_API_KEY, or bind to 127.0.0.1."
+        )
     _warnings.warn(
-        "AMS_TRAINER_API_KEY is not set — trainer dashboard has no authentication. "
-        "Set the variable before deploying in a shared environment.",
+        "AMS_TRAINER_API_KEY is not set — trainer dashboard API is restricted to the "
+        "local machine only. Set the variable to allow authenticated remote access.",
         stacklevel=2,
     )
 

@@ -321,6 +321,12 @@ async def import_cvs(
             count = 0
             errors = []
 
+            # Zip-bomb defence: bound BOTH per-entry and cumulative UNcompressed
+            # size before reading anything. DEFLATE can hit ~1000:1, so a 50MB
+            # upload could otherwise expand to tens of GB and OOM the worker.
+            _MAX_ENTRY_UNCOMPRESSED = 25 * 1024 * 1024      # 25 MB per CV JSON
+            _MAX_TOTAL_UNCOMPRESSED = 200 * 1024 * 1024     # 200 MB across the zip
+
             try:
                 with zipfile.ZipFile(io.BytesIO(contents)) as zf:
                     # Safety: limit number of entries
@@ -328,9 +334,30 @@ async def import_cvs(
                     if len(entries) > 1000:
                         raise HTTPException(status_code=400, detail="ZIP contains too many files (max 1000)")
 
+                    # Pre-flight the declared uncompressed sizes.
+                    info_by_name = {zi.filename: zi for zi in zf.infolist()}
+                    total_uncompressed = 0
+                    for filename in entries:
+                        zi = info_by_name.get(filename)
+                        size = zi.file_size if zi else 0
+                        if size > _MAX_ENTRY_UNCOMPRESSED:
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"ZIP entry {filename} exceeds the per-file size limit "
+                                       f"({_MAX_ENTRY_UNCOMPRESSED // (1024*1024)} MB).")
+                        total_uncompressed += size
+                        if total_uncompressed > _MAX_TOTAL_UNCOMPRESSED:
+                            raise HTTPException(
+                                status_code=400,
+                                detail="ZIP total uncompressed size exceeds the allowed budget.")
+
                     for filename in entries:
                         try:
                             json_content = zf.read(filename)
+                            # Defence-in-depth: ZipInfo.file_size can be spoofed,
+                            # so also bound the actually-decompressed bytes.
+                            if len(json_content) > _MAX_ENTRY_UNCOMPRESSED:
+                                raise ValueError("decompressed entry exceeds size limit")
                             cv_dict = json.loads(json_content)
                             _validate_json_payload(cv_dict)
                             _import_single_cv(db, cohort_id, cv_dict, force_overwrite)
@@ -359,8 +386,10 @@ async def import_cvs(
     except HTTPException:
         raise
     except Exception as e:
+        # Log the detail server-side; do NOT leak internal exception strings
+        # (paths, SQL, stack hints) to the client.
         logger.error(f"Import error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Import failed. See server logs for details.")
 
 
 @router.get("/participants")
@@ -1162,7 +1191,7 @@ async def bulk_export(
         raise
     except Exception as e:
         logger.error(f"Bulk export error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Export failed. See server logs for details.")
 
 
 @router.get("/export-all")

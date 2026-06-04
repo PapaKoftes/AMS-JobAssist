@@ -59,35 +59,59 @@ class ComplianceChecker:
             "logging_filtered": self._verify_logging_filtered(),
             "database_schema": self._verify_database_schema(),
             "deletion_mechanism": self._verify_deletion_mechanism(),
+            "consent_capture": self._verify_consent_capture(),
             "no_remote_sync": self._verify_no_remote_sync(),
             "foreign_keys_enabled": self._verify_foreign_keys(),
             "audit_logging": self._verify_audit_logging(),
         }
 
-        # Overall compliance
-        results["overall_compliant"] = all(v for k, v in results.items() if k != "overall_compliant")
+        # This is a TECHNICAL self-check of control PRESENCE — NOT a legal
+        # compliance certification. "all_controls_present" must never be reported
+        # to a supervisory authority as proof of DSGVO compliance.
+        results["all_controls_present"] = all(
+            v for k, v in results.items() if k != "all_controls_present")
 
-        # Log results
-        if results["overall_compliant"]:
-            logger.info("✓ DSGVO COMPLIANCE: ALL CHECKS PASSED")
+        if results["all_controls_present"]:
+            logger.info("DSGVO technical self-check: all checked controls PRESENT (not a legal audit)")
         else:
-            violations = [k for k, v in results.items() if not v and k != "overall_compliant"]
-            logger.warning(f"⚠️ COMPLIANCE VIOLATIONS: {violations}")
+            failed = [k for k, v in results.items() if not v and k != "all_controls_present"]
+            logger.warning(f"DSGVO technical self-check: controls MISSING/FAILED: {failed}")
 
         return results
 
-    def _verify_logging_filtered(self) -> bool:
-        """Verify privacy filter is active."""
+    def _verify_consent_capture(self) -> bool:
+        """Verify a consent record store exists (Art. 7 demonstrable consent)."""
         try:
-            if self.logging is None:
-                logger.error("Privacy filter not initialized")
+            rows = self.db.execute_query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='consent_records'")
+            if not rows:
+                logger.error("No consent_records table — consent is not demonstrable (Art. 7)")
                 return False
-
-            # Check filter has redaction patterns
-            if len(self.logging.PII_PATTERNS) > 0:
-                logger.debug(f"✓ Logging filter active ({len(self.logging.PII_PATTERNS)} patterns)")
-                return True
+            return True
+        except Exception as e:
+            logger.error(f"Consent verification error: {e}")
             return False
+
+    def _verify_logging_filtered(self) -> bool:
+        """
+        Verify the PrivacyFilter is actually ATTACHED to a live log handler — not
+        merely that a filter object exists with patterns. A filter that isn't on a
+        handler redacts nothing, so this check must inspect real handler state.
+        """
+        try:
+            import logging as _pl
+            from privacy.logging_rules import PrivacyFilter as _PF
+            attached = False
+            for lg in (_pl.getLogger(), _pl.getLogger("uvicorn"), _pl.getLogger("uvicorn.access")):
+                for h in lg.handlers:
+                    if any(isinstance(f, _PF) for f in h.filters):
+                        attached = True
+                        break
+            if not attached:
+                logger.error("PrivacyFilter is not attached to any log handler — logs are NOT redacted")
+                return False
+            logger.debug("✓ PrivacyFilter is attached to a live log handler")
+            return True
         except Exception as e:
             logger.error(f"Logging verification error: {e}")
             return False
@@ -123,17 +147,38 @@ class ComplianceChecker:
             return False
 
     def _verify_deletion_mechanism(self) -> bool:
-        """Verify deletion mechanism works (test with dummy user)."""
+        """
+        Actually EXERCISE erasure end-to-end against a throwaway user, then verify
+        the rows are gone. A self-check that never deletes proves nothing.
+
+        Uses a uniquely-namespaced test user (never collides with real data) and
+        cleans up after itself.
+        """
         try:
-            # Test deletion (don't actually delete real user)
-            test_user = "test-compliance-check-user"
-
-            # Verify we CAN delete (mechanism exists)
-            # Don't actually delete in this check
-
-            logger.debug("✓ Deletion mechanism available")
+            from privacy.data_deletion import DataDeletion
+            test_user = "__compliance_selfcheck__deletion_probe"
+            # Seed a throwaway user + session + answer.
+            self.db.execute_update(
+                "INSERT OR IGNORE INTO users (user_id) VALUES (?)", (test_user,))
+            rows = self.db.execute_query("SELECT id FROM users WHERE user_id = ?", (test_user,))
+            if not rows:
+                logger.error("Deletion self-check: could not seed probe user")
+                return False
+            try:
+                sid = self.db.create_session(test_user, "other", "de")
+                self.db.save_answer(session_id=sid, question_id="probe", answer_text="x")
+            except Exception:
+                pass  # session/answer seeding is best-effort; user-delete is the core test
+            # Exercise the real erasure path.
+            ok = DataDeletion(self.db).delete_user_data(test_user)
+            still = self.db.execute_query("SELECT id FROM users WHERE user_id = ?", (test_user,))
+            if not ok or still:
+                logger.error("Deletion self-check FAILED: probe user not fully erased")
+                # Best-effort cleanup if the mechanism left anything behind.
+                self.db.execute_update("DELETE FROM users WHERE user_id = ?", (test_user,))
+                return False
+            logger.debug("✓ Deletion mechanism exercised and verified")
             return True
-
         except Exception as e:
             logger.error(f"Deletion mechanism error: {e}")
             return False
@@ -162,10 +207,20 @@ class ComplianceChecker:
 
             for env_var in cloud_env:
                 if env_var in os.environ:
-                    logger.warning(f"Cloud service detected: {env_var}")
-                    # Not failing for now (user might have other projects)
+                    logger.warning(f"Cloud service env detected (informational): {env_var}")
 
-            logger.debug("✓ No cloud sync configuration detected")
+            # HARD FAIL on the configuration that actually causes off-device PII
+            # transfer for THIS app: a configured cloud AI provider, or offline
+            # mode explicitly disabled. These are the real exfiltration switches.
+            provider = os.environ.get("AMS_AI_PROVIDER", "").strip().lower()
+            if provider in ("openai", "anthropic", "cloud"):
+                logger.error(f"AMS_AI_PROVIDER={provider!r} would transmit CV data off-device — FAIL")
+                return False
+            if os.environ.get("AMS_ENFORCE_OFFLINE", "1").lower() in ("0", "false", "no"):
+                logger.error("AMS_ENFORCE_OFFLINE is disabled — offline guarantee not in force — FAIL")
+                return False
+
+            logger.debug("✓ No off-device transfer configuration detected")
             return True
 
         except Exception as e:
@@ -221,46 +276,33 @@ class ComplianceChecker:
 
         report = """
 ═══════════════════════════════════════════════════════════════════
-                    DSGVO COMPLIANCE REPORT
+            DSGVO TECHNICAL CONTROL SELF-CHECK
+   (engineering self-test of control PRESENCE — NOT a legal
+    compliance certification and NOT a substitute for a DPIA)
 ═══════════════════════════════════════════════════════════════════
 
 System: AMS JobAssist (Tool 1 - CV Maker)
-Status: {}
+Result: {}
 
-DETAILED CHECKS:
+CHECKS (each exercises real runtime state, not stubs):
 ─────────────────────────────────────────────────────────────────
 
-1. Network Blocking
-   Status: {}
-   Description: No external network access possible
-
-2. Logging Privacy Filter
-   Status: {}
-   Description: PII automatically redacted from logs
-
-3. Database Schema
-   Status: {}
-   Description: All required tables and constraints present
-
-4. Data Deletion Mechanism
-   Status: {}
-   Description: Users can request complete data deletion (DSGVO Article 17)
-
-5. Remote Sync Prevention
-   Status: {}
-   Description: No cloud sync or remote backup configured
-
-6. Foreign Key Constraints
-   Status: {}
-   Description: Database enforces data integrity
-
-7. Audit Logging
-   Status: {}
-   Description: System actions logged for audit trail
+1. Network Blocking ......... {}  (loopback-only egress enforced)
+2. Log PII Redaction ........ {}  (filter attached to live handler)
+3. Database Schema .......... {}  (required tables present)
+4. Erasure (Art. 17) ........ {}  (deletion exercised end-to-end)
+5. Consent Record (Art. 7) .. {}  (consent_records store present)
+6. No Off-device Transfer ... {}  (no cloud provider / offline on)
+7. Foreign Keys ............. {}  (referential integrity on)
+8. Audit Logging ............ {}  (handlers configured)
 
 ═══════════════════════════════════════════════════════════════════
 
-OVERALL RESULT: {}
+ALL CHECKED CONTROLS PRESENT: {}
+
+NOTE: "present" ≠ "compliant". Encryption-at-rest, retention of
+completed records, lawful-basis documentation and a DPIA are NOT
+verified here and must be assessed separately.
 
 {}
 
@@ -268,15 +310,16 @@ OVERALL RESULT: {}
 Last Verified: {}
 ═══════════════════════════════════════════════════════════════════
 """.format(
-            "✓ COMPLIANT" if results["overall_compliant"] else "⚠️ VIOLATIONS DETECTED",
+            "ALL CHECKED CONTROLS PRESENT" if results["all_controls_present"] else "⚠️ CONTROLS MISSING",
             "✓ PASS" if results["network_blocked"] else "✗ FAIL",
             "✓ PASS" if results["logging_filtered"] else "✗ FAIL",
             "✓ PASS" if results["database_schema"] else "✗ FAIL",
             "✓ PASS" if results["deletion_mechanism"] else "✗ FAIL",
+            "✓ PASS" if results["consent_capture"] else "✗ FAIL",
             "✓ PASS" if results["no_remote_sync"] else "✗ FAIL",
             "✓ PASS" if results["foreign_keys_enabled"] else "✗ FAIL",
             "✓ PASS" if results["audit_logging"] else "✗ FAIL",
-            "✓ COMPLIANT" if results["overall_compliant"] else "✗ NON-COMPLIANT",
+            "YES" if results["all_controls_present"] else "NO",
             self._get_recommendation(results),
             self._get_timestamp()
         )
@@ -286,11 +329,12 @@ Last Verified: {}
     @staticmethod
     def _get_recommendation(results: Dict[str, bool]) -> str:
         """Get recommendation based on violations."""
-        violations = [k for k, v in results.items() if not v and k != "overall_compliant"]
+        violations = [k for k, v in results.items() if not v and k != "all_controls_present"]
         if not violations:
-            return "No action required. System is DSGVO compliant."
+            return ("All checked technical controls are present. This is NOT a finding of "
+                    "legal compliance — a DPIA and lawful-basis review are still required.")
         else:
-            return f"ACTION REQUIRED: Fix violations in: {', '.join(violations)}"
+            return f"ACTION REQUIRED: missing/failed controls: {', '.join(violations)}"
 
     @staticmethod
     def _get_timestamp() -> str:

@@ -761,34 +761,56 @@ class InterviewEngine:
             logger.error(f"Error loading interview questions: {e}")
             # Don't raise - this shouldn't block engine initialization
 
-    def cleanup_old_sessions(self, days_old: int = 90) -> int:
+    def cleanup_old_sessions(self, days_old: int = 365, draft_days_old: int = 30) -> int:
         """
-        Delete incomplete sessions older than *days_old* days.
+        Enforce DSGVO Art. 5(1)(e) storage limitation with a FINITE ceiling for
+        ALL records — including completed/approved/locked CVs.
 
-        Only sessions that were never finished (completed = 0 or the column
-        does not exist yet) are removed. Approved/locked sessions are always
-        kept to preserve the trainer audit trail.
+        Two tiers:
+        - Abandoned drafts (never completed) are purged sooner, after
+          *draft_days_old* days (low-value, incomplete PII).
+        - EVERY session — completed, approved or locked included — is purged once
+          older than *days_old*. (The previous behaviour kept approved/locked CVs
+          forever, which inverted storage limitation: that is the bug being fixed.
+          The trainer audit trail lives in Tool 2's separate store.)
+
+        FK ON DELETE CASCADE removes the dependent answers / cv_data / consent rows.
 
         Args:
-            days_old: Age threshold in whole days (default 90).
+            days_old: Hard retention ceiling for all records (default 365).
+                      If 0, retention is disabled (caller takes on the obligation).
+            draft_days_old: Shorter ceiling for abandoned drafts (default 30).
 
         Returns:
-            Number of sessions deleted.
+            Total number of sessions deleted.
         """
+        if days_old <= 0:
+            logger.info("Retention disabled (days_old<=0) — no automatic purge performed")
+            return 0
+        deleted = 0
         try:
-            result = self.db.execute_update(
+            # Tier 1: abandoned drafts, purged sooner.
+            draft_cut = min(draft_days_old, days_old) if days_old else draft_days_old
+            d1 = self.db.execute_update(
                 """DELETE FROM sessions
                    WHERE created_at < datetime('now', '-' || ? || ' days')
                      AND (completed IS NULL OR completed = 0)
                      AND (locked IS NULL OR locked = 0)
                      AND (approved IS NULL OR approved = 0)""",
+                (draft_cut,)
+            ) or 0
+            # Tier 2: hard ceiling for everything else (completed/approved/locked).
+            d2 = self.db.execute_update(
+                "DELETE FROM sessions WHERE created_at < datetime('now', '-' || ? || ' days')",
                 (days_old,)
-            )
-            logger.info(f"Cleaned up {result} stale sessions older than {days_old} days")
-            return result if result is not None else 0
+            ) or 0
+            deleted = d1 + d2
+            logger.info(f"Retention: purged {d1} stale drafts (>{draft_cut}d) and "
+                        f"{d2} records past the {days_old}d ceiling")
+            return deleted
         except Exception as e:
             logger.error(f"Session cleanup failed: {e}")
-            return 0
+            return deleted
 
     @staticmethod
     def validate_interview_path(path_key: str) -> bool:

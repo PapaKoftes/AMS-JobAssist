@@ -2,7 +2,7 @@
 Database layer for Tool 2 - SQLite (separate from Tool 1)
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from config import DATABASE_URL, DB_ECHO
 
@@ -11,6 +11,26 @@ engine = create_engine(
     echo=DB_ECHO,
     connect_args={"check_same_thread": False}
 )
+
+
+@event.listens_for(engine, "connect")
+def _sqlite_pragmas(dbapi_connection, _record):
+    """
+    Per-connection SQLite hardening (RC-6 reliability + data integrity):
+    - WAL journal mode: readers don't block writers → no spurious 'database is
+      locked' when a trainer reads while another writes.
+    - busy_timeout: wait up to 5s for a lock instead of failing immediately.
+    - foreign_keys ON: enforce referential integrity / ON DELETE CASCADE so
+      deleting a participant actually removes their submissions/feedback.
+    """
+    cur = dbapi_connection.cursor()
+    try:
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA busy_timeout=5000")
+        cur.execute("PRAGMA foreign_keys=ON")
+    finally:
+        cur.close()
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -45,8 +65,15 @@ def init_db():
                 raw.execute(sql)
                 raw.commit()
                 _log.debug(f"Tool 2 migration applied: {sql[:60]}")
-            except sqlite3.OperationalError:
-                pass  # Column already exists — normal on upgrade
+            except sqlite3.OperationalError as oe:
+                # Only "duplicate column" is the expected no-op on upgrade; any
+                # other OperationalError (locked, disk full, syntax) is a REAL
+                # failure and must be surfaced, not silently swallowed.
+                if "duplicate column" in str(oe).lower():
+                    pass
+                else:
+                    _log.error(f"Tool 2 migration FAILED ({sql[:60]}): {oe}")
+                    raise
         raw.close()
     except Exception as exc:
         _log.warning(f"Tool 2 migration skipped (non-fatal): {exc}")

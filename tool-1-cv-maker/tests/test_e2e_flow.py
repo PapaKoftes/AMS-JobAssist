@@ -74,6 +74,7 @@ class TestE2EFlow:
         r = client.post("/api/interview/start", json={
             "user_id": "e2e_user_001",
             "interview_path": "unemployed",
+            "consent_given": True,
             "language": "de",
         })
         assert r.status_code == 200, f"start failed: {r.text}"

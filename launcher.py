@@ -46,10 +46,11 @@ class AMS_Launcher:
         self.running = True
         self._log_handles = []  # open child-log file handles, closed on shutdown
 
-    def _start_tool(self, name: str, src_rel: str, port: int):
+    def _start_tool(self, name: str, src_rel: str, port: int,
+                    exe_basename: str = "", port_env_var: str = ""):
         """
-        Start a tool from source (uvicorn).
-        Source always takes priority — stale .exe files are never used.
+        Start a tool. When running from a frozen launcher .exe, invoke the
+        sibling per-tool .exe (exe_basename); from source, run uvicorn via Python.
 
         IMPORTANT: child stdout/stderr are redirected to per-tool log files,
         NOT subprocess.PIPE. Uvicorn logs every HTTP request; if we used PIPE
@@ -60,19 +61,54 @@ class AMS_Launcher:
         """
         print(f"  [>>] Starting {name}...")
 
-        src_path = Path(src_rel)
-        if not src_path.exists():
-            print(f"  [!!] ERROR: {name} source not found at {src_rel}")
-            return None
-
         env = os.environ.copy()
-        env["PYTHONPATH"] = str(src_path.resolve())
+        frozen = getattr(sys, "frozen", False)
 
-        # Per-tool log file (drains child output so the pipe can never fill)
-        log_dir = src_path.resolve().parents[1] / "logs"  # <tool>/logs/
+        # ── Decide HOW to launch ──────────────────────────────────────────────
+        # FROZEN (.exe distribution): we CANNOT run `sys.executable -m uvicorn`
+        # — sys.executable is the launcher .exe, which has no -m/uvicorn and no
+        # source tree. Instead invoke the bundled per-tool .exe (built from
+        # build_tool{1,2}.spec, whose app.py __main__ runs uvicorn in-process),
+        # located next to the launcher, with the port passed via env.
+        if frozen:
+            exe_dir = Path(sys.executable).resolve().parent
+            exe_name = f"{exe_basename}.exe" if os.name == "nt" else exe_basename
+            tool_exe = exe_dir / exe_name
+            if not tool_exe.exists():
+                print(f"  [!!] ERROR: {name} executable not found at {tool_exe}")
+                return None
+            # The tool reads its port from AMS_TOOL{1,2}_PORT.
+            env[port_env_var] = str(port)
+            cmd = [str(tool_exe)]
+            cwd = str(exe_dir)
+            log_base = exe_dir
+        else:
+            # SOURCE / dev: run uvicorn via the real Python interpreter.
+            src_path = Path(src_rel)
+            if not src_path.exists():
+                print(f"  [!!] ERROR: {name} source not found at {src_rel}")
+                return None
+            env["PYTHONPATH"] = str(src_path.resolve())
+            env[port_env_var] = str(port)
+            cmd = [sys.executable, "-m", "uvicorn", "app:app",
+                   "--host", "127.0.0.1", "--port", str(port)]
+            cwd = str(src_path.resolve())
+            log_base = src_path.resolve().parents[1]  # <tool>/
+
+        # Per-tool log file (drains child output so the pipe can never fill).
+        log_dir = log_base / "logs"
         try:
             log_dir.mkdir(parents=True, exist_ok=True)
             log_path = log_dir / "server.log"
+            # Rotate if the log has grown large (RC-6: prevent unbounded growth).
+            try:
+                if log_path.exists() and log_path.stat().st_size > 10 * 1024 * 1024:
+                    bak = log_dir / "server.log.1"
+                    if bak.exists():
+                        bak.unlink()
+                    log_path.rename(bak)
+            except Exception:
+                pass
             log_handle = open(log_path, "a", buffering=1, encoding="utf-8", errors="replace")
         except Exception:
             # If we can't open a log file, fall back to discarding output —
@@ -82,10 +118,8 @@ class AMS_Launcher:
         self._log_handles.append(log_handle)
 
         return subprocess.Popen(
-            [sys.executable, "-m", "uvicorn",
-             "app:app", "--host", "127.0.0.1",
-             "--port", str(port)],
-            cwd=str(src_path.resolve()),
+            cmd,
+            cwd=cwd,
             stdout=log_handle,
             stderr=subprocess.STDOUT,
             env=env,
@@ -93,7 +127,8 @@ class AMS_Launcher:
 
     def start_tool1(self):
         """Start Tool 1 (CV Maker) from source."""
-        proc = self._start_tool("Tool 1", "tool-1-cv-maker/src/backend", TOOL1_PORT)
+        proc = self._start_tool("Tool 1", "tool-1-cv-maker/src/backend", TOOL1_PORT,
+                                exe_basename="AMS-JobAssist-Tool1", port_env_var="AMS_TOOL1_PORT")
         if proc is None:
             return False
         self.tool1_process = proc
@@ -101,7 +136,8 @@ class AMS_Launcher:
 
     def start_tool2(self):
         """Start Tool 2 (Trainer Dashboard) from source."""
-        proc = self._start_tool("Tool 2", "tool-2-trainer-dashboard/src/backend", TOOL2_PORT)
+        proc = self._start_tool("Tool 2", "tool-2-trainer-dashboard/src/backend", TOOL2_PORT,
+                                exe_basename="AMS-JobAssist-Tool2", port_env_var="AMS_TOOL2_PORT")
         if proc is None:
             return False
         self.tool2_process = proc
