@@ -35,18 +35,24 @@ jobs:
         run: |
           python -m compileall -q tool-1-cv-maker/src tool-2-trainer-dashboard/src shared launcher.py
 
-      - name: Tool 1 unit + remediation tests (model-independent)
+      - name: Tool 1 FULL suite (model-independent; LLM correctness tests self-skip)
         working-directory: tool-1-cv-maker
         env:
           AMS_ENFORCE_OFFLINE: "1"
         run: |
-          python -m pytest tests/test_remediation.py tests/test_privacy.py tests/test_offline_integrity.py -q
+          # test_llm_correctness.py self-skips when the GGUF model is absent (CI has none).
+          python -m pytest tests/ -q
 
-      - name: Tool 2 tests (if present)
+      - name: Tool 2 tests
         run: |
           if [ -d tool-2-trainer-dashboard/tests ]; then \
             python -m pytest tool-2-trainer-dashboard/tests -q ; \
           else echo "no tool-2 tests dir"; fi
+
+      - name: API docs generated from code (no manual drift)
+        run: |
+          python scripts/dump_openapi.py
+          test -f docs/openapi-tool1.json && test -f docs/openapi-tool2.json
 
   security-lint:
     runs-on: ubuntu-latest

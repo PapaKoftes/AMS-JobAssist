@@ -173,12 +173,15 @@ class DatabaseManager:
                 conn.execute(f"PRAGMA key = '{_DB_KEY}'")
             conn.row_factory = sqlite3.Row  # Allow dict-like access to rows
             conn.isolation_level = None  # Manual transaction control
-            # NOTE: foreign_keys is intentionally left at SQLite's per-connection
-            # default (OFF) here. The dump-mode flow writes answers for synthetic
-            # identity question_ids that aren't all pre-registered, and enabling
-            # FK globally would reject those inserts. Erasure does NOT depend on
-            # cascade — DataDeletion deletes children explicitly in order. WAL is
-            # set once at init; busy_timeout avoids spurious 'database is locked'.
+            # Enforce foreign keys on EVERY connection (incl. worker threads).
+            # SQLite's per-connection default is OFF, which previously let
+            # retention/erasure orphan child PII when run off the init thread.
+            # ON DELETE CASCADE now fires everywhere → no orphaned answers/cv_data/
+            # consent rows. The dump-mode flow registers its synthetic question_ids
+            # (_register_and_save) BEFORE inserting answers, so the
+            # answers→interview_questions FK is satisfied. Explicit child-deletes in
+            # DataDeletion / cleanup_old_sessions remain as defence-in-depth.
+            conn.execute("PRAGMA foreign_keys=ON")
             conn.execute("PRAGMA busy_timeout=5000")
             _tls.connection = conn
             logger.debug(f"New DB connection for thread {threading.current_thread().name}")

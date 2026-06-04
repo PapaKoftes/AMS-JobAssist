@@ -86,7 +86,7 @@ class CustomSection(BaseModel):
     Flexible catch-all for sections that don't fit standard categories
     (e.g. volunteering, projects, publications).
     """
-    heading: str
+    heading: str = ""   # optional; a missing heading is recoverable (routes to motivation)
     german: str = ""
     english: str = ""
     native: str = ""

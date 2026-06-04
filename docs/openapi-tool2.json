@@ -1,0 +1,945 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AMS JobAssist - Trainer Dashboard",
+    "description": "Trainer dashboard for reviewing participant CVs",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import-cvs": {
+      "post": {
+        "tags": [
+          "Trainer Dashboard",
+          "Import"
+        ],
+        "summary": "Import Cvs",
+        "description": "Import CVData JSON from Tool 1.\n\nSupports:\n- Single JSON file (one CV)\n- ZIP file with multiple JSONs\n\nFile size limited to MAX_UPLOAD_SIZE_MB.",
+        "operationId": "import_cvs_api_import_cvs_post",
+        "parameters": [
+          {
+            "name": "cohort_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cohort Id"
+            }
+          },
+          {
+            "name": "force_overwrite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Overwrite a locked/approved/trainer-edited submission instead of refusing",
+              "default": false,
+              "title": "Force Overwrite"
+            },
+            "description": "Overwrite a locked/approved/trainer-edited submission instead of refusing"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_cvs_api_import_cvs_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants": {
+      "get": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "List Participants",
+        "description": "List participants with optional filtering and pagination.\n\nQuery params:\n- cohort_id: Filter by cohort\n- status: Filter by approval status (pending/approved/rejected)\n- search: Search by name or email\n- min_quality: Only show participants with CV quality >= value (0.0–1.0)\n- max_quality: Only show participants with CV quality <= value (0.0–1.0)\n- page: Page number (default 1)\n- page_size: Items per page (default 50, max 200)",
+        "operationId": "list_participants_api_participants_get",
+        "parameters": [
+          {
+            "name": "cohort_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "min_quality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to participants whose latest CV quality >= this value",
+              "title": "Min Quality"
+            },
+            "description": "Filter to participants whose latest CV quality >= this value"
+          },
+          {
+            "name": "max_quality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to participants whose latest CV quality <= this value",
+              "title": "Max Quality"
+            },
+            "description": "Filter to participants whose latest CV quality <= this value"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{participant_id}": {
+      "get": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Get Participant",
+        "description": "Get a specific participant with their CV.",
+        "operationId": "get_participant_api_participants__participant_id__get",
+        "parameters": [
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{participant_id}/approve": {
+      "post": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Approve Submission",
+        "description": "Approve or reject a participant's CV submission.\n\nAll approval actions are logged to the audit trail.",
+        "operationId": "approve_submission_api_participants__participant_id__approve_post",
+        "parameters": [
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{participant_id}/cv-section": {
+      "patch": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Update Cv Section",
+        "description": "Persist a trainer's inline edit to one CV section.\n\nFinds the section by question_id inside cv_data_json and overwrites\nthe text for the requested language.  Records the change in the\nTrainerFeedback audit trail.",
+        "operationId": "update_cv_section_api_participants__participant_id__cv_section_patch",
+        "parameters": [
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CVSectionEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/bulk-approve": {
+      "post": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Bulk Approve",
+        "description": "Bulk approve/reject multiple participants.\n\nAll actions are logged individually to the audit trail.",
+        "operationId": "bulk_approve_api_participants_bulk_approve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkApprovalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{participant_id}/status": {
+      "get": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Get Participant Cv Status",
+        "description": "Return the approval and lock status for a participant's CV.\n\nResponse shape::\n\n    {\"approved\": false, \"locked\": false, \"approved_at\": null, \"approved_by\": null}",
+        "operationId": "get_participant_cv_status_api_participants__participant_id__status_get",
+        "parameters": [
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{participant_id}/lock": {
+      "post": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Lock Participant Cv",
+        "description": "Lock a participant's CV — prevents any further edits by the participant.\n\nOnce locked, the interview engine rejects new answers for the linked session.\nTrainers can still edit inline via the dashboard.",
+        "operationId": "lock_participant_cv_api_participants__participant_id__lock_post",
+        "parameters": [
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{participant_id}/unlock": {
+      "post": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Unlock Participant Cv",
+        "description": "Unlock a previously locked CV so the participant can continue editing.",
+        "operationId": "unlock_participant_cv_api_participants__participant_id__unlock_post",
+        "parameters": [
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cohorts/{cohort_id}/metrics": {
+      "get": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Get Cohort Metrics",
+        "description": "Get summary metrics for a cohort.",
+        "operationId": "get_cohort_metrics_api_cohorts__cohort_id__metrics_get",
+        "parameters": [
+          {
+            "name": "cohort_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cohort Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bulk-export": {
+      "post": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Bulk Export",
+        "description": "Export multiple CVs in the requested format.\n\n- format=json  → single JSON bundle (always available)\n- format=pdf   → zip archive of individual PDFs (requires Tool 1)\n- format=docx  → zip archive of individual DOCX files (requires Tool 1)\n\nReturns a downloadable file (JSON, or a .zip for pdf/docx).",
+        "operationId": "bulk_export_api_bulk_export_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export-all": {
+      "get": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Export All Participants",
+        "description": "Export ALL participants' CVs as a single zip archive (PDF or DOCX),\nor as a JSON bundle.\n\n- format=pdf   → zip of individual PDFs\n- format=docx  → zip of individual DOCX files\n- format=json  → single JSON bundle\n\nOptionally filter by cohort_id.",
+        "operationId": "export_all_participants_api_export_all_get",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Export format: pdf, docx, or json",
+              "default": "pdf",
+              "title": "Format"
+            },
+            "description": "Export format: pdf, docx, or json"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Output language: de or en",
+              "default": "de",
+              "title": "Language"
+            },
+            "description": "Output language: de or en"
+          },
+          {
+            "name": "cohort_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optionally filter by cohort",
+              "title": "Cohort Id"
+            },
+            "description": "Optionally filter by cohort"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/backup": {
+      "get": {
+        "tags": [
+          "Trainer Dashboard",
+          "Admin"
+        ],
+        "summary": "Admin Backup",
+        "description": "Download a CONSISTENT snapshot of the trainer SQLite database.\n\nSecurity: this endpoint exposes ALL participant PII, so it is gated\nindependently of the global AUTH_ENABLED flag. It is allowed only when the\nrequest comes from loopback (the trainer's own machine) OR a valid\nAMS_TRAINER_API_KEY is presented. A remote client without the key is always\nrefused, even if the dashboard otherwise runs without authentication.",
+        "operationId": "admin_backup_api_admin_backup_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApprovalRequest": {
+        "properties": {
+          "approval_status": {
+            "type": "string",
+            "title": "Approval Status"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback"
+          },
+          "approved_by": {
+            "type": "string",
+            "title": "Approved By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approval_status",
+          "approved_by"
+        ],
+        "title": "ApprovalRequest",
+        "description": "Request to approve/reject a submission"
+      },
+      "Body_import_cvs_api_import_cvs_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_cvs_api_import_cvs_post"
+      },
+      "BulkApprovalRequest": {
+        "properties": {
+          "participant_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Participant Ids"
+          },
+          "approval_status": {
+            "type": "string",
+            "title": "Approval Status"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback"
+          },
+          "approved_by": {
+            "type": "string",
+            "title": "Approved By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "participant_ids",
+          "approval_status",
+          "approved_by"
+        ],
+        "title": "BulkApprovalRequest",
+        "description": "Request to bulk approve/reject participants"
+      },
+      "BulkExportRequest": {
+        "properties": {
+          "participant_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Participant Ids"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "default": "pdf"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          },
+          "include_feedback": {
+            "type": "boolean",
+            "title": "Include Feedback",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "participant_ids"
+        ],
+        "title": "BulkExportRequest",
+        "description": "Request to export multiple CVs"
+      },
+      "CVSectionEditRequest": {
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "title": "Question Id"
+          },
+          "edited_text": {
+            "type": "string",
+            "title": "Edited Text"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question_id",
+          "edited_text"
+        ],
+        "title": "CVSectionEditRequest",
+        "description": "Request to persist a trainer's inline edit to one CV section."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LockRequest": {
+        "properties": {
+          "locked_by": {
+            "type": "string",
+            "title": "Locked By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locked_by"
+        ],
+        "title": "LockRequest",
+        "description": "Request body for lock / unlock operations."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

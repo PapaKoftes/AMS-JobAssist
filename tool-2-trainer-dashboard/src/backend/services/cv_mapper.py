@@ -56,6 +56,36 @@ except ImportError:
     CURRENT_VERSION = "1.0"
     logger.debug("shared.schema.migration not available; skipping version migration")
 
+# The canonical CVDocument Pydantic model is the cross-tool CONTRACT. We now
+# validate every canonical import against it so malformed data is rejected at
+# the boundary instead of silently stored.
+try:
+    from shared.schema.cv_schema import CVDocument as _CVDocument
+    _HAS_SCHEMA = True
+except ImportError:
+    _HAS_SCHEMA = False
+    logger.debug("shared.schema.cv_schema not available; canonical validation disabled")
+
+
+def _validate_canonical(raw: dict) -> None:
+    """
+    Enforce the cross-tool contract: a canonical export (schema_version present)
+    must satisfy the CVDocument Pydantic model. Raises ValueError on a structural
+    mismatch so the import is rejected with a clear message rather than corrupting
+    the trainer DB. No-op if the schema module isn't importable.
+    """
+    if not _HAS_SCHEMA:
+        return
+    try:
+        # Pydantic v2 model_validate; tolerant of extra keys (model ignores them).
+        _CVDocument.model_validate(raw)
+    except Exception as exc:
+        # Keep the message short — the full validation error can be huge.
+        msg = str(exc).splitlines()[0] if str(exc) else exc.__class__.__name__
+        raise ValueError(
+            f"Canonical CV failed schema validation (cross-tool contract): {msg}"
+        ) from exc
+
 
 def normalise(raw: dict[str, Any]) -> dict[str, Any]:
     """
@@ -74,9 +104,10 @@ def normalise(raw: dict[str, Any]) -> dict[str, Any]:
     # ── Primary path: canonical CVDocument (schema_version present) ──────────
     if "schema_version" in raw:
         logger.debug(f"cv_mapper: canonical export (schema_version={raw['schema_version']})")
-        if _HAS_MIGRATION:
-            return _migrate_schema(raw)
-        return dict(raw)
+        migrated = _migrate_schema(raw) if _HAS_MIGRATION else dict(raw)
+        # Enforce the cross-tool contract on the (migrated) canonical document.
+        _validate_canonical(migrated)
+        return migrated
 
     # ── Legacy Shape B: has a top-level "cvdata" key ─────────────────────────
     if "cvdata" in raw and isinstance(raw["cvdata"], dict):

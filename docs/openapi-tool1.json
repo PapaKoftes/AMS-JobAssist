@@ -1,0 +1,2278 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AMS JobAssist - CV Maker",
+    "description": "Offline CV building tool for AMS participants",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/interview/start": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Start Interview",
+        "description": "Start a new interview session.\n\nArgs:\n    user_id: Unique identifier for the user\n    interview_path: One of: unemployed, career-switch, student, pause, other\n    language: Interview language (default: de)\n    user_native_language: Optional native language code (ISO 639-1)\n\nReturns:\n    Dict with session_id, first_question, and progress info",
+        "operationId": "start_interview_api_interview_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartInterviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Start Interview Api Interview Start Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/next-question/{session_id}": {
+      "get": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Get Next Question",
+        "description": "Get the next question in the interview.\n\nArgs:\n    session_id: Current session ID\n\nReturns:\n    Dict with next question and progress info, or completion status",
+        "operationId": "get_next_question_api_interview_next_question__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Next Question Api Interview Next Question  Session Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/submit-answer": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Submit Answer",
+        "description": "Submit an answer to a question.\n\nValidates answer length and may trigger re-ask if too weak.",
+        "operationId": "submit_answer_api_interview_submit_answer_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Submit Answer Api Interview Submit Answer Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/skip-question": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Skip Question",
+        "description": "Skip a question and get the next one.",
+        "operationId": "skip_question_api_interview_skip_question_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkipQuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Skip Question Api Interview Skip Question Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/resume": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Resume Interview",
+        "description": "Resume an interview that was paused.\n\nUses crash recovery to restore session to consistent state.",
+        "operationId": "resume_interview_api_interview_resume_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeInterviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Resume Interview Api Interview Resume Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/status/{session_id}": {
+      "get": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Get Interview Status",
+        "description": "Get current status of an interview session.",
+        "operationId": "get_interview_status_api_interview_status__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Interview Status Api Interview Status  Session Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/autosave-status/{session_id}": {
+      "get": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Get Autosave Status",
+        "description": "Get autosave status for a session.",
+        "operationId": "get_autosave_status_api_interview_autosave_status__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Autosave Status Api Interview Autosave Status  Session Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/preview": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Preview Answer",
+        "description": "Polish a raw answer for live preview without saving it.\n\nCalled on every keystroke (debounced) to show the user how their\nrough text will look on their CV before they submit.\n\nArgs:\n    answer_text: Raw text the user is currently typing\n    category: Question category (default: experience)\n\nReturns:\n    Dict with polished_text (English version for display)",
+        "operationId": "preview_answer_api_interview_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewAnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Preview Answer Api Interview Preview Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/follow-up": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Get Follow Up",
+        "description": "Generate one targeted follow-up question for a just-submitted answer.\n\nReads the session's target_job (if any) to align probes.\nReturns null follow_up when no probe is needed (answer is sufficient).",
+        "operationId": "get_follow_up_api_interview_follow_up_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Follow Up Api Interview Follow Up Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/ai/status": {
+      "get": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Get Ai Status",
+        "description": "Return the current AI mode — checks local model, Ollama, and rule-based.\n\nCalled by the frontend to show the AI indicator badge.\nReturns a unified status so the badge correctly reflects whichever engine\nis actually active (local model takes priority over Ollama over rules).",
+        "operationId": "get_ai_status_api_interview_ai_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Ai Status Api Interview Ai Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/ai/refresh": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Refresh Ai Detection",
+        "description": "Force re-detection of all AI engines (local model + Ollama).",
+        "operationId": "refresh_ai_detection_api_interview_ai_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Refresh Ai Detection Api Interview Ai Refresh Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/admin/cleanup-sessions": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Cleanup Sessions",
+        "description": "Trigger a retention sweep (DESTRUCTIVE) older than the given thresholds.\n\nTwo-tier purge: abandoned drafts after `draft_days_old`; ALL sessions\n(incl. completed/approved/locked) after `days_old`. Child rows are deleted\nexplicitly (no orphaned PII). Gated to loopback-or-API-key — it can delete\napproved CVs, so it must not be callable by an unauthenticated remote client.\n\nWARNING: days_old=1 will delete approved CVs older than 1 day. Export first.\n\nReturns:\n    Dict with number of deleted sessions and thresholds used.",
+        "operationId": "cleanup_sessions_api_interview_admin_cleanup_sessions_post",
+        "parameters": [
+          {
+            "name": "days_old",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 365,
+              "title": "Days Old"
+            }
+          },
+          {
+            "name": "draft_days_old",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Draft Days Old"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cleanup Sessions Api Interview Admin Cleanup Sessions Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interview/complete/{session_id}": {
+      "post": {
+        "tags": [
+          "interview"
+        ],
+        "summary": "Complete Interview",
+        "description": "Finalize interview: build CVData from all answers and persist it.\n\nMust be called when interview is complete so exports can work.\nReturns CV summary including quality score and ready_for_export flag.",
+        "operationId": "complete_interview_api_interview_complete__session_id__post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Complete Interview Api Interview Complete  Session Id  Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/language-packs/available": {
+      "get": {
+        "tags": [
+          "language-packs"
+        ],
+        "summary": "Get Available Languages",
+        "description": "Get all available languages (core and optional).\n\nReturns:\n    Dict with core and optional languages",
+        "operationId": "get_available_languages_api_language_packs_available_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableLanguages"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/language-packs/core": {
+      "get": {
+        "tags": [
+          "language-packs"
+        ],
+        "summary": "Get Core Languages",
+        "description": "Get list of core languages (14 languages, always available offline).\n\nReturns:\n    List of ISO 639-1 language codes",
+        "operationId": "get_core_languages_api_language_packs_core_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "type": "object",
+                  "title": "Response Get Core Languages Api Language Packs Core Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/language-packs/info/{language_code}": {
+      "get": {
+        "tags": [
+          "language-packs"
+        ],
+        "summary": "Get Language Info",
+        "description": "Get detailed information about a specific language.\n\nArgs:\n    language_code: ISO 639-1 language code (e.g., 'de', 'en', 'uk')\n\nReturns:\n    Language metadata",
+        "operationId": "get_language_info_api_language_packs_info__language_code__get",
+        "parameters": [
+          {
+            "name": "language_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Language Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguageInfo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/language-packs/stats": {
+      "get": {
+        "tags": [
+          "language-packs"
+        ],
+        "summary": "Get Language Stats",
+        "description": "Get statistics about language packs.\n\nReturns:\n    Language pack statistics including total, core, available counts",
+        "operationId": "get_language_stats_api_language_packs_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguagePackStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/language-packs/check/{language_code}": {
+      "get": {
+        "tags": [
+          "language-packs"
+        ],
+        "summary": "Check Language Available",
+        "description": "Check if a language is available for offline use.\n\nArgs:\n    language_code: ISO 639-1 language code\n\nReturns:\n    Dict with 'available' boolean flag",
+        "operationId": "check_language_available_api_language_packs_check__language_code__get",
+        "parameters": [
+          {
+            "name": "language_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Language Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Check Language Available Api Language Packs Check  Language Code  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "description": "Simple liveness probe.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cv/{session_id}": {
+      "get": {
+        "tags": [
+          "CV"
+        ],
+        "summary": "Get Cv Metadata",
+        "description": "Return CV metadata for a completed session.",
+        "operationId": "get_cv_metadata_api_cv__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/backup": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin Backup Tool1",
+        "description": "Download a CONSISTENT snapshot of Tool 1's SQLite database.\n\nSecurity: this streams ALL participant PII, so it is gated to a loopback\nclient OR a valid AMS_TOOL1_API_KEY (see _require_local_or_key). It uses\nSQLite's online-backup API for a non-torn snapshot rather than streaming the\nlive file, and every download is audit-logged.",
+        "operationId": "admin_backup_tool1_api_admin_backup_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cv/{session_id}/my-data": {
+      "get": {
+        "tags": [
+          "DSGVO"
+        ],
+        "summary": "Download My Data",
+        "description": "DSGVO data portability (Art. 20) — download all raw answers and CV data.\n\nOwnership is proven by the session access_token (?token=... or X-Session-Token)\nor the user_id (?user_id=... / X-User-Id). Without valid proof → 404. This\ncloses the IDOR where integer session_ids could be enumerated.",
+        "operationId": "download_my_data_api_cv__session_id__my_data_get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cv/{session_id}/erase": {
+      "delete": {
+        "tags": [
+          "DSGVO"
+        ],
+        "summary": "Erase My Data",
+        "description": "DSGVO right-to-erasure (Art. 17). Permanently deletes the participant's\naccount and ALL associated data (sessions, answers, CV, export files),\nafter proving ownership via the session access_token or user_id.\n\nThis wires the previously-unreachable DataDeletion.delete_user_data().",
+        "operationId": "erase_my_data_api_cv__session_id__erase_delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/json": {
+      "post": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Export Cv Json",
+        "description": "Export CV as JSON (for Tool 2 import or download).",
+        "operationId": "export_cv_json_api_export_json_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/pdf": {
+      "post": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Export Cv Pdf",
+        "description": "Export CV as PDF.",
+        "operationId": "export_cv_pdf_api_export_pdf_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/docx": {
+      "post": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Export Cv Docx",
+        "description": "Export CV as DOCX (Word document).",
+        "operationId": "export_cv_docx_api_export_docx_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/cover-letter": {
+      "post": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Export Cover Letter",
+        "description": "Generate a cover letter for a completed CV.\n\nUses the CV's identity, skills, and experience sections to produce\na template-based letter in the requested language and tone.\nOptionally targeted at a specific job title / employer.",
+        "operationId": "export_cover_letter_api_export_cover_letter_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverLetterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ats/score": {
+      "post": {
+        "tags": [
+          "ATS"
+        ],
+        "summary": "Ats Score",
+        "description": "Score the CV against a job description (or the full ATS bank if no JD provided).\nReturns score, grade, matched/missing keywords, and suggestions.",
+        "operationId": "ats_score_api_ats_score_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ATSScoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/europass": {
+      "post": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Export Cv Europass",
+        "description": "Export CV as Europass-compatible XML.",
+        "operationId": "export_cv_europass_api_export_europass_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Chat",
+        "description": "Coach chat — context-aware conversation with the AI.\nKnows the user's CV if session_id is provided.\nFalls back to a helpful message if model not available.",
+        "operationId": "ai_chat_api_ai_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/interview-coach": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Interview Coach",
+        "description": "In-interview coaching assistant.\n\nHelps the user answer the CURRENT question — explains what's being asked,\ngives examples, and offers gentle prompts when they're stuck.\nWorks during the interview (not just post-completion).\nAlways returns something useful — gracefully degrades to rule-based tips.",
+        "operationId": "ai_interview_coach_api_ai_interview_coach_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewCoachRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/dump-extract": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Dump Extract",
+        "description": "Free-form \"dump\" mode: the participant writes everything about themselves in\none block (any language); we extract structured CV fields, store them as\nanswers (so the normal build/export pipeline works), and report what was\ncaptured and what's still missing — so the assistant can ask only about the\ngaps. Rules-first with AI assist; never fails the request.",
+        "operationId": "ai_dump_extract_api_ai_dump_extract_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DumpExtractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/dump-snapshot/{session_id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Dump Snapshot",
+        "description": "Reconstruct the captured/missing snapshot for a session from stored answers.\n\nUsed on RESUME so the living-CV sheet can be repainted and the conversation\ncan pick up at the right gap, instead of dropping the participant into the\nlegacy per-question flow with an empty CV.",
+        "operationId": "ai_dump_snapshot_api_ai_dump_snapshot__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/interview-prep": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Interview Prep",
+        "description": "Generate likely interview questions from the completed CV.\n\nTries local LLM first, then Ollama, then falls back to a path-aware\nrule-based question bank.  Never returns 503 — always gives useful content.",
+        "operationId": "ai_interview_prep_api_ai_interview_prep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewPrepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/job-match": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Job Match",
+        "description": "Match CV against a job description and give actionable feedback.\n\nTries local LLM first, then Ollama, then falls back to rule-based ATS\nkeyword matching.  Never returns 503.",
+        "operationId": "ai_job_match_api_ai_job_match_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobMatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/model-status": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Model Status",
+        "description": "Return AI model status. Priority: Local LLM > Ollama > rule-based.",
+        "operationId": "ai_model_status_api_ai_model_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/download-model": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Download Model",
+        "description": "Trigger model download in the background.\nSupports tiered models: \"light\" (~400MB), \"medium\" (~1.1GB), \"full\" (~2GB).\nReturns immediately — poll /api/ai/model-status to track progress.",
+        "operationId": "ai_download_model_api_ai_download_model_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelDownloadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/model-tiers": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Model Tiers",
+        "description": "List all available model tiers with download status.",
+        "operationId": "ai_model_tiers_api_ai_model_tiers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/download-status": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Download Status",
+        "description": "Live progress of the current/last model download.\n\nPoll this after POST /api/ai/download-model. Returns status\n(idle/downloading/verifying/done/error/cancelled), bytes downloaded/total,\npercent, and any error message.",
+        "operationId": "ai_download_status_api_ai_download_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/download-cancel": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Download Cancel",
+        "description": "Stop an in-flight model download. The partial file is kept so a later\ndownload resumes from where it stopped.",
+        "operationId": "ai_download_cancel_api_ai_download_cancel_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/knowledge/status": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Knowledge Status",
+        "description": "Return knowledge base status — how many jobs, verbs, skills loaded.",
+        "operationId": "ai_knowledge_status_api_ai_knowledge_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/knowledge/jobs": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Knowledge Jobs",
+        "description": "List all jobs in the knowledge base (for admin/debug).",
+        "operationId": "ai_knowledge_jobs_api_ai_knowledge_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/knowledge/search": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Knowledge Search",
+        "description": "Search the knowledge base for a job matching the query text.",
+        "operationId": "ai_knowledge_search_api_ai_knowledge_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/profile-summary": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Ai Profile Summary",
+        "description": "Generate a short, encouraging plain-language summary of the user's CV profile.\n\nHelps participants understand their own strengths and what makes them stand out.\nReturns a rule-based fallback summary when AI is not available.",
+        "operationId": "ai_profile_summary_api_ai_profile_summary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileSummaryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Serve main UI",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ATSScoreRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "job_description": {
+            "type": "string",
+            "title": "Job Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "ATSScoreRequest",
+        "description": "Request body for ATS scoring."
+      },
+      "AvailableLanguages": {
+        "properties": {
+          "core": {
+            "items": {
+              "$ref": "#/components/schemas/LanguageInfo"
+            },
+            "type": "array",
+            "title": "Core"
+          },
+          "optional": {
+            "items": {
+              "$ref": "#/components/schemas/LanguageInfo"
+            },
+            "type": "array",
+            "title": "Optional"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "core",
+          "optional",
+          "total"
+        ],
+        "title": "AvailableLanguages",
+        "description": "List of available languages."
+      },
+      "ChatRequest": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ChatRequest"
+      },
+      "CoverLetterRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "job_title": {
+            "type": "string",
+            "title": "Job Title",
+            "default": ""
+          },
+          "employer_name": {
+            "type": "string",
+            "title": "Employer Name",
+            "default": ""
+          },
+          "tone": {
+            "type": "string",
+            "title": "Tone",
+            "default": "formal"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "CoverLetterRequest",
+        "description": "Request body for cover-letter generation."
+      },
+      "DumpExtractRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          },
+          "expect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expect"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "text"
+        ],
+        "title": "DumpExtractRequest"
+      },
+      "ExportRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "anonymise": {
+            "type": "boolean",
+            "title": "Anonymise",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "ExportRequest",
+        "description": "Request body for export endpoints."
+      },
+      "FollowUpRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "question_id": {
+            "type": "string",
+            "title": "Question Id"
+          },
+          "answer_text": {
+            "type": "string",
+            "title": "Answer Text"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "question_id",
+          "answer_text"
+        ],
+        "title": "FollowUpRequest",
+        "description": "Request a follow-up probe for a just-submitted answer."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InterviewCoachRequest": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          },
+          "question_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Id"
+          },
+          "question_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "InterviewCoachRequest"
+      },
+      "InterviewPrepRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "InterviewPrepRequest"
+      },
+      "JobMatchRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "job_description": {
+            "type": "string",
+            "title": "Job Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "job_description"
+        ],
+        "title": "JobMatchRequest"
+      },
+      "LanguageInfo": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "native_name": {
+            "type": "string",
+            "title": "Native Name"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "is_core": {
+            "type": "boolean",
+            "title": "Is Core"
+          },
+          "size_mb": {
+            "type": "number",
+            "title": "Size Mb"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "native_name",
+          "region",
+          "is_core",
+          "size_mb",
+          "description"
+        ],
+        "title": "LanguageInfo",
+        "description": "Language metadata."
+      },
+      "LanguagePackStats": {
+        "properties": {
+          "total_languages": {
+            "type": "integer",
+            "title": "Total Languages"
+          },
+          "core_languages": {
+            "type": "integer",
+            "title": "Core Languages"
+          },
+          "core_size_mb": {
+            "type": "number",
+            "title": "Core Size Mb"
+          },
+          "available_languages": {
+            "type": "integer",
+            "title": "Available Languages"
+          },
+          "core_list": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Core List"
+          },
+          "available_list": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available List"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_languages",
+          "core_languages",
+          "core_size_mb",
+          "available_languages",
+          "core_list",
+          "available_list"
+        ],
+        "title": "LanguagePackStats",
+        "description": "Language pack statistics."
+      },
+      "ModelDownloadRequest": {
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "title": "Confirm",
+            "default": false
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          }
+        },
+        "type": "object",
+        "title": "ModelDownloadRequest"
+      },
+      "PreviewAnswerRequest": {
+        "properties": {
+          "answer_text": {
+            "type": "string",
+            "title": "Answer Text"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "experience"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer_text"
+        ],
+        "title": "PreviewAnswerRequest",
+        "description": "Polish a raw answer for live preview — no save, no session required."
+      },
+      "ProfileSummaryRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "ProfileSummaryRequest"
+      },
+      "ResumeInterviewRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "ResumeInterviewRequest",
+        "description": "Request to resume an interview."
+      },
+      "SkipQuestionRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "question_id": {
+            "type": "string",
+            "title": "Question Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "question_id"
+        ],
+        "title": "SkipQuestionRequest",
+        "description": "Request to skip a question."
+      },
+      "StartInterviewRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "interview_path": {
+            "type": "string",
+            "title": "Interview Path"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "de"
+          },
+          "user_native_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Native Language"
+          },
+          "consent_given": {
+            "type": "boolean",
+            "title": "Consent Given",
+            "default": false
+          },
+          "consent_text_version": {
+            "type": "string",
+            "title": "Consent Text Version",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "interview_path"
+        ],
+        "title": "StartInterviewRequest",
+        "description": "Request to start a new interview."
+      },
+      "SubmitAnswerRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "question_id": {
+            "type": "string",
+            "title": "Question Id"
+          },
+          "answer_text": {
+            "type": "string",
+            "title": "Answer Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "question_id",
+          "answer_text"
+        ],
+        "title": "SubmitAnswerRequest",
+        "description": "Request to submit an answer to a question."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

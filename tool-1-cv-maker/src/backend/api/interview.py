@@ -785,26 +785,52 @@ async def refresh_ai_detection() -> Dict:
     }}
 
 
+def _require_local_or_key(request: Request) -> None:
+    """
+    Gate destructive/admin endpoints. Allowed from loopback OR with a matching
+    X-API-Key. A remote caller without the key is refused. Kept self-contained
+    here to avoid a circular import from app.py.
+    """
+    host = (request.client.host if request.client else "") or ""
+    if host.startswith("127.") or host in ("::1", "localhost", "", "testclient"):
+        return
+    import secrets as _secrets
+    try:
+        from config import API_KEY
+    except Exception:
+        API_KEY = ""
+    supplied = request.headers.get("X-API-Key", "")
+    if not API_KEY or not _secrets.compare_digest(supplied, API_KEY):
+        logger.warning(f"admin endpoint refused: non-loopback client={host} without valid key")
+        raise HTTPException(status_code=403,
+                            detail="Restricted to the local machine or an authenticated request.")
+
+
 @router.post("/admin/cleanup-sessions")
 async def cleanup_sessions(
-    days_old: int = 90,
+    request: Request,
+    days_old: int = 365,
+    draft_days_old: int = 30,
     engine: InterviewEngine = Depends(_get_engine),
 ) -> Dict:
     """
-    Clean up incomplete sessions older than N days.
+    Trigger a retention sweep (DESTRUCTIVE) older than the given thresholds.
 
-    Only sessions that were never finished and are neither approved nor locked
-    are deleted.  Safe to call repeatedly.
+    Two-tier purge: abandoned drafts after `draft_days_old`; ALL sessions
+    (incl. completed/approved/locked) after `days_old`. Child rows are deleted
+    explicitly (no orphaned PII). Gated to loopback-or-API-key — it can delete
+    approved CVs, so it must not be callable by an unauthenticated remote client.
 
-    Args:
-        days_old: Age threshold in whole days (default 90).
+    WARNING: days_old=1 will delete approved CVs older than 1 day. Export first.
 
     Returns:
-        Dict with number of deleted sessions and threshold used.
+        Dict with number of deleted sessions and thresholds used.
     """
+    _require_local_or_key(request)
     try:
-        count = engine.cleanup_old_sessions(days_old)
-        return {"status": "success", "data": {"deleted": count, "days_old": days_old}}
+        count = engine.cleanup_old_sessions(days_old, draft_days_old)
+        return {"status": "success",
+                "data": {"deleted": count, "days_old": days_old, "draft_days_old": draft_days_old}}
     except Exception as e:
         logger.error(f"Session cleanup error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Session cleanup failed")

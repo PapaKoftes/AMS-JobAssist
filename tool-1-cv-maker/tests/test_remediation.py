@@ -152,6 +152,41 @@ def test_retention_purges_completed_records_and_children(db_manager):
         "consent_records must NOT be orphaned"
 
 
+def test_admin_cleanup_endpoint_is_gated():
+    """The destructive cleanup endpoint must refuse a non-loopback client without a key."""
+    from api.interview import _require_local_or_key
+    from fastapi import HTTPException
+
+    class _FakeClient:
+        host = "10.0.0.5"   # non-loopback
+
+    class _FakeReq:
+        client = _FakeClient()
+        headers = {}
+
+    with pytest.raises(HTTPException) as exc:
+        _require_local_or_key(_FakeReq())
+    assert exc.value.status_code == 403
+
+    # Loopback is allowed.
+    class _LoopClient:
+        host = "127.0.0.1"
+
+    class _LoopReq:
+        client = _LoopClient()
+        headers = {}
+
+    _require_local_or_key(_LoopReq())  # must not raise
+
+
+def test_foreign_keys_enabled_by_default(db_manager):
+    """FK enforcement must be ON for every connection (prevents orphaned PII)."""
+    row = db_manager.execute_query("PRAGMA foreign_keys")
+    # PRAGMA foreign_keys returns [{'foreign_keys': 1}]
+    val = list(row[0].values())[0] if row else 0
+    assert val == 1, "foreign_keys must be ON so session cascade never orphans children"
+
+
 def test_retention_disabled_when_zero(db_manager):
     from interview.engine import InterviewEngine
     db_manager.execute_update("PRAGMA foreign_keys=OFF")

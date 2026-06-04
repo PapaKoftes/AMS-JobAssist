@@ -214,3 +214,38 @@ def enable_offline_mode() -> bool:
 def verify_network_blocked() -> bool:
     """Verify offline mode is active (convenience function for tests)."""
     return _network_blocker.verify_network_blocked()
+
+
+import contextlib as _contextlib
+
+
+@_contextlib.contextmanager
+def temporarily_allow_network():
+    """
+    Temporarily restore real networking for ONE explicit, user-initiated
+    operation: downloading the local AI model. Restores the original socket /
+    urllib / http.client primitives for the duration, then re-installs the block.
+
+    If offline mode was never enabled this is a no-op. Single-user localhost tool:
+    the window is the user-triggered model download only.
+    """
+    nb = _network_blocker
+    if not nb._blocked:
+        yield
+        return
+    saved = (
+        socket.socket, socket.getaddrinfo, urllib.request.urlopen,
+        http.client.HTTPConnection, http.client.HTTPSConnection,
+    )
+    socket.socket = nb._original_socket
+    socket.getaddrinfo = nb._original_getaddrinfo
+    urllib.request.urlopen = nb._original_urlopen
+    http.client.HTTPConnection = nb._original_http_connection
+    http.client.HTTPSConnection = nb._original_https_connection
+    logger.warning("🌐 Network temporarily ALLOWED for explicit model download")
+    try:
+        yield
+    finally:
+        (socket.socket, socket.getaddrinfo, urllib.request.urlopen,
+         http.client.HTTPConnection, http.client.HTTPSConnection) = saved
+        logger.warning("🔒 Network block RE-INSTATED after model download")

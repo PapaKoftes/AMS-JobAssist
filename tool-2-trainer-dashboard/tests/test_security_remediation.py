@@ -98,3 +98,32 @@ def test_import_500_does_not_leak_internal_detail(client, monkeypatch):
     )
     assert resp.status_code == 500
     assert "SECRET" not in resp.text and "stacktrace" not in resp.text.lower()
+
+
+def test_canonical_schema_validation_rejects_malformed():
+    """The cross-tool contract is enforced: a malformed canonical doc is rejected."""
+    from services.cv_mapper import normalise
+    import pytest as _pytest
+    # schema_version present (canonical path) but 'experience' is the wrong type
+    bad = {
+        "schema_version": "1.0",
+        "user_id": "u1",
+        "experience": "not-a-list",   # must be a list of entries
+    }
+    with _pytest.raises(ValueError):
+        normalise(bad)
+
+
+def test_canonical_schema_validation_accepts_valid():
+    """A well-formed canonical doc passes validation and normalises."""
+    from services.cv_mapper import normalise
+    good = {
+        "schema_version": "1.0",
+        "user_id": "u2",
+        "interview_path": "other",
+        "basics": {"full_name": "A B"},
+        "experience": [{"german": "x", "english": "x", "native": ""}],
+        "custom_sections": [{"german": "m", "english": "m", "native": ""}],  # no heading → OK
+    }
+    out = normalise(good)
+    assert out["user_id"] == "u2"

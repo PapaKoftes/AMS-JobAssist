@@ -450,6 +450,91 @@ def test_llm_endpoint_chat_live(live_server):
         f"Chat reply doesn't seem relevant to CV topic: {reply!r}"
 
 
+def _build_completed_cv(base, user_id):
+    """Start a session, dump a rich profile, and complete it → returns session_id."""
+    sess = _api(base, "POST", "/api/interview/start", {
+        "user_id": user_id, "interview_path": "other",
+        "language": "de", "consent_given": True
+    })
+    sid = sess["data"]["session_id"]
+    _api(base, "POST", "/api/ai/dump-extract", {
+        "session_id": sid,
+        "text": ("Ich bin Anna Gruber, anna@test.at. Ich suche Arbeit als "
+                 "Buchhalterin. Ich habe 6 Jahre Erfahrung in der Buchhaltung "
+                 "bei Steuerberatung Wien. Ich kann BMD, Excel, Lohnverrechnung "
+                 "und Bilanzierung. Ich habe die HAK-Matura abgeschlossen."),
+        "language": "de"
+    })
+    _api(base, "POST", f"/api/interview/complete/{sid}", None)
+    return sid
+
+
+@SKIP_NO_MODEL
+def test_llm_endpoint_interview_coach_live(live_server):
+    """E2E: /api/ai/interview-coach returns a relevant German reply (no CV needed)."""
+    resp = _api(live_server, "POST", "/api/ai/interview-coach", {
+        "message": "Ich weiß nicht, was ich bei Berufserfahrung schreiben soll.",
+        "language": "de",
+        "question_id": "u_02",
+        "question_text": "Erzählen Sie von Ihrer Berufserfahrung.",
+    })
+    assert resp["status"] == "success"
+    reply = resp["data"].get("reply", "")
+    assert len(reply.split()) >= 8, f"coach reply too short: {reply!r}"
+
+
+@SKIP_NO_MODEL
+def test_llm_endpoint_job_match_live(live_server):
+    """E2E: /api/ai/job-match analyses a built CV against a JD."""
+    sid = _build_completed_cv(live_server, "jobmatch-e2e")
+    resp = _api(live_server, "POST", "/api/ai/job-match", {
+        "session_id": sid,
+        "job_description": ("Wir suchen eine Buchhalterin (m/w/d) mit BMD-Kenntnissen, "
+                            "Erfahrung in der Lohnverrechnung und Bilanzierung. "
+                            "SAP von Vorteil."),
+    })
+    assert resp["status"] == "success", f"job-match failed: {resp}"
+    data = resp["data"]
+    blob = json.dumps(data, ensure_ascii=False).lower()
+    # Must reference at least one real overlap term between CV and JD.
+    assert any(t in blob for t in ["bmd", "lohnverrechnung", "bilanz", "buchhalt", "sap"]), \
+        f"job-match analysis doesn't reference key terms: {data}"
+
+
+@SKIP_NO_MODEL
+def test_llm_endpoint_profile_summary_live(live_server):
+    """E2E: /api/ai/profile-summary produces a non-trivial summary of a built CV."""
+    sid = _build_completed_cv(live_server, "profile-e2e")
+    resp = _api(live_server, "POST", "/api/ai/profile-summary", {
+        "session_id": sid, "language": "de",
+    })
+    assert resp["status"] == "success", f"profile-summary failed: {resp}"
+    data = resp["data"]
+    summary = data.get("summary") or data.get("profile_summary") or json.dumps(data)
+    assert len(str(summary).split()) >= 8, f"profile summary too short: {summary!r}"
+
+
+@SKIP_NO_MODEL
+def test_llm_endpoint_follow_up_live(live_server):
+    """E2E: /api/interview/follow-up returns a valid structure (probe or null)."""
+    sess = _api(live_server, "POST", "/api/interview/start", {
+        "user_id": "followup-e2e", "interview_path": "other",
+        "language": "de", "consent_given": True
+    })
+    sid = sess["data"]["session_id"]
+    resp = _api(live_server, "POST", "/api/interview/follow-up", {
+        "session_id": sid,
+        "question_id": "u_02",
+        "answer_text": "Ich habe gearbeitet.",   # thin answer → likely a probe
+        "language": "de",
+    })
+    assert resp["status"] == "success"
+    # follow_up is either a non-empty question string or null — both are valid.
+    fu = resp["data"].get("follow_up")
+    assert fu is None or (isinstance(fu, str) and len(fu.split()) >= 3), \
+        f"unexpected follow_up shape: {fu!r}"
+
+
 @SKIP_NO_MODEL
 def test_llm_endpoint_interview_prep_live(live_server):
     """

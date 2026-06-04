@@ -38,9 +38,10 @@
 > **ExportRequest** now accepts `"anonymise": true` (name→initials, drops
 > photo/DOB/nationality) on all four export endpoints.
 >
-> Full accurate API surface: read the FastAPI `/docs` auto-generated page at
-> `http://localhost:8000/docs` and `http://localhost:8001/docs` on a running
-> instance — it reflects the real routes and schemas at all times.
+> **Authoritative route list**: `docs/API_ENDPOINTS.generated.md` (generated
+> from code by `scripts/dump_openapi.py`; regenerated in CI so it can't drift),
+> plus `docs/openapi-tool1.json` / `docs/openapi-tool2.json`. Or read the live
+> FastAPI `/docs` page at `http://localhost:8000/docs` and `:8001/docs`.
 
 ---
 
