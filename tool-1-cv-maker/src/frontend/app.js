@@ -281,6 +281,7 @@ const TRANSLATIONS = {
         answerLabel:          'Ihre Antwort — schreiben Sie in jeder Sprache, die Sie möchten:',
         answerPlaceholder:    'Erzählen Sie einfach drauf los — so viel Sie möchten, in jeder Sprache. Ich ordne es für Sie.',
         cvSheetEmpty:         'Ihr Lebenslauf entsteht hier, während wir uns unterhalten…',
+        cvDocNamePlaceholder: 'Ihr Name',
         dumpPrompt:           'Erzählen Sie mir alles über sich.',
         dumpHint:             'Ihr Name, wo Sie wohnen, Ihre Arbeit, Ausbildung, Fähigkeiten — schreiben Sie so viel Sie möchten, in jeder Sprache. Ich ordne alles für Ihren Lebenslauf.',
         dumpPlaceholder:      'z.B. Ich heiße Maria, wohne in Wien, habe 5 Jahre in einer Bäckerei gearbeitet…',
