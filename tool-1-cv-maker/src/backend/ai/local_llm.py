@@ -575,7 +575,17 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
             if x and x.lower() not in {y.lower() for y in out}:
                 out.append(x)
         return out
-    result["skills"] = _merge(_regex_skills, result.get("skills") or [])[:14]
+    # Skills are atomic: split any comma-joined entry (the model sometimes returns
+    # "A, B, C" as one string while the regex returns them split) and dedupe, so
+    # the CV never shows a redundant combined skill alongside its parts.
+    _merged_skills = _merge(_regex_skills, result.get("skills") or [])
+    _skills: list = []
+    for _sk in _merged_skills:
+        for _part in _re.split(r"\s*,\s*", _sk):
+            _part = _clean(_part)
+            if _part and _part.lower() not in {y.lower() for y in _skills}:
+                _skills.append(_part)
+    result["skills"] = _skills[:14]
     result["education"] = _merge(_regex_edu, result.get("education") or [])[:5]
 
     # ---- EXPERIENCE: clean the fallback so it reads as a CV line, not the raw
