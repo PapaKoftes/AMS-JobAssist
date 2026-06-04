@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-05-12
 **Current Phase**: AMS pilot prep (Phase 6)
-**Test Suite**: 742 tests passing (697 Tool 1 + 45 Tool 2)
+**Test Suite**: 778 tests passing (730 Tool 1 + 48 Tool 2)
 
 ---
 
@@ -136,11 +136,11 @@ Concrete stability wins from the recent pass — everything below landed since 2
 
 ## Test Suite
 
-**Total: 742 passing** — run from each tool's directory with `python -m pytest tests/ -q`.
+**Total: 778 passing** — run from each tool's directory with `python -m pytest tests/ -q`.
 
 | Tool | Tests | Test files |
 |------|-------|-----------|
-| Tool 1 (CV maker) | 683 | 22 files — interview, polish, language (×3), CV, exports (×4), AI, ATS, privacy, e2e (×2), API |
+| Tool 1 (CV maker) | 730 | 22 files — interview, polish, language (×3), CV, exports (×4), AI, ATS, privacy, e2e (×2), API |
 | Tool 2 (Trainer dashboard) | 42 | 2 files — `test_cv_mapper.py`, `test_integration.py` |
 
 ---

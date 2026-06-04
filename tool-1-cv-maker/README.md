@@ -3,7 +3,7 @@
 **Standalone professional CV tool for AMS training participants and job seekers**
 
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
-![Tests](https://img.shields.io/badge/Tests-628%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-730%20passing-brightgreen)
 ![Languages](https://img.shields.io/badge/Languages-14-blue)
 ![Offline](https://img.shields.io/badge/Runs-100%25%20Offline-orange)
 
@@ -50,7 +50,7 @@ Open `http://localhost:8000` in your browser.
 ```bash
 cd tool-1-cv-maker
 python -m pytest tests/ -q
-# Expected: 628 passed
+# Expected: 730 passed
 ```
 
 ---
@@ -182,7 +182,7 @@ tool-1-cv-maker/
 │       ├── index.html
 │       ├── styles.css
 │       └── app.js
-└── tests/                           628 tests
+└── tests/                           730 tests
     ├── conftest.py
     ├── test_interview_engine.py
     ├── test_autosave.py

@@ -202,26 +202,41 @@ Should return `ok`. Anything else: restore from backup.
 
 ## Audit Log
 
-Every trainer action that affects a participant is written to `ams_trainer.db` in the `export_logs` table.
+Tool 2 records trainer actions in **two places**:
 
-Sample query — show the last 50 audit events:
+1. **`trainer_feedback` table** (`ams_trainer.db`) — every `approve`,
+   `reject`, `bulk_approve`, `edit_section`, `lock`, `unlock` action is
+   written here.
+2. **`export_logs` table** — PDF/DOCX/JSON export events only (columns:
+   `participant_id`, `submission_id`, `export_format`, `export_language`,
+   `file_path`, `file_size`, `exported_at`, `exported_by`).
+
+> ⚠️ **The `export_logs` table does NOT contain approve/edit/lock events.**
+> Previous documentation incorrectly said it did.
+
+Sample query — show the last 50 trainer feedback/approval events:
 
 ```sql
-SELECT created_at, trainer_id, action, target_session_id, details
-FROM export_logs
-ORDER BY created_at DESC
+-- Tool 2: ams_trainer.db
+SELECT tf.created_at, tf.category, tf.feedback_text, tf.submission_id
+FROM trainer_feedback tf
+ORDER BY tf.created_at DESC
 LIMIT 50;
 ```
 
-Common `action` values:
-- `edit_section` — inline edit in the dashboard
-- `approve` / `reject` — status change
-- `bulk_approve` / `bulk_export`
-- `lock` / `unlock`
-- `export_pdf` / `export_docx` / `export_json`
-- `delete_participant`
+Sample query — show the last 50 export events:
 
-Hand this table to AMS data-protection officers on request — it provides a tamper-evident timeline of every administrative action.
+```sql
+-- Tool 2: ams_trainer.db
+SELECT exported_at, export_format, export_language, exported_by, file_size
+FROM export_logs
+ORDER BY exported_at DESC
+LIMIT 50;
+```
+
+Additionally, every security-relevant event (backup downloads, erasure
+requests, auth failures) is logged to the `audit` Python logger which writes
+to stderr/the launcher log file.
 
 ---
 
@@ -241,7 +256,16 @@ This is *not* recommended for classroom use.
 
 ### API-key auth on Tool 2
 
-Set `AMS_TRAINER_API_KEY` to any string. Tool 2 will then require the `X-API-Key` header on all API endpoints. The browser UI prompts for it on first load and stores it in `sessionStorage`.
+Set `AMS_TRAINER_API_KEY` to any string. Tool 2 will then require the
+`X-API-Key: <key>` header on all API endpoints.
+
+> ⚠️ **The browser UI does NOT prompt for the key.** It reads from
+> `localStorage.getItem('apiKey')`. To inject the key without a prompt,
+> open the browser DevTools console and run:
+> ```js
+> localStorage.setItem('apiKey', 'your-key-here');
+> location.reload();
+> ```
 
 ### File-system access
 
@@ -259,19 +283,42 @@ Both `.db` files inherit Windows ACLs from their parent folder. To restrict trai
 
 ```
 GET http://localhost:8000/api/cv/{session_id}/my-data
+Headers:
+  X-Session-Token: <token>   # from the start-interview response
+  # OR
+  X-User-Id: <user_id>       # back-compat fallback
 ```
 
-Returns the participant's complete record (raw answers, polished output, metadata) as JSON. Save the response and hand it to the participant.
+> ⚠️ **Ownership proof is required.** Without a valid session token or
+> user_id the endpoint returns 404. This closes the IDOR where anyone
+> could enumerate integer session_ids to harvest other participants' data.
+
+Returns the participant's complete record (raw answers, polished output,
+metadata) as a JSON download.
 
 ### Art. 17 - Right to erasure
 
-Run the deletion helper:
+> ⚠️ **There is no CLI for erasure.** A previously documented command
+> (`python privacy/data_deletion.py --session-id …`) does not exist —
+> that file has no `__main__` block. Do not use it.
+
+Use the HTTP endpoint. The participant or trainer calls:
 
 ```
-python privacy/data_deletion.py --session-id <SESSION_ID>
+DELETE http://localhost:8000/api/cv/{session_id}/erase
+Headers:
+  X-Session-Token: <token>   # from the start-interview response
+  # OR
+  X-User-Id: <user_id>       # back-compat fallback
 ```
 
-This removes the participant from both `ams_jobassist.db` and `ams_trainer.db`, purges any export files for that session, and writes a `delete_participant` audit entry to `export_logs`.
+This calls `DataDeletion.delete_user_data()`, which removes the user
+record, all sessions, all answers, CV data, consent records, and any
+export files stored on disk. Returns `{"erased": true}` on success.
+
+**Bulk erasure at course end:** Use the "per-participant deletion" step in
+`RETENTION_POLICY.md §7` — call the endpoint once per participant, then
+run the cleanup-sessions sweep.
 
 ### Retention automation
 

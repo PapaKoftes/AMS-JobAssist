@@ -1,11 +1,36 @@
-# Language Support - 14 Core Languages
+# Language Support — Verified Capability vs. Intended Design
+
+> ⚠️ **ACCURACY NOTICE (2026-06-04)** — This document was originally
+> written as a design/aspiration spec. The sections below that describe
+> "language packs", on-disk `~/.ams_jobassist/language_packs/*.json`
+> files (~331 MB), and per-language size tables are **NOT IMPLEMENTED**.
+> Those files do not exist. Detection uses Lingua + inline keyword dicts
+> in `polish/language.py` — no language-pack files are downloaded or cached.
+>
+> **What is actually implemented:**
+>
+> | Capability | Reality |
+> |---|---|
+> | **Input detection** | ~14 languages via Lingua + hardcoded keyword dicts (exact set varies by detector config — see `CORE_LANGUAGES` in `polish/language.py`) |
+> | **UI translations** | **12** locales in `TRANSLATIONS` (frontend/app.js); missing: `cs`, `hu`, `it`, `fr`, `fa` |
+> | **CV output** | **German (de) + English (en) only** with polished prose; other inputs get a "native" passthrough (raw user text) with German/English section headings — NOT a translated output |
+> | **Dump/gap conversation** | Full i18n only for **de** and **en**; all other languages fall back to German |
+> | **Language packs on disk** | **Do not exist** |
+>
+> The design below remains as a record of intended future direction.
+> Treat everything in §§ "On-Disk Storage", "Cache Structure", and the
+> size tables as **future work**, not current capability.
+
+---
+
+# Language Support - 14 Core Languages (Design Document)
 
 ## Overview
 
-The AMS JobAssist CV Maker now supports **14 core languages** covering Austria's DACH region plus major immigrant populations. All core languages are bundled offline with no external API dependencies.
+The AMS JobAssist CV Maker targets **14 core languages** covering Austria's DACH region plus major immigrant populations. Detection is fully offline using Lingua; polished CV output is currently German (primary) and English (secondary).
 
 **Implementation Date**: Week 2, Days 8-10  
-**Status**: ✅ Complete with Lingua-based detection
+**Status**: Input detection ✅ complete; Full per-language polished output 🔜 future work
 
 ---
 

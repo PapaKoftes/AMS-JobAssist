@@ -94,7 +94,7 @@ AMS as controller commits to:
    random value (≥ 32 characters) on every trainer laptop and rotate the
    key per cohort (Tool 2 `config.py` line 47).
 3. **Retention configuration.** Set `AMS_DATA_RETENTION_DAYS` to a value
-   appropriate for the course cycle (default 90; see `RETENTION_POLICY.md`).
+   appropriate for the course cycle (default 365 for completed CVs, 30 for drafts; see `RETENTION_POLICY.md`).
 4. **Trainer training.** Ensure trainers know how to operate the
    participant-rights endpoints (Art. 15 export, Art. 17 deletion) and have
    read the consent text the participant signs.
@@ -224,7 +224,7 @@ The TOM below are implemented in code and verifiable via
 - **Foreign-key cascade for erasure.** SQLite `PRAGMA foreign_keys = ON`
   is enforced; `DataDeletion.delete_user_data()` performs the cascade and
   verifies it post-deletion.
-- **Bounded retention.** `AMS_DATA_RETENTION_DAYS` (default 90) drives
+- **Bounded retention.** `AMS_DATA_RETENTION_DAYS` (default 365/30) drives
   the 24-hour cleanup loop in `app.py` and the admin endpoint
   `POST /api/interview/admin/cleanup-sessions`.
 - **Recommended encryption at rest.** Full-disk encryption is a

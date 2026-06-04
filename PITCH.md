@@ -47,7 +47,7 @@ After both items, we propose a **single-classroom pilot of 8 participants** to m
 
 ## What we have already delivered
 
-- **725 automated tests** across both tools — all passing
+- **778 automated tests** across both tools — all passing
 - **3 standalone Windows .exe artifacts** in the build pipeline, reproducible from `build_all.bat`
 - **12-language UI**, 14-language CV polish
 - **5 interview paths** with example answers, quick-fill chips, helper tips per question

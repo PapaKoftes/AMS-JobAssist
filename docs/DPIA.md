@@ -102,8 +102,12 @@ used for:
     │     via /api/export/{session_id}/{format}
     │
     │  5. Optionally the participant invokes
-    │     GET /api/cv/{session_id}/my-data  (Art. 20 portability)
-    │     POST /api/users/{user_id}/delete  (Art. 17 erasure)
+    │     GET  /api/cv/{session_id}/my-data   (Art. 20 portability)
+    │          — requires X-Session-Token or X-User-Id header (IDOR protection)
+    │     DELETE /api/cv/{session_id}/erase   (Art. 17 erasure)
+    │          — same ownership proof required; calls DataDeletion.delete_user_data()
+    │     NOTE: there is NO CLI for erasure — the documented
+    │           "python privacy/data_deletion.py --session-id …" does not exist.
 ```
 
 ### 2.2 Trainer flow
@@ -236,13 +240,14 @@ sufficient.
 | Quality scores are not stored             | derived at request time in `interview/engine.py`, never persisted           |
 | Photo is optional                         | the photo upload field has a "skip" button on every step                    |
 | Approximate dates are accepted            | the date field accepts `"~2015"` or `"keine Angabe"`                        |
-| Default retention is bounded              | `AMS_DATA_RETENTION_DAYS=90` (config.py line 22)                            |
+| Default retention is bounded              | `AMS_DATA_RETENTION_DAYS=365` (config.py line 27); drafts purged after 30d  |
 | No tracking, telemetry, or analytics      | network is blocked at the socket layer (`privacy/network_block.py`)         |
 | No analytics IDs, cookies, or fingerprint | the frontend uses session-scoped IDs only; no third-party JS is loaded      |
 | No backup of polished CVs to cloud        | export goes to a local folder chosen by the user; cloud sync is out of band |
 
-The 90-day default was chosen because a typical AMS course (8–12 weeks) plus
-a short follow-up window fits inside 90 days. It is configurable per
+The 365-day default gives a hard ceiling covering the course cycle plus a
+reasonable trainer-review and appeal window; abandoned drafts are purged
+sooner (30 days). Both ceilings are configurable per
 installation — see `RETENTION_POLICY.md`.
 
 ---
@@ -259,7 +264,10 @@ installation — see `RETENTION_POLICY.md`.
 | Optional LLM weights                  | `~/.cache/huggingface/` (no personal data)                  |
 | Logs                                 | stderr / stdout of the local process; no log file by default |
 
-Both databases enforce SQLite `PRAGMA foreign_keys = ON` and cascade
+Both databases use explicit child-row deletes (NOT `ON DELETE CASCADE` —
+SQLite FK enforcement is per-connection and off on worker threads;
+`cleanup_old_sessions()` and `DataDeletion.delete_user_data()` delete child
+rows explicitly to guarantee no orphaned PII). Schema also
 deletes (`PRIVACY_ENFORCEMENT.md` §7).
 
 ### 6.2 Security controls
@@ -348,7 +356,7 @@ mitigation is recorded in the final column.
 
 | ID   | Risk                                                            | Likelihood | Impact | Mitigation                                                                                                                          | Residual |
 | ---- | --------------------------------------------------------------- | ---------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| R-1  | Laptop theft / loss exposes the SQLite database                  | 2          | 3      | Full-disk encryption (BitLocker) mandated by AMS; 90-day retention default; no at-rest application-level encryption                  | medium   |
+| R-1  | Laptop theft / loss exposes the SQLite database                  | 2          | 3      | Full-disk encryption (BitLocker) mandated by AMS; 365-day retention default (30d for drafts); AMS_REQUIRE_ENCRYPTION gate; optional SQLCipher via AMS_DB_KEY | medium   |
 | R-2  | Trainer misuses access (curiosity, gossip)                       | 2          | 2      | `AMS_TRAINER_API_KEY` Bearer auth on Tool 2; `ExportLog` audit table records who exported what when; trainers sign confidentiality   | low      |
 | R-3  | AI hallucination — polish layer invents an employer / skill      | 2          | 2      | Rule-based fallback always available; live preview shows the participant the polished text; trainer must approve before bulk export | low      |
 | R-4  | Unsigned `.exe` is replaced with a trojaned copy                 | 1          | 3      | Code-signing certificate procurement is pending; until then AMS IT distributes the binary over a trusted internal channel only      | medium   |

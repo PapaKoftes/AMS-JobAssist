@@ -8,7 +8,7 @@
 Built for AMS Wien classroom use — currently a polished demonstrator awaiting pilot validation. Runs entirely on the trainer's laptop. No cloud, no data leaves the device.
 
 ![Status](https://img.shields.io/badge/Status-Demo--ready-brightgreen)
-![Tests](https://img.shields.io/badge/Tests-742%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-778%20passing-brightgreen)
 ![Build](https://img.shields.io/badge/Windows%20.exe-3%20artifacts-blue)
 ![Languages](https://img.shields.io/badge/UI-12%20languages-blue)
 ![License](https://img.shields.io/badge/License-MIT-blue)
@@ -97,7 +97,7 @@ AMS-JobAssist/
 ├── tool-1-cv-maker/          Participant interface
 │   ├── src/backend/          FastAPI + SQLite + interview/polish/export engines
 │   ├── src/frontend/         Vanilla JS, 12-language UI, live preview
-│   └── tests/                697 tests
+│   └── tests/                730 tests
 ├── tool-2-trainer-dashboard/ Trainer interface
 │   ├── src/backend/          FastAPI + SQLAlchemy + audit middleware
 │   ├── frontend/             Vanilla JS table view + side-by-side compare
@@ -186,7 +186,7 @@ This is not a marketing claim — it is enforced at the socket layer.
 ## Running tests
 
 ```bash
-# Tool 1 — 697 tests
+# Tool 1 — 730 tests
 cd tool-1-cv-maker
 python -m pytest tests/ --ignore=tests/demo_test.py -q
 
@@ -240,7 +240,7 @@ Honest about what this is and isn't:
 - **Tool 1 (CV Maker):** ✅ Production-ready
 - **Tool 2 (Trainer Dashboard):** ✅ All spec features wired with audit/auth
 - **Windows .exe build:** ✅ Reproducible — 3 artifacts produced from `build_all.bat`
-- **Tests:** ✅ 742 passing (697 T1 + 45 T2)
+- **Tests:** ✅ 778 passing (730 T1 + 48 T2)
 - **Accessibility quick wins:** ✅ Focus rings, touch targets, RTL Arabic, print stylesheet, contrast/motion preferences
 - **AMS trainer sign-off:** ⏳ Pending — see [TRAINER_DECISIONS_CHECKLIST.md](docs/TRAINER_DECISIONS_CHECKLIST.md)
 - **Pilot in a real classroom:** ⏳ Pending an AMS partner

@@ -789,7 +789,13 @@ class InterviewEngine:
           forever, which inverted storage limitation: that is the bug being fixed.
           The trainer audit trail lives in Tool 2's separate store.)
 
-        FK ON DELETE CASCADE removes the dependent answers / cv_data / consent rows.
+        Child rows (answers / cv_data / exports / cover_letters / ats_scores /
+        consent_records) are deleted EXPLICITLY in dependency order. We do NOT
+        rely on ON DELETE CASCADE: SQLite's foreign_keys pragma is per-connection
+        and OFF by default on worker threads, so a cascade would silently leave
+        orphaned child PII behind (a real storage-limitation/erasure gap). This
+        method runs on whatever thread the caller is on, so it must be correct
+        regardless of FK state.
 
         Args:
             days_old: Hard retention ceiling for all records (default 365).
@@ -802,26 +808,39 @@ class InterviewEngine:
         if days_old <= 0:
             logger.info("Retention disabled (days_old<=0) — no automatic purge performed")
             return 0
+
+        _CHILD_TABLES = ("answers", "cv_data", "exports", "cover_letters",
+                         "ats_scores", "consent_records")
+
+        def _purge_where(where_sql: str, params: tuple) -> int:
+            # Delete children of the matching sessions FIRST (subquery sees the
+            # sessions while they still exist), then delete the sessions.
+            for tbl in _CHILD_TABLES:
+                try:
+                    self.db.execute_update(
+                        f"DELETE FROM {tbl} WHERE session_id IN "
+                        f"(SELECT id FROM sessions WHERE {where_sql})", params)
+                except Exception as _te:
+                    logger.debug(f"retention: skipped child table {tbl}: {_te}")
+            return self.db.execute_update(
+                f"DELETE FROM sessions WHERE {where_sql}", params) or 0
+
         deleted = 0
         try:
             # Tier 1: abandoned drafts, purged sooner.
             draft_cut = min(draft_days_old, days_old) if days_old else draft_days_old
-            d1 = self.db.execute_update(
-                """DELETE FROM sessions
-                   WHERE created_at < datetime('now', '-' || ? || ' days')
-                     AND (completed IS NULL OR completed = 0)
-                     AND (locked IS NULL OR locked = 0)
-                     AND (approved IS NULL OR approved = 0)""",
-                (draft_cut,)
-            ) or 0
+            d1 = _purge_where(
+                "created_at < datetime('now', '-' || ? || ' days') "
+                "AND (completed IS NULL OR completed = 0) "
+                "AND (locked IS NULL OR locked = 0) "
+                "AND (approved IS NULL OR approved = 0)",
+                (draft_cut,))
             # Tier 2: hard ceiling for everything else (completed/approved/locked).
-            d2 = self.db.execute_update(
-                "DELETE FROM sessions WHERE created_at < datetime('now', '-' || ? || ' days')",
-                (days_old,)
-            ) or 0
+            d2 = _purge_where(
+                "created_at < datetime('now', '-' || ? || ' days')", (days_old,))
             deleted = d1 + d2
             logger.info(f"Retention: purged {d1} stale drafts (>{draft_cut}d) and "
-                        f"{d2} records past the {days_old}d ceiling")
+                        f"{d2} records past the {days_old}d ceiling (children removed explicitly)")
             return deleted
         except Exception as e:
             logger.error(f"Session cleanup failed: {e}")

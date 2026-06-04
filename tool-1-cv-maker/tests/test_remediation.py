@@ -117,24 +117,39 @@ def test_unpinned_model_tier_is_refused(monkeypatch):
 
 
 # ── RC-3 / M4: retention purges COMPLETED records past the ceiling ─────────────
-def test_retention_purges_completed_records(db_manager):
+def test_retention_purges_completed_records_and_children(db_manager):
+    """
+    Retention must purge completed/approved/locked sessions past the ceiling AND
+    their child rows — with NO orphaned PII. Run with foreign_keys OFF to mirror
+    the worker-thread connection where ON DELETE CASCADE does NOT fire (the exact
+    condition that previously orphaned child PII).
+    """
     from interview.engine import InterviewEngine
-    # Seed an old COMPLETED session (the kind that used to be kept forever).
+    db_manager.execute_update("PRAGMA foreign_keys=OFF")  # mirror worker thread
     db_manager.create_user(user_id="old-user")
     db_manager.execute_update(
         "INSERT INTO sessions (user_id, interview_path, language, created_at, completed, approved, locked) "
         "VALUES ('old-user','other','de','2000-01-01 00:00:00', 1, 1, 1)")
-    old = db_manager.execute_query(
-        "SELECT id FROM sessions WHERE created_at < '2001-01-01'")
-    assert old, "seed session should exist"
+    sid = db_manager.execute_query(
+        "SELECT id FROM sessions WHERE created_at < '2001-01-01'")[0]["id"]
+    # Seed child PII rows (FK is OFF, so the answer needs no registered question).
+    db_manager.execute_update(
+        "INSERT INTO answers (session_id, question_id, answer_text) VALUES (?, 'rq', 'Max Mustermann')", (sid,))
+    db_manager.execute_update(
+        "INSERT INTO consent_records (session_id, user_id, consent_given) VALUES (?, 'old-user', 1)", (sid,))
+    assert db_manager.execute_query("SELECT 1 FROM answers WHERE session_id=?", (sid,))
 
     engine = InterviewEngine(db_manager)
     deleted = engine.cleanup_old_sessions(days_old=365, draft_days_old=30)
     assert deleted >= 1
 
-    remaining = db_manager.execute_query(
-        "SELECT id FROM sessions WHERE created_at < '2001-01-01'")
-    assert not remaining, "completed/approved/locked records past the ceiling must be purged"
+    assert not db_manager.execute_query("SELECT id FROM sessions WHERE id=?", (sid,)), \
+        "session past the ceiling must be purged"
+    # The bug this locks: NO orphaned child PII may remain.
+    assert not db_manager.execute_query("SELECT 1 FROM answers WHERE session_id=?", (sid,)), \
+        "answers must NOT be orphaned (retention left child PII behind)"
+    assert not db_manager.execute_query("SELECT 1 FROM consent_records WHERE session_id=?", (sid,)), \
+        "consent_records must NOT be orphaned"
 
 
 def test_retention_disabled_when_zero(db_manager):

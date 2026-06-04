@@ -1,8 +1,46 @@
 # AMS JobAssist — API Documentation
 
-**Version**: 1.0 (ships as a single `.exe`)
-**Audience**: Developers and AMS IT integrating with the tool
-**Last reviewed**: 2026-05-12
+**Version**: 1.0  
+**Audience**: Developers and AMS IT integrating with the tool  
+**Last reviewed**: 2026-05-12 (corrections added 2026-06-04)
+
+> ⚠️ **CORRECTION NOTICE — This document predates security hardening (2026-06).**
+> Several sections are now inaccurate. Read these corrections first:
+>
+> **Endpoints that do NOT exist (will return 404, not 501):**
+> - `POST /api/interview/conversational/start`
+> - `POST /api/interview/conversational/turn`
+>
+> **New required fields — calls without them will fail:**
+> - `POST /api/interview/start` now requires `"consent_given": true` in the
+>   request body → 403 without it.
+> - `GET /api/cv/{session_id}/my-data` now requires ownership proof:
+>   `X-Session-Token: <token>` header (from start response) or `X-User-Id: <uid>` → 404 without it.
+> - `DELETE /api/cv/{session_id}/erase` — **THIS ENDPOINT NOW EXISTS** (the doc
+>   says it doesn't — that statement is wrong). Same ownership proof required.
+>
+> **Endpoints NOT documented here (they exist and work):**
+> - `DELETE /api/cv/{session_id}/erase` — Art. 17 erasure
+> - `GET /api/admin/backup` — full SQLite snapshot (loopback-or-API-key gated)
+> - `POST /api/ai/dump-extract` — free-form dump extraction (core AI feature)
+> - `GET /api/ai/dump-snapshot/{session_id}` — resume snapshot
+> - `GET /api/ai/model-tiers`, `GET /api/ai/download-status`, `POST /api/ai/download-cancel`
+> - `GET /api/ai/knowledge/status`, `/jobs`, `/search`
+> - `POST /api/ai/interview-coach`
+> - Tool 2: `GET /api/admin/backup`, `POST /api/participants/bulk-approve`,
+>   `POST /api/participants/{id}/lock`, `POST /api/participants/{id}/unlock`,
+>   `GET /api/export-all`
+>
+> **Tool 2 import:** `POST /api/import-cvs` now accepts `?force_overwrite=true`
+> and returns HTTP 409 when re-importing a locked/approved/trainer-edited CV
+> without it.
+>
+> **ExportRequest** now accepts `"anonymise": true` (name→initials, drops
+> photo/DOB/nationality) on all four export endpoints.
+>
+> Full accurate API surface: read the FastAPI `/docs` auto-generated page at
+> `http://localhost:8000/docs` and `http://localhost:8001/docs` on a running
+> instance — it reflects the real routes and schemas at all times.
 
 ---
 
