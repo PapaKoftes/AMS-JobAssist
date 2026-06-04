@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     approved_at TEXT,                  -- ISO-8601 timestamp of trainer approval
     locked INTEGER DEFAULT 0,          -- 1 when trainer locks further edits
     needs_review INTEGER DEFAULT 0,    -- 1 when vague date inputs are detected
+    access_token TEXT,                 -- high-entropy per-session ownership proof (DSGVO data-subject access)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE

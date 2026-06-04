@@ -14,12 +14,28 @@ Philosophy: Transparent crashes. If database corrupts, recover from last good st
 import sqlite3
 import json
 import threading
+import os
 from contextlib import contextmanager
 from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Optional encryption-at-rest: if a SQLCipher driver (pysqlcipher3) is installed
+# AND AMS_DB_KEY is set, use it transparently. Otherwise fall back to the stock
+# stdlib sqlite3 (plaintext). The default install path is unchanged.
+_DB_KEY = os.environ.get("AMS_DB_KEY", "")
+_sqlite_driver = sqlite3
+if _DB_KEY:
+    try:
+        from pysqlcipher3 import dbapi2 as _sqlcipher  # type: ignore
+        _sqlite_driver = _sqlcipher
+        logger.info("Encryption at rest: using SQLCipher (AMS_DB_KEY set)")
+    except Exception:
+        logger.warning("AMS_DB_KEY is set but pysqlcipher3 is not installed — "
+                       "DB will be PLAINTEXT. Install a SQLCipher build or rely on "
+                       "full-disk encryption (BitLocker).")
 
 # Thread-local storage so each thread gets its own SQLite connection.
 # SQLite connections must not be shared across threads when using WAL + write workloads.
@@ -94,6 +110,7 @@ class DatabaseManager:
                 "ALTER TABLE sessions ADD COLUMN approved_at TEXT",
                 "ALTER TABLE sessions ADD COLUMN locked INTEGER DEFAULT 0",
                 "ALTER TABLE sessions ADD COLUMN needs_review INTEGER DEFAULT 0",
+                "ALTER TABLE sessions ADD COLUMN access_token TEXT",
             ]
             for _sql in _migrations:
                 try:
@@ -146,11 +163,14 @@ class DatabaseManager:
         """
         conn = getattr(_tls, "connection", None)
         if conn is None:
-            conn = sqlite3.connect(
+            conn = _sqlite_driver.connect(
                 str(self.database_path),
                 timeout=10.0,
                 check_same_thread=True,
             )
+            # SQLCipher: unlock the database with the key before any other use.
+            if _DB_KEY and _sqlite_driver is not sqlite3:
+                conn.execute(f"PRAGMA key = '{_DB_KEY}'")
             conn.row_factory = sqlite3.Row  # Allow dict-like access to rows
             conn.isolation_level = None  # Manual transaction control
             # NOTE: foreign_keys is intentionally left at SQLite's per-connection

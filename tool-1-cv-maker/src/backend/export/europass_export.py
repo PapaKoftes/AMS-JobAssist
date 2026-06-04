@@ -1,9 +1,14 @@
 """
-Europass XML Exporter — minimal Europass-compatible CV XML.
+Europass-style XML Exporter — a simplified, Europass-INSPIRED CV XML.
 
-Generates a simplified Europass XML document following the Europass CV
-data model structure. Not a full schema-validated Europass XML but
-contains all required fields for import by Europass-compatible systems.
+⚠️  This is NOT validated against the official Europass/EDCI XSD and is NOT
+guaranteed to import into the europa.eu Europass editor or employer EDCI
+systems. It approximates the V3 data-model shape (SkillsPassport root,
+LearnerInfo, work/education/language sections) for offline/interoperability
+experiments. Do not present it to participants as a guaranteed-portable
+Europass file. A future pass should validate against the published XSD (or
+emit the current Europass JSON/EDCI 'europass-2020' model) before that claim
+can be made. See README and the project audit.
 """
 
 from __future__ import annotations
@@ -48,10 +53,15 @@ class EuropassExporter(CVExporter):
             return None
 
     def _build_xml(self, cv_data: CVData, language: str) -> ET.Element:
-        root = ET.Element("EuropassCV", {
+        # The Europass V3 schema root element is <SkillsPassport>, not <EuropassCV>
+        # (which guaranteed import rejection). We also drop the bogus
+        # schemaLocation that pointed at the namespace with no .xsd. NOTE: this
+        # output is still NOT validated against the official XSD — see the module
+        # docstring — so it must not be presented to users as a guaranteed-portable
+        # Europass file.
+        root = ET.Element("SkillsPassport", {
             "xmlns": "http://europass.cedefop.europa.eu/Europass/V3.0",
             "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "xsi:schemaLocation": "http://europass.cedefop.europa.eu/Europass/V3.0",
             "locale": language,
         })
 

@@ -59,16 +59,34 @@ def extract_jd_keywords(job_description: str) -> list[str]:
 
 # ── Templates ─────────────────────────────────────────────────────────────────
 
+# Salutation/closing now vary by BOTH language and tone (previously German-only,
+# and all three tones produced identical text).
+_TONES = ("formal", "friendly", "neutral")
+
 _SALUTATIONS = {
-    "formal":   "Sehr geehrte Damen und Herren",
-    "friendly": "Guten Tag",
-    "neutral":  "Sehr geehrte Damen und Herren",
+    "de": {
+        "formal":   "Sehr geehrte Damen und Herren",
+        "friendly": "Guten Tag",
+        "neutral":  "Sehr geehrtes Team",
+    },
+    "en": {
+        "formal":   "Dear Sir or Madam",
+        "friendly": "Hello",
+        "neutral":  "Dear Hiring Manager",
+    },
 }
 
 _CLOSING = {
-    "formal":   "Mit freundlichen Grüßen",
-    "friendly": "Mit freundlichen Grüßen",
-    "neutral":  "Mit freundlichen Grüßen",
+    "de": {
+        "formal":   "Mit freundlichen Grüßen",
+        "friendly": "Herzliche Grüße",
+        "neutral":  "Freundliche Grüße",
+    },
+    "en": {
+        "formal":   "Yours faithfully",
+        "friendly": "Best regards",
+        "neutral":  "Kind regards",
+    },
 }
 
 # Opening sentence that references the job ad (Bezugnahme auf Inserat)
@@ -176,7 +194,7 @@ def generate(req: CoverLetterRequest) -> CoverLetter:
         [Anlagen]                Lebenslauf, Zeugniskopien
     """
     lang = req.language if req.language in ("de", "en") else "de"
-    tone = req.tone if req.tone in _SALUTATIONS else "formal"
+    tone = req.tone if req.tone in _TONES else "formal"
 
     parts: list[str] = []
 
@@ -223,7 +241,7 @@ def generate(req: CoverLetterRequest) -> CoverLetter:
     parts.append("")
 
     # ── Anrede (salutation) ───────────────────────────────────────────────────
-    parts.append(f"{_SALUTATIONS[tone]},")
+    parts.append(f"{_SALUTATIONS[lang][tone]},")
     parts.append("")
 
     # ── Einleitung / Bezugnahme auf Inserat ───────────────────────────────────
@@ -271,7 +289,7 @@ def generate(req: CoverLetterRequest) -> CoverLetter:
     parts.append("")
 
     # ── Abschluss ─────────────────────────────────────────────────────────────
-    parts.append(f"{_CLOSING[tone]},")
+    parts.append(f"{_CLOSING[lang][tone]},")
     parts.append("")
     parts.append(req.full_name)
     parts.append("")

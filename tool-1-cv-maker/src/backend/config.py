@@ -70,6 +70,32 @@ if not _is_loopback_host(HOST) and not API_KEY:
         "Set AMS_TOOL1_API_KEY, or bind to 127.0.0.1."
     )
 
+# Encryption at rest (DSGVO Art. 32(1)(a)).
+# The SQLite DB stores participant PII in plaintext at the file level. The
+# supported control is OS full-disk encryption (BitLocker on Windows). Because
+# we can't reliably detect that, the operator asserts it via AMS_DATADIR_ENCRYPTED=1.
+# AMS_REQUIRE_ENCRYPTION=1 turns that assertion into a hard startup gate so an
+# AMS-IT policy can REFUSE to run on an unencrypted volume.
+DATADIR_ENCRYPTED = os.environ.get("AMS_DATADIR_ENCRYPTED", "").lower() in ("1", "true", "yes")
+REQUIRE_ENCRYPTION = os.environ.get("AMS_REQUIRE_ENCRYPTION", "").lower() in ("1", "true", "yes")
+# Optional application-level DB key, used only if a SQLCipher driver is installed
+# (pysqlcipher3). Absent that driver the DB is plaintext and this is ignored.
+DB_ENCRYPTION_KEY = os.environ.get("AMS_DB_KEY", "")
+if REQUIRE_ENCRYPTION and not (DATADIR_ENCRYPTED or DB_ENCRYPTION_KEY):
+    raise RuntimeError(
+        "AMS_REQUIRE_ENCRYPTION=1 but neither AMS_DATADIR_ENCRYPTED=1 (volume on "
+        "BitLocker/LUKS) nor AMS_DB_KEY (SQLCipher) is set. Refusing to store "
+        "participant PII unencrypted at rest."
+    )
+if not (DATADIR_ENCRYPTED or DB_ENCRYPTION_KEY):
+    import warnings as _w
+    _w.warn(
+        "Participant PII is stored UNENCRYPTED at rest. Put the data dir on an "
+        "encrypted volume (BitLocker) and set AMS_DATADIR_ENCRYPTED=1, or set "
+        "AMS_DB_KEY with a SQLCipher build. See PRIVACY_ENFORCEMENT.md.",
+        stacklevel=2,
+    )
+
 # Paths - create if needed
 DB_DIR.mkdir(parents=True, exist_ok=True)
 LOG_DIR.mkdir(parents=True, exist_ok=True)

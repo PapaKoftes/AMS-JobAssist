@@ -9,6 +9,7 @@
 
 const SESSION_STORAGE_KEY  = 'ams_session_id';
 const USER_STORAGE_KEY     = 'ams_user_id';
+const TOKEN_STORAGE_KEY    = 'ams_session_token';   // per-session ownership proof
 const COMPLETED_SESSION_KEY = 'ams_session_completed';
 const LANGUAGE_STORAGE_KEY = 'ams_language';
 const PREVIEW_DEBOUNCE_MS  = 600;
@@ -2004,9 +2005,9 @@ class APIClient {
         this.exportBase    = '/api/export';
     }
 
-    async _request(url, method = 'GET', data = null) {
+    async _request(url, method = 'GET', data = null, extraHeaders = null) {
         try {
-            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            const options = { method, headers: { 'Content-Type': 'application/json', ...(extraHeaders || {}) } };
             if (data) options.body = JSON.stringify(data);
             const response = await fetch(url, options);
             if (!response.ok) {
@@ -2079,11 +2080,25 @@ class APIClient {
     }
 
     // DSGVO Art. 17 — permanently erase all of the participant's data.
-    eraseMyData(sessionId, userId) {
-        return this._request(
-            `/api/cv/${sessionId}/erase?user_id=${encodeURIComponent(userId || '')}`,
-            'DELETE',
-        );
+    // Ownership proof goes in HEADERS, never the URL (avoids leaking the token to
+    // access logs / browser history).
+    eraseMyData(sessionId, userId, token) {
+        return this._request(`/api/cv/${sessionId}/erase`, 'DELETE', null,
+            { 'X-Session-Token': token || '', 'X-User-Id': userId || '' });
+    }
+
+    // DSGVO Art. 20 — download all stored data as a JSON blob (token in header).
+    async downloadMyData(sessionId, userId, token) {
+        const resp = await fetch(`/api/cv/${sessionId}/my-data`, {
+            headers: { 'X-Session-Token': token || '', 'X-User-Id': userId || '' },
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `meine-daten-${sessionId}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     // Export — returns raw Response so caller can stream the blob
@@ -2932,8 +2947,10 @@ class InterviewManager {
     async handleResume() {
         const savedId   = localStorage.getItem(SESSION_STORAGE_KEY);
         const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+        const savedToken = localStorage.getItem(TOKEN_STORAGE_KEY) || '';
         if (!savedId) return;
         const sid = parseInt(savedId, 10);
+        state.sessionToken = savedToken;
 
         ui.hideResumeBanner();
         try {
@@ -3067,6 +3084,7 @@ class InterviewManager {
 
             const data = response.data;
             state.sessionId            = data.session_id;
+            state.sessionToken         = data.access_token || '';
             state.currentQuestionIndex = 0;
             state.followUpsShown       = 0;   // reset gentle-probe counter per interview
             state.totalQuestions       = data.progress.total;
@@ -3085,6 +3103,7 @@ class InterviewManager {
             // Persist for resume
             localStorage.setItem(SESSION_STORAGE_KEY, String(state.sessionId));
             localStorage.setItem(USER_STORAGE_KEY, userId);
+            if (state.sessionToken) localStorage.setItem(TOKEN_STORAGE_KEY, state.sessionToken);
 
             ui.showScreen('interview');
             // Free-form start: invite the participant to dump everything; the AI
@@ -3576,7 +3595,8 @@ class InterviewManager {
         if (btn) btn.dataset.confirming = 'false';
         try {
             if (state.sessionId) {
-                await api.eraseMyData(state.sessionId, state.userId);
+                const tok = state.sessionToken || localStorage.getItem(TOKEN_STORAGE_KEY) || '';
+                await api.eraseMyData(state.sessionId, state.userId, tok);
             }
         } catch (err) {
             console.error('Erase failed:', err);
@@ -4314,9 +4334,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('exportJsonBtn')?.addEventListener('click', () => interview.handleExport('json'));
     document.getElementById('myDataBtn')?.addEventListener('click', () => {
         if (state.sessionId) {
-            // user_id proves ownership (closes the integer-session IDOR).
-            const uid = encodeURIComponent(state.userId || '');
-            window.location.href = `/api/cv/${state.sessionId}/my-data?user_id=${uid}`;
+            // The per-session token is the strong ownership proof; user_id is a
+            // back-compat fallback. Sent via headers (not the URL) so the secret
+            // never lands in access logs / history.
+            const tok = state.sessionToken || localStorage.getItem(TOKEN_STORAGE_KEY) || '';
+            api.downloadMyData(state.sessionId, state.userId, tok)
+               .catch(err => { console.error('my-data failed:', err);
+                               alert(t('myDataFailed') || 'Download fehlgeschlagen.'); });
         }
     });
     document.getElementById('eraseDataBtn')?.addEventListener('click', () => interview.handleEraseData());

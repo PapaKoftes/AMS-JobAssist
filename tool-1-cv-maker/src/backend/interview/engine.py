@@ -89,6 +89,20 @@ class InterviewEngine:
                 user_native_language=user_native_language
             )
 
+            # Mint a high-entropy per-session access token. This is the STRONG
+            # ownership proof for data-subject endpoints (export/erasure) — far
+            # better than the participant-chosen user_id, which can be guessable.
+            import secrets as _secrets
+            access_token = _secrets.token_urlsafe(32)
+            try:
+                self.db.execute_update(
+                    "UPDATE sessions SET access_token = ? WHERE id = ?",
+                    (access_token, session_id))
+            except Exception as _te:
+                # Column may be missing on a very old DB before migration ran.
+                logger.warning(f"could not store access_token (non-fatal): {_te}")
+                access_token = ""
+
             # CVSections will be rebuilt from DB on demand (get_cv_sections)
             # No instance-level cache to avoid race conditions between concurrent users
 
@@ -98,6 +112,7 @@ class InterviewEngine:
 
             result = {
                 "session_id": session_id,
+                "access_token": access_token,
                 "interview_path": interview_path,
                 "question_id": first_question_id,
                 "question": self._prepare_question(

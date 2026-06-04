@@ -67,6 +67,23 @@ if not AUTH_ENABLED:
         stacklevel=2,
     )
 
+# Encryption at rest (DSGVO Art. 32) — Tool 2 aggregates ALL participants' PII.
+# Operator asserts an encrypted volume (BitLocker) via AMS_DATADIR_ENCRYPTED=1;
+# AMS_REQUIRE_ENCRYPTION=1 makes it a hard startup gate.
+DATADIR_ENCRYPTED = os.environ.get("AMS_DATADIR_ENCRYPTED", "").lower() in ("1", "true", "yes")
+REQUIRE_ENCRYPTION = os.environ.get("AMS_REQUIRE_ENCRYPTION", "").lower() in ("1", "true", "yes")
+if REQUIRE_ENCRYPTION and not DATADIR_ENCRYPTED:
+    raise RuntimeError(
+        "AMS_REQUIRE_ENCRYPTION=1 but AMS_DATADIR_ENCRYPTED is not set. Refusing to "
+        "store aggregated participant PII on an unencrypted volume."
+    )
+if not DATADIR_ENCRYPTED:
+    _warnings.warn(
+        "Tool 2 stores aggregated participant PII UNENCRYPTED at rest. Put the data "
+        "dir on an encrypted volume (BitLocker) and set AMS_DATADIR_ENCRYPTED=1.",
+        stacklevel=2,
+    )
+
 # Paths - create if needed
 DB_DIR.mkdir(parents=True, exist_ok=True)
 LOG_DIR.mkdir(parents=True, exist_ok=True)

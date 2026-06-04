@@ -146,8 +146,22 @@ def canonical_to_cvdata_dict(canon: dict) -> dict:
     experience = [_sec("experience", e) for e in (canon.get("experience") or []) if not e.get("hidden")]
     # Canonical folds background + training into education; route them to background.
     background = [_sec("background", e) for e in (canon.get("education") or []) if not e.get("hidden")]
-    # Canonical folds motivation + projects into custom_sections; route to motivation.
-    motivation = [_sec("motivation", e) for e in (canon.get("custom_sections") or []) if not e.get("hidden")]
+    # Canonical custom_sections carry a heading ("Motivation"/"Projekte"/…). Split
+    # them back into the right CVData buckets instead of collapsing everything into
+    # motivation (which lost the projects/training distinction on the trainer side).
+    motivation: list[dict] = []
+    projects: list[dict] = []
+    training: list[dict] = []
+    for e in (canon.get("custom_sections") or []):
+        if e.get("hidden"):
+            continue
+        heading = (e.get("heading") or "").lower()
+        if "projekt" in heading or "project" in heading:
+            projects.append(_sec("projects", e))
+        elif "weiterbild" in heading or "training" in heading or "kurs" in heading or "course" in heading:
+            training.append(_sec("training", e))
+        else:
+            motivation.append(_sec("motivation", e))
 
     # Skills: canonical SkillGroups, else synthesise one section from all_skills.
     skills: list[dict] = []
@@ -180,8 +194,8 @@ def canonical_to_cvdata_dict(canon: dict) -> dict:
         "experience": experience,
         "skills": skills,
         "motivation": motivation,
-        "training": [],
-        "projects": [],
+        "training": training,
+        "projects": projects,
         "all_skills": all_skills,
         "overall_quality": canon.get("overall_quality", 0.0) or 0.0,
         "ready_for_export": canon.get("ready_for_export", True),

@@ -20,6 +20,29 @@ def test_busy_timeout_is_set(db_manager):
     assert rows and rows[0]["timeout"] >= 5000
 
 
+# ── W2-A: per-session access token is the strong ownership proof ──────────────
+def test_session_access_token_minted_and_enforced(db_manager):
+    from interview.engine import InterviewEngine
+    eng = InterviewEngine(db_manager)
+    res = eng.start_interview(user_id="tok-user", interview_path="other", language="de")
+    token = res.get("access_token")
+    sid = res["session_id"]
+    assert token and len(token) >= 32, "a high-entropy token must be minted at start"
+
+    # Stored on the session.
+    row = db_manager.execute_query("SELECT access_token FROM sessions WHERE id=?", (sid,))
+    assert row and row[0]["access_token"] == token
+
+    # The authorize helper accepts the right token, rejects a wrong one.
+    from app import _authorize_session_owner
+    from fastapi import HTTPException
+    assert _authorize_session_owner(db_manager, sid, supplied_token=token) == "tok-user"
+    with pytest.raises(HTTPException):
+        _authorize_session_owner(db_manager, sid, supplied_token="wrong-token")
+    with pytest.raises(HTTPException):
+        _authorize_session_owner(db_manager, sid)  # no proof at all
+
+
 # ── RC-2 / M1: right-to-erasure actually cascades and removes ALL PII ──────────
 def test_erasure_cascades_and_removes_all_pii(db_manager):
     from privacy.data_deletion import DataDeletion
@@ -150,6 +173,58 @@ def test_compliance_logging_check_fails_when_filter_not_installed(db_manager):
             h.filters = [f for f in h.filters if not isinstance(f, PF)]
     checker = ComplianceChecker(db_manager, NetworkBlocker(), PrivacyFilter())
     assert checker._verify_logging_filtered() is False
+
+
+# ── W2-B: encryption-at-rest startup gate (Art. 32) ───────────────────────────
+def test_require_encryption_gate(tmp_path):
+    import subprocess
+    backend = str(Path(__file__).parent.parent / "src" / "backend")
+    env = dict(os.environ)
+    env["AMS_REQUIRE_ENCRYPTION"] = "1"
+    env.pop("AMS_DATADIR_ENCRYPTED", None)
+    env.pop("AMS_DB_KEY", None)
+    env["AMS_DATA_DIR"] = str(tmp_path)
+    # Must refuse to import (start) when encryption is required but not asserted.
+    r = subprocess.run(["python", "-c", "import config"], cwd=backend, env=env,
+                       capture_output=True, text=True)
+    assert r.returncode != 0
+    assert "REQUIRE_ENCRYPTION" in (r.stderr + r.stdout)
+    # Asserting an encrypted volume lets it start.
+    env["AMS_DATADIR_ENCRYPTED"] = "1"
+    r2 = subprocess.run(["python", "-c", "import config; print('ok')"], cwd=backend, env=env,
+                        capture_output=True, text=True)
+    assert r2.returncode == 0 and "ok" in r2.stdout
+
+
+# ── W2-C: cover letter is language- AND tone-aware (was German-only/flat) ──────
+def test_cover_letter_language_and_tone():
+    from cv.cover_letter import generate, CoverLetterRequest
+    en_formal = generate(CoverLetterRequest(full_name="A B", job_title="Cook",
+                                            language="en", tone="formal")).text
+    en_friendly = generate(CoverLetterRequest(full_name="A B", job_title="Cook",
+                                              language="en", tone="friendly")).text
+    # English letter must use an English salutation/closing, not the German one.
+    assert "Sehr geehrte" not in en_formal and "Mit freundlichen" not in en_formal
+    assert "Dear Sir or Madam" in en_formal and "Yours faithfully" in en_formal
+    # Tones must actually differ now (friendly uses different salutation + closing).
+    assert "Hello" in en_friendly and "Best regards" in en_friendly
+    assert "Dear Sir or Madam" not in en_friendly
+
+
+# ── W2-C: anonymised CV export (anti-discrimination) ──────────────────────────
+def test_anonymise_cv_redacts_identity():
+    from app import _anonymise_cv
+    from cv.models import CVData, CVIdentity
+    cv = CVData(session_id="s", user_id="u", interview_path="other", language_input="de")
+    cv.identity = CVIdentity(full_name="Maria Huber", location="Wien",
+                             date_of_birth="1990-01-01", nationality="AT", photo="data:...")
+    anon = _anonymise_cv(cv)
+    assert anon.identity.full_name == "M. H."
+    assert anon.identity.photo is None
+    assert anon.identity.date_of_birth is None
+    assert anon.identity.nationality is None
+    # Original is untouched.
+    assert cv.identity.full_name == "Maria Huber" and cv.identity.photo == "data:..."
 
 
 # ── RC-2 / M3: the handler-level PII filter installer actually attaches ────────

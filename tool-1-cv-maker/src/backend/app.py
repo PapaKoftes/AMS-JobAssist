@@ -55,6 +55,7 @@ class ExportRequest(BaseModel):
     language: str = "de"
     filename: Optional[str] = None
     force: bool = False   # bypass quality gate (for trainer use)
+    anonymise: bool = False   # blank name→initials, drop photo/DOB/nationality (anti-discrimination)
 
 
 class ATSScoreRequest(BaseModel):
@@ -434,26 +435,33 @@ def _require_local_or_key(request: Request) -> None:
                             detail="Restricted to the local machine or an authenticated request.")
 
 
-def _authorize_session_owner(db: "DatabaseManager", session_id: int, supplied_user_id: str) -> str:
+def _authorize_session_owner(db: "DatabaseManager", session_id: int,
+                             supplied_user_id: str = "", supplied_token: str = "") -> str:
     """
     Capability check for data-subject endpoints (Art. 15/17/20).
 
-    A participant proves ownership of a session by presenting the session's
-    user_id (an unguessable server-generated UUID, held only in their own
-    browser). This closes the IDOR where any caller could enumerate integer
-    session_ids to read other participants' data.
+    Ownership is proven by EITHER:
+    - the session's high-entropy access_token (the strong proof, minted at start
+      and held only in the participant's own browser), OR
+    - the session's user_id (a weaker back-compat fallback).
 
-    Returns the verified user_id, or raises 404 (not found) / 403 (mismatch).
-    We return 404 for a non-existent session and 403 for an ownership mismatch
-    only to a loopback caller; remote callers always get 404 to avoid leaking
-    which session_ids exist.
+    This closes the IDOR where any caller could enumerate integer session_ids to
+    read other participants' data. Always returns 404 (never confirms existence)
+    to an unauthorised caller so session_ids can't be probed.
+
+    Returns the verified user_id (needed for the erasure cascade).
     """
-    rows = db.execute_query("SELECT user_id FROM sessions WHERE id = ?", (session_id,))
+    rows = db.execute_query(
+        "SELECT user_id, access_token FROM sessions WHERE id = ?", (session_id,))
     if not rows:
         raise HTTPException(status_code=404, detail="Keine Daten für diese Sitzung gefunden.")
     real_user_id = rows[0].get("user_id") or ""
-    if not supplied_user_id or supplied_user_id != real_user_id:
-        # Do not confirm existence to an unauthorised caller.
+    real_token = rows[0].get("access_token") or ""
+    import secrets as _secrets
+    token_ok = bool(supplied_token) and bool(real_token) and \
+        _secrets.compare_digest(supplied_token, real_token)
+    uid_ok = bool(supplied_user_id) and supplied_user_id == real_user_id
+    if not (token_ok or uid_ok):
         raise HTTPException(status_code=404, detail="Keine Daten für diese Sitzung gefunden.")
     return real_user_id
 
@@ -508,19 +516,20 @@ async def admin_backup_tool1(request: Request):
 
 
 @app.get("/api/cv/{session_id}/my-data", tags=["DSGVO"])
-async def download_my_data(session_id: int, request: Request, user_id: str = ""):
+async def download_my_data(session_id: int, request: Request, user_id: str = "", token: str = ""):
     """
     DSGVO data portability (Art. 20) — download all raw answers and CV data.
 
-    Ownership is proven by the session's user_id (passed as ?user_id=... or the
-    X-User-Id header). Without it the request is refused — this closes the IDOR
-    where integer session_ids could be enumerated to read others' data.
+    Ownership is proven by the session access_token (?token=... or X-Session-Token)
+    or the user_id (?user_id=... / X-User-Id). Without valid proof → 404. This
+    closes the IDOR where integer session_ids could be enumerated.
     """
     db_manager: DatabaseManager = request.app.state.db_manager
     cv_storage: CVStorage = request.app.state.cv_storage
 
-    supplied = user_id or request.headers.get("X-User-Id", "")
-    _authorize_session_owner(db_manager, session_id, supplied)
+    supplied_uid = user_id or request.headers.get("X-User-Id", "")
+    supplied_tok = token or request.headers.get("X-Session-Token", "")
+    _authorize_session_owner(db_manager, session_id, supplied_uid, supplied_tok)
 
     raw_answers = db_manager.execute_query(
         "SELECT question_id, answer_text, created_at FROM answers WHERE session_id = ? ORDER BY id",
@@ -549,17 +558,18 @@ async def download_my_data(session_id: int, request: Request, user_id: str = "")
 
 
 @app.delete("/api/cv/{session_id}/erase", tags=["DSGVO"])
-async def erase_my_data(session_id: int, request: Request, user_id: str = ""):
+async def erase_my_data(session_id: int, request: Request, user_id: str = "", token: str = ""):
     """
     DSGVO right-to-erasure (Art. 17). Permanently deletes the participant's
     account and ALL associated data (sessions, answers, CV, export files),
-    after proving ownership via the session's user_id.
+    after proving ownership via the session access_token or user_id.
 
     This wires the previously-unreachable DataDeletion.delete_user_data().
     """
     db_manager: DatabaseManager = request.app.state.db_manager
-    supplied = user_id or request.headers.get("X-User-Id", "")
-    verified_user_id = _authorize_session_owner(db_manager, session_id, supplied)
+    supplied_uid = user_id or request.headers.get("X-User-Id", "")
+    supplied_tok = token or request.headers.get("X-Session-Token", "")
+    verified_user_id = _authorize_session_owner(db_manager, session_id, supplied_uid, supplied_tok)
 
     from privacy.data_deletion import DataDeletion
     try:
@@ -591,6 +601,25 @@ def _get_ready_cv(session_id: int, request: Request, force: bool = False):
     if not force and not cv_data.ready_for_export:
         raise HTTPException(status_code=400, detail="CV quality too low for export (add more detail, or use force=true)")
     return cv_data
+
+
+def _anonymise_cv(cv_data):
+    """
+    Return an anonymised COPY for anti-discrimination ('anonymisierter Lebenslauf'):
+    name → initials, and photo / date-of-birth / nationality removed. Skills and
+    experience are untouched. The original object is not mutated.
+    """
+    import copy as _copy
+    anon = _copy.deepcopy(cv_data)
+    ident = getattr(anon, "identity", None)
+    if ident is not None:
+        name = (getattr(ident, "full_name", "") or "").strip()
+        initials = " ".join(f"{p[0]}." for p in name.split() if p) if name else "—"
+        ident.full_name = initials
+        for attr in ("photo", "date_of_birth", "nationality"):
+            if hasattr(ident, attr):
+                setattr(ident, attr, None)
+    return anon
 
 
 def _log_export(request: Request, session_id: int, export_type: str, path: Optional[str], language: str = "de") -> None:
@@ -650,6 +679,8 @@ def _persist_ats_score(request: Request, session_id, result, suggestions: list,
 async def export_cv_json(body: ExportRequest, request: Request):
     """Export CV as JSON (for Tool 2 import or download)."""
     cv_data = _get_ready_cv(body.session_id, request, force=body.force)
+    if body.anonymise:
+        cv_data = _anonymise_cv(cv_data)
     exporter: JSONExporter = request.app.state.json_exporter
     path = exporter.export(cv_data, language=body.language, filename=body.filename)
     if not path:
@@ -662,6 +693,8 @@ async def export_cv_json(body: ExportRequest, request: Request):
 async def export_cv_pdf(body: ExportRequest, request: Request):
     """Export CV as PDF."""
     cv_data = _get_ready_cv(body.session_id, request, force=body.force)
+    if body.anonymise:
+        cv_data = _anonymise_cv(cv_data)
     exporter: PDFExporter = request.app.state.pdf_exporter
     path = exporter.export(cv_data, language=body.language, filename=body.filename)
     if not path:
@@ -674,6 +707,8 @@ async def export_cv_pdf(body: ExportRequest, request: Request):
 async def export_cv_docx(body: ExportRequest, request: Request):
     """Export CV as DOCX (Word document)."""
     cv_data = _get_ready_cv(body.session_id, request, force=body.force)
+    if body.anonymise:
+        cv_data = _anonymise_cv(cv_data)
     exporter: DOCXExporter = request.app.state.docx_exporter
     path = exporter.export(cv_data, language=body.language, filename=body.filename)
     if not path:
@@ -796,6 +831,8 @@ async def ats_score(body: ATSScoreRequest, request: Request):
 async def export_cv_europass(body: ExportRequest, request: Request):
     """Export CV as Europass-compatible XML."""
     cv_data = _get_ready_cv(body.session_id, request, force=body.force)
+    if body.anonymise:
+        cv_data = _anonymise_cv(cv_data)
     exporter: EuropassExporter = request.app.state.europass_exporter
     path = exporter.export(cv_data, language=body.language, filename=body.filename)
     if not path:

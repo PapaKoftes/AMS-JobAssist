@@ -441,6 +441,30 @@ Recommended classroom settings:
 
 ---
 
+## 11. Encryption at rest — `AMS_DATADIR_ENCRYPTED` / `AMS_REQUIRE_ENCRYPTION` / `AMS_DB_KEY`
+
+DSGVO Art. 32(1)(a) names encryption as a key technical measure. The SQLite
+database holds participant PII; at the file level it is plaintext, so the data
+directory **must** sit on an encrypted volume.
+
+Supported controls (in order of preference):
+
+1. **OS full-disk encryption (recommended): BitLocker (Windows) / LUKS (Linux).**
+   Encrypt the volume that holds the data dir, then assert it with
+   `AMS_DATADIR_ENCRYPTED=1`. To make this mandatory (an AMS-IT policy can refuse
+   to run otherwise) also set `AMS_REQUIRE_ENCRYPTION=1` — the app then **refuses
+   to start** unless encryption is asserted.
+2. **Application-level SQLCipher (optional).** Install a SQLCipher build of the
+   driver (`pysqlcipher3`) and set `AMS_DB_KEY` to a strong key. The DB file is
+   then encrypted by the engine. Without the driver, `AMS_DB_KEY` is ignored and
+   a startup warning is emitted.
+
+If neither is configured the app logs a loud **"PII stored UNENCRYPTED at rest"**
+advisory at startup. Do **not** point `AMS_DATA_DIR` at a network share unless
+that share is itself encrypted.
+
+---
+
 ## 11. Privacy-filtered logging — `privacy/logging_rules.py`
 
 *(Note: the spec previously referred to this file as
