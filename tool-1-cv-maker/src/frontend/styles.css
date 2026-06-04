@@ -2874,3 +2874,70 @@ a:focus-visible,
     .interview-container { height: calc(100vh - 150px); }
     .conv-messages { max-height: 64px; }
 }
+
+/* ============================================================================
+   FLUID layout (no hardcoded heights) — the app fills the viewport with flex,
+   so the CV pane and the conversation use ALL available space and adapt to any
+   screen, instead of being capped by pixel calc()/max-height values.
+   ============================================================================ */
+html, body { height: 100%; }
+.app-container { height: 100vh; overflow: hidden; }
+
+.main-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-y: auto;            /* welcome/completion scroll if tall */
+    padding: var(--spacing-md);
+}
+/* Welcome & completion: natural height, centred, scroll within main-content. */
+#welcomeScreen.screen, #completionScreen.screen { flex: 0 0 auto; margin: auto; }
+
+/* Interview: fill the available height with flex (no calc, no fixed height). */
+#interviewScreen.screen.screen-active {
+    display: flex; flex: 1 1 auto; min-height: 0; width: 100%;
+    max-width: 1040px; margin: 0; animation: none;
+}
+.interview-layout {
+    flex: 1 1 auto; min-height: 0; display: flex;
+    align-items: stretch;        /* let the container fill the height (was 'start') */
+    width: 100%; max-width: 1040px; margin: 0 auto;
+}
+.interview-container {
+    flex: 1 1 auto; min-height: 0;
+    height: auto !important;     /* override every calc(100vh - …) rule */
+    max-height: none !important;
+}
+.cv-top-pane { flex: 1 1 0; min-height: 90px; }
+.conv-bottom-pane {
+    flex: 1.05 1 0; min-height: 180px; max-height: none !important;
+    display: flex; flex-direction: column;
+}
+.conv-messages {
+    flex: 1 1 auto; min-height: 0;
+    max-height: none !important;  /* was capped at ~80px — too cramped */
+    height: auto;
+}
+/* the composer stays compact at the bottom (always visible); the textarea has
+   rows="5" in markup which would render ~110px and eat the message area, so pin
+   a sensible height (it scrolls internally for long dumps). */
+.conv-bottom-pane .answer-input { height: 58px !important; min-height: 58px; max-height: 120px; }
+
+/* Dump mode: "Lebenslauf erstellen" sits in the action row next to Senden
+   (outline style), so the composer is one row shorter and the conversation gets
+   the space. */
+.interview-container .action-buttons #dumpFinishBtn {
+    border: 1.5px solid var(--secondary);
+    color: var(--secondary);
+    background: white;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+}
+.interview-container .action-buttons #dumpFinishBtn:hover {
+    background: #f5f0fa; box-shadow: none;
+}

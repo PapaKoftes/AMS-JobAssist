@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMS JobAssist - Lebenslauf-Ersteller</title>
-    <link rel="stylesheet" href="/static/styles.css?v=fit1">
+    <link rel="stylesheet" href="/static/styles.css?v=fluid1">
 </head>
 <body>
 <!-- Skip navigation link for keyboard / screen reader users -->
@@ -325,18 +325,14 @@
                     <span id="midwayText">Sie haben den schwierigsten Teil bereits geschafft.</span>
                 </div>
 
-                <!-- Action buttons -->
+                <!-- Action buttons (dump mode shows: Lebenslauf erstellen + Senden) -->
                 <div class="action-buttons">
                     <button class="btn btn-secondary" id="skipBtn">Frage überspringen</button>
+                    <button class="btn btn-ghost" id="dumpFinishBtn" type="button" style="display:none;">✓ <span id="dumpFinishLabel">Lebenslauf erstellen</span></button>
                     <button class="btn btn-primary" id="submitBtn" disabled>Weiter →</button>
                 </div>
                 <!-- A3: short-input hint shown below submit button -->
                 <p id="submitHint" class="submit-hint" aria-live="polite"></p>
-
-                <!-- Dump mode: finish + build the CV any time -->
-                <div id="dumpFinishRow" class="dump-finish-row" style="display:none;">
-                    <button class="btn btn-primary" id="dumpFinishBtn" type="button">✓ <span id="dumpFinishLabel">Lebenslauf erstellen</span></button>
-                </div>
 
                 <!-- Save and finish later — autosave runs every answer, but
                      this gives the participant explicit reassurance + exit. -->
@@ -718,6 +714,6 @@
     <div id="aiModelStatus" class="ai-model-status"></div>
 </div>
 
-<script src="/static/app.js?v=fit1"></script>
+<script src="/static/app.js?v=fluid1"></script>
 </body>
 </html>

@@ -2957,7 +2957,7 @@ class InterviewManager {
             // structures it onto the CV, then we converse about any gaps.
             cvDocSetPrompt({ text: t('dumpPrompt'), hint: t('dumpHint'), examples: {} });
             ui.updateProgress(0, 1);
-            document.getElementById('dumpFinishRow')?.style.setProperty('display', 'flex');
+            document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
             if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
             // Dump mode: no "skip", and the send button just sends.
             document.getElementById('skipBtn')?.style.setProperty('display', 'none');
