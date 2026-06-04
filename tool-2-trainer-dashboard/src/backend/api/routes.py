@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Query
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Query, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
@@ -265,6 +265,8 @@ class PaginatedResponse(BaseModel):
 async def import_cvs(
     cohort_id: str,
     file: UploadFile = File(...),
+    force_overwrite: bool = Query(False,
+        description="Overwrite a locked/approved/trainer-edited submission instead of refusing"),
     db: Session = Depends(get_db)
 ):
     """
@@ -302,7 +304,10 @@ async def import_cvs(
                 raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
             _validate_json_payload(cv_dict)
 
-            participant_id = _import_single_cv(db, cohort_id, cv_dict)
+            try:
+                participant_id = _import_single_cv(db, cohort_id, cv_dict, force_overwrite)
+            except CVImportConflict as conflict:
+                raise HTTPException(status_code=409, detail=str(conflict))
             audit_logger.info(f"IMPORT single CV: cohort={cohort_id} user={cv_dict.get('user_id', 'unknown')}")
 
             return {
@@ -328,8 +333,11 @@ async def import_cvs(
                             json_content = zf.read(filename)
                             cv_dict = json.loads(json_content)
                             _validate_json_payload(cv_dict)
-                            _import_single_cv(db, cohort_id, cv_dict)
+                            _import_single_cv(db, cohort_id, cv_dict, force_overwrite)
                             count += 1
+                        except CVImportConflict as e:
+                            errors.append(f"{filename}: {e} (use force_overwrite to replace)")
+                            logger.warning(f"Skipped protected submission {filename}: {e}")
                         except (json.JSONDecodeError, KeyError, ValueError) as e:
                             errors.append(f"{filename}: {e}")
                             logger.warning(f"Skipped invalid file {filename}: {e}")
@@ -1330,11 +1338,33 @@ async def export_all_participants(
 # Helper Functions
 # =====================================================
 
-def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict) -> int:
+class CVImportConflict(ValueError):
+    """Raised when a re-import would shadow protected trainer work (locked/approved/edited)."""
+
+
+def _submission_has_trainer_edits(cv_json) -> bool:
+    """Recursively check whether any section in a stored CV carries a trainer_edited flag."""
+    if isinstance(cv_json, dict):
+        if cv_json.get("trainer_edited"):
+            return True
+        return any(_submission_has_trainer_edits(v) for v in cv_json.values())
+    if isinstance(cv_json, list):
+        return any(_submission_has_trainer_edits(v) for v in cv_json)
+    return False
+
+
+def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict,
+                      force_overwrite: bool = False) -> int:
     """
     Import a single CV from Tool 1.
 
     Accepts all Tool 1 export shapes (nested or flat) via cv_mapper.normalise().
+
+    Re-import protection: if the participant's latest submission is locked,
+    approved/rejected, or carries trainer inline edits, importing a fresh CV
+    from Tool 1 would silently shadow that trainer work. In that case we refuse
+    with CVImportConflict unless force_overwrite=True, so nothing is lost.
+
     Returns: participant_id
     """
     try:
@@ -1366,12 +1396,29 @@ def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict) -> int:
         db.add(participant)
         db.flush()  # Get the ID
 
-    # Create/update CV submission
-    latest_version = (
+    # Re-import protection: never silently shadow protected trainer work.
+    latest = (
         db.query(CVSubmission)
         .filter(CVSubmission.participant_id == participant.id)
-        .count()
-    ) + 1
+        .order_by(CVSubmission.version.desc())
+        .first()
+    )
+    if latest is not None and not force_overwrite:
+        reason = None
+        if latest.cv_locked:
+            reason = "the latest CV is locked"
+        elif latest.approval_status in ("approved", "rejected"):
+            reason = f"the latest CV is already {latest.approval_status}"
+        elif _submission_has_trainer_edits(latest.cv_data_json):
+            reason = "the latest CV has trainer edits"
+        if reason:
+            raise CVImportConflict(
+                f"Re-import refused for '{user_id}': {reason}. "
+                f"Pass force_overwrite=true to replace it."
+            )
+
+    # Create/update CV submission
+    latest_version = (latest.version if latest is not None else 0) + 1
 
     quality = cv_dict.get("overall_quality", 0.0)
     if not isinstance(quality, (int, float)):
@@ -1399,16 +1446,34 @@ def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict) -> int:
 # Admin: SQLite backup
 # =====================================================
 
-@router.get("/admin/backup", tags=["Admin"])
-async def admin_backup():
-    """
-    Stream the trainer SQLite database as a downloadable file.
+def _is_loopback_client(request: Request) -> bool:
+    host = (request.client.host if request.client else "") or ""
+    return host.startswith("127.") or host in ("::1", "localhost", "")
 
-    Intended for AMS IT to run a periodic backup. Returns the live `.db` file
-    with a timestamped filename. Caller should have `AMS_TRAINER_API_KEY`
-    configured to prevent unauthorised download.
+
+@router.get("/admin/backup", tags=["Admin"])
+async def admin_backup(request: Request):
     """
-    from config import DATABASE_URL
+    Download a CONSISTENT snapshot of the trainer SQLite database.
+
+    Security: this endpoint exposes ALL participant PII, so it is gated
+    independently of the global AUTH_ENABLED flag. It is allowed only when the
+    request comes from loopback (the trainer's own machine) OR a valid
+    AMS_TRAINER_API_KEY is presented. A remote client without the key is always
+    refused, even if the dashboard otherwise runs without authentication.
+    """
+    import secrets as _secrets
+    from config import DATABASE_URL, API_KEY
+
+    if not _is_loopback_client(request):
+        supplied = request.headers.get("X-API-Key", "")
+        if not API_KEY or not _secrets.compare_digest(supplied, API_KEY):
+            client = request.client.host if request.client else "unknown"
+            audit_logger.warning(f"BACKUP refused: non-loopback client={client} without valid key")
+            raise HTTPException(
+                status_code=403,
+                detail="Backup is restricted to the local machine or an authenticated request.",
+            )
 
     db_path = DATABASE_URL.replace("sqlite:///", "")
     if not os.path.exists(db_path):
@@ -1416,10 +1481,37 @@ async def admin_backup():
 
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     filename = f"ams_trainer_backup_{timestamp}.db"
-    audit_logger.info(f"BACKUP requested: path={db_path}")
+
+    # Produce a consistent point-in-time copy via SQLite's online backup API.
+    # Streaming the live .db file risks a torn copy if a write is mid-flight.
+    import sqlite3 as _sqlite3
+    import tempfile as _tempfile
+    tmp_fd, tmp_path = _tempfile.mkstemp(prefix="ams_backup_", suffix=".db")
+    os.close(tmp_fd)
+    try:
+        src = _sqlite3.connect(db_path)
+        dst = _sqlite3.connect(tmp_path)
+        with dst:
+            src.backup(dst)
+        dst.close()
+        src.close()
+    except Exception as _exc:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        audit_logger.error(f"BACKUP failed: {_exc}")
+        raise HTTPException(status_code=500, detail="Backup could not be created")
+
+    client = request.client.host if request.client else "unknown"
+    audit_logger.info(f"BACKUP served: client={client} bytes={os.path.getsize(tmp_path)}")
+
+    # Schedule the temp snapshot for deletion after the response is sent.
+    from starlette.background import BackgroundTask
     return FileResponse(
-        path=db_path,
+        path=tmp_path,
         filename=filename,
         media_type="application/octet-stream",
         headers={"X-Backup-Timestamp": timestamp},
+        background=BackgroundTask(lambda: os.remove(tmp_path) if os.path.exists(tmp_path) else None),
     )

@@ -402,11 +402,20 @@ class PDFExporter(CVExporter):
         result = []
         for base in order:
             g = groups.get(base, {})
+            main = g.get("main")
+            # Prefer values folded onto the main section by the builder
+            # (title / employer / period). Fall back to the legacy separate
+            # _title / _employer / _dates sub-sections for older sessions.
+            title = g.get("title") or (getattr(main, "title", "") if main else "")
+            employer = g.get("employer") or (getattr(main, "employer", "") if main else "")
+            dates = g.get("dates")
+            if not dates and main and getattr(main, "period", None):
+                dates = self._format_period(main.period)
             result.append({
-                "main":     g.get("main"),
-                "employer": g.get("employer"),
-                "title":    g.get("title"),
-                "dates":    g.get("dates"),
+                "main":     main,
+                "employer": employer or None,
+                "title":    title or None,
+                "dates":    dates,
             })
         return result
 

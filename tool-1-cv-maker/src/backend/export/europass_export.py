@@ -98,7 +98,16 @@ class EuropassExporter(CVExporter):
                 text = (section.german if language == "de" else section.english) or ""
                 exp = ET.SubElement(we, "Experience", {"order": str(i + 1)})
                 pd = ET.SubElement(exp, "Period")
-                ET.SubElement(pd, "From").text = ""
+                _per = getattr(section, "period", None) or {}
+                ET.SubElement(pd, "From").text = _per.get("start") or ""
+                if _per.get("end"):
+                    ET.SubElement(pd, "To").text = _per["end"]
+                if getattr(section, "title", "") or getattr(section, "employer", ""):
+                    pos = ET.SubElement(exp, "Position")
+                    ET.SubElement(pos, "Label").text = getattr(section, "title", "") or ""
+                    if getattr(section, "employer", ""):
+                        emp = ET.SubElement(exp, "Employer")
+                        ET.SubElement(emp, "Name").text = section.employer
                 act = ET.SubElement(exp, "Activities")
                 ET.SubElement(act, "Description").text = text
 
@@ -115,12 +124,29 @@ class EuropassExporter(CVExporter):
                 ET.SubElement(desc, "Label").text = text
 
         # Skills
-        if cv_data.all_skills:
+        if cv_data.all_skills or cv_data.languages:
             skills_el = ET.SubElement(li, "Skills")
-            other = ET.SubElement(skills_el, "OtherSkills")
-            for skill in cv_data.all_skills:
-                sk = ET.SubElement(other, "Skill")
-                ET.SubElement(sk, "Description").text = skill
+            # Linguistic skills (mother tongue + foreign languages with CEFR levels)
+            if cv_data.languages:
+                ling = ET.SubElement(skills_el, "LinguisticSkills")
+                for lang_entry in cv_data.languages:
+                    name = lang_entry.get("language", "")
+                    level = (lang_entry.get("level", "") or "").lower()
+                    if not name:
+                        continue
+                    if level == "native":
+                        mt = ET.SubElement(ling, "MotherTongue")
+                        ET.SubElement(mt, "Description").text = name
+                    else:
+                        fl = ET.SubElement(ling, "ForeignLanguage")
+                        ET.SubElement(fl, "Description").text = name
+                        if level:
+                            ET.SubElement(fl, "ProficiencyLevel").text = level.upper()
+            if cv_data.all_skills:
+                other = ET.SubElement(skills_el, "OtherSkills")
+                for skill in cv_data.all_skills:
+                    sk = ET.SubElement(other, "Skill")
+                    ET.SubElement(sk, "Description").text = skill
 
         # Motivation / cover letter snippet
         if cv_data.motivation:

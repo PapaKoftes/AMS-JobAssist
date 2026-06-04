@@ -262,7 +262,7 @@ async def get_next_question(
 
 
 @router.post("/submit-answer")
-async def submit_answer(
+def submit_answer(
     request: SubmitAnswerRequest,
     engine: InterviewEngine = Depends(_get_engine),
 ) -> Dict:
@@ -405,7 +405,7 @@ async def get_autosave_status(
 
 
 @router.post("/preview")
-async def preview_answer(
+def preview_answer(
     request: PreviewAnswerRequest,
     engine: InterviewEngine = Depends(_get_engine),
 ) -> Dict:
@@ -890,7 +890,7 @@ def interpret_quality(score: float, language: str = "de") -> dict:
 
 
 @router.post("/complete/{session_id}")
-async def complete_interview(
+def complete_interview(
     session_id: int,
     builder: CVBuilder = Depends(_get_builder),
     storage: CVStorage = Depends(_get_storage),

@@ -329,15 +329,25 @@ class DOCXExporter(CVExporter):
                 if qid not in order:
                     order.append(qid)
 
-        return [
-            {
-                "main":     groups.get(b, {}).get("main"),
-                "employer": groups.get(b, {}).get("employer"),
-                "title":    groups.get(b, {}).get("title"),
-                "dates":    groups.get(b, {}).get("dates"),
-            }
-            for b in order
-        ]
+        result = []
+        for b in order:
+            g = groups.get(b, {})
+            main = g.get("main")
+            # Prefer values folded onto the main section by the builder; fall
+            # back to legacy separate _title/_employer/_dates sub-sections.
+            title = g.get("title") or (getattr(main, "title", "") if main else "")
+            employer = g.get("employer") or (getattr(main, "employer", "") if main else "")
+            dates = g.get("dates")
+            if not dates and main and getattr(main, "period", None):
+                fmt = getattr(self, "_format_period", None)
+                dates = fmt(main.period) if callable(fmt) else None
+            result.append({
+                "main":     main,
+                "employer": employer or None,
+                "title":    title or None,
+                "dates":    dates,
+            })
+        return result
 
     def _add_experience_block(
         self, doc: Document, block: Dict, language: str

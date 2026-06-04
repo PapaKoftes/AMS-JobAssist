@@ -327,24 +327,46 @@ def main():
             # Export the dumped CV as canonical JSON from Tool 1, import into Tool 2.
             pid = [None]
 
-            def _import():
-                s, cv_bytes, hdr = http("POST", b1 + "/api/export/json",
-                                        {"session_id": sid, "language": "de"}, timeout=30, raw=True)
-                # multipart upload to Tool 2 /api/import-cvs
+            cv_export = [None]
+
+            def _post_import(url):
+                """Upload the exported Tool 1 CV to Tool 2; returns parsed JSON."""
+                if cv_export[0] is None:
+                    _s, cv_bytes, _h = http("POST", b1 + "/api/export/json",
+                                            {"session_id": sid, "language": "de"}, timeout=30, raw=True)
+                    cv_export[0] = cv_bytes
                 boundary = "----amsTestBoundary"
                 body = (
                     f"--{boundary}\r\n"
                     'Content-Disposition: form-data; name="file"; filename="cv.json"\r\n'
                     "Content-Type: application/json\r\n\r\n"
-                ).encode() + cv_bytes + f"\r\n--{boundary}--\r\n".encode()
+                ).encode() + cv_export[0] + f"\r\n--{boundary}--\r\n".encode()
                 req = urllib.request.Request(
-                    b2 + "/api/import-cvs?cohort_id=TestCohort", data=body, method="POST",
+                    url, data=body, method="POST",
                     headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
                 with urllib.request.urlopen(req, timeout=30) as r:
-                    j = json.loads(r.read().decode())
+                    return json.loads(r.read().decode())
+
+            def _import():
+                # force_overwrite=true mirrors a trainer deliberately re-importing
+                # after a prior approval; keeps the harness deterministic across runs
+                # now that re-import protection (B7) guards locked/approved CVs.
+                j = _post_import(b2 + "/api/import-cvs?cohort_id=TestCohort&force_overwrite=true")
                 pid[0] = j.get("participant_id")
                 return (j.get("imported", 0) >= 1 and pid[0], f"imported participant_id={pid[0]}")
             check(G, "Import Tool 1 CV into Tool 2 (real handoff)", _import)
+
+            def _reimport_protection():
+                # Approve the just-imported CV, then a plain re-import (no force)
+                # must be refused with 409 so trainer work is never silently shadowed.
+                http("POST", b2 + "/api/participants/%d/approve" % pid[0],
+                     {"approval_status": "approved", "approved_by": "T"}, timeout=15)
+                try:
+                    _post_import(b2 + "/api/import-cvs?cohort_id=TestCohort")
+                    return (False, "re-import was NOT refused (expected 409)")
+                except urllib.error.HTTPError as e:
+                    return (e.code == 409, f"re-import of approved CV refused (HTTP {e.code})")
+            check(G, "Re-import protection: approved CV not overwritten (B7)", _reimport_protection)
 
             def _list():
                 s, j, _ = http("GET", b2 + "/api/participants?cohort_id=TestCohort", timeout=15)

@@ -70,6 +70,11 @@ class CVSection:
     # Date range for experience/education entries
     period: Optional[Dict[str, Optional[str]]] = None  # {"start": "2020-01", "end": "2023-03"} or None
 
+    # Structured experience metadata (populated from the _title / _employer
+    # follow-up questions so a job renders as one entry, not 3 loose blobs).
+    title: str = ""      # Job title / role
+    employer: str = ""   # Company / employer name
+
     # Metadata
     category: QuestionCategory = QuestionCategory.OTHER  # Section category
     question_id: str = ""  # Original question ID
@@ -101,6 +106,8 @@ class CVSection:
             "native": self.native,
             "bullets": self.bullets,
             "period": self.period,
+            "title": self.title,
+            "employer": self.employer,
             "category": self.category.value,
             "question_id": self.question_id,
             "detected_input_language": self.detected_input_language,
@@ -395,6 +402,8 @@ class CVData:
 
         def _section_to_work(s: "CVSection") -> WorkEntry:
             return WorkEntry(
+                title=getattr(s, "title", "") or "",
+                employer=getattr(s, "employer", "") or "",
                 german=s.german,
                 english=s.english,
                 native=s.native,

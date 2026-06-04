@@ -291,6 +291,35 @@ const TRANSLATIONS = {
         dumpError:            'Das hat nicht ganz geklappt — erzählen Sie es einfach noch einmal.',
         dumpFinishLabel:      'Lebenslauf erstellen',
         dumpSend:             'Senden →',
+        // Conversational gap questions (use {job} placeholder where supported).
+        dumpGaps: {
+            experience_detail: { text: 'Erzählen Sie mir mehr über Ihre Arbeit als {job} — wo haben Sie gearbeitet, wie lange, und was waren Ihre Aufgaben?',
+                                 textNoJob: 'Erzählen Sie mir mehr über Ihre letzte Arbeit — wo, wie lange, und was haben Sie gemacht?',
+                                 hint: 'Firma, Zeitraum und Ihre wichtigsten Aufgaben.', expect: 'experience_detail' },
+            experience: { text: 'Erzählen Sie mir von Ihrer Berufserfahrung — wo haben Sie gearbeitet und was haben Sie gemacht?',
+                          hint: 'Auch kurze oder ältere Jobs zählen.', expect: 'experience' },
+            education:  { text: 'Welche Ausbildung, Kurse oder Abschlüsse haben Sie?',
+                          hint: 'Schule, Lehre, Kurse, Zertifikate — alles zählt.', expect: 'education' },
+            skills:     { text: 'Welche Stärken und Kenntnisse haben Sie noch?',
+                          hint: 'Sprachen, Computer, Maschinen, Soft Skills…', expect: 'skills' },
+            target_job: { text: 'Und welche Stelle suchen Sie jetzt?',
+                          hint: 'Berufsbezeichnung oder Bereich reicht.', expect: 'target_job' },
+            contact:    { text: 'Wie kann man Sie erreichen?',
+                          hint: 'Stadt, Telefon, E-Mail — was Sie angeben möchten.', expect: 'contact' },
+            name:       { text: 'Wie heißen Sie? (Vor- und Nachname)', hint: '', expect: 'name' },
+        },
+        dumpEnrichment: [
+            { key: 'languages',  expect: 'skills',     text: 'Welche Sprachen sprechen Sie — und wie gut?', hint: 'z.B. Deutsch B1, Bosnisch Muttersprache, Englisch Grundkenntnisse.' },
+            { key: 'tools',      expect: 'skills',     text: 'Welche Computerprogramme, Werkzeuge oder Maschinen können Sie bedienen?', hint: 'z.B. MS Office, Stapler, CNC, Kassensystem…' },
+            { key: 'certs',      expect: 'education',   text: 'Haben Sie Zertifikate, einen Führerschein oder andere Nachweise?', hint: 'z.B. Führerschein B, Staplerschein, Erste-Hilfe-Kurs.' },
+            { key: 'strengths',  expect: 'skills',     text: 'Was sind Ihre größten persönlichen Stärken?', hint: 'z.B. zuverlässig, teamfähig, lernbereit, belastbar.' },
+            { key: 'motivation', expect: 'motivation', text: 'Zum Schluss: Warum interessiert Sie diese Art von Arbeit?', hint: 'Ein, zwei Sätze genügen — das macht Ihre Bewerbung persönlich.' },
+        ],
+        // ✓ acknowledgement labels for captured fields (joined into "✓ Übernommen: …").
+        dumpAckPrefix: '✓ Übernommen:',
+        dumpAckName: 'Name', dumpAckTarget: 'Zielberuf', dumpAckContact: 'Kontakt',
+        dumpAckExperience: 'Berufserfahrung', dumpAckEducation: 'Ausbildung', dumpAckSkills: 'Kenntnisse',
+        dumpAckNoted: '✓ Notiert.',
         askName:              'Wie heißen Sie? (Vor- und Nachname)',
         askContact:           'Wo wohnen Sie, und wie kann man Sie erreichen? (Stadt, Telefon, E-Mail)',
         askTarget:            'Welche Stelle suchen Sie?',
@@ -473,6 +502,43 @@ const TRANSLATIONS = {
         resumeBtn:            'Continue where I left off',
         dismissResumeBtn:     'Start fresh',
         resumeWelcome:        (name) => name ? `Welcome back, ${name}! Your CV is waiting for you.` : 'You have an interview in progress.',
+        // Free-form dump flow (English)
+        dumpPrompt:           'Tell me everything about yourself.',
+        dumpHint:             'Your name, where you live, your work, education, skills — write as much as you like, in any language. I will organise it all for your CV.',
+        dumpPlaceholder:      'e.g. My name is Maria, I live in Vienna, I worked 5 years in a bakery…',
+        dumpThinking:         'One moment — I am organising this for your CV…',
+        dumpKeepGoing:        'Or just keep telling me more.',
+        dumpAnythingElse:     'Great! Would you like to add anything else? If not, click “Create CV”.',
+        dumpError:            'That didn’t quite work — your text is still here, just send it again.',
+        dumpFinishLabel:      'Create CV',
+        dumpSend:             'Send →',
+        dumpGaps: {
+            experience_detail: { text: 'Tell me more about your work as {job} — where did you work, for how long, and what were your tasks?',
+                                 textNoJob: 'Tell me more about your last job — where, how long, and what did you do?',
+                                 hint: 'Company, time period and your main tasks.', expect: 'experience_detail' },
+            experience: { text: 'Tell me about your work experience — where did you work and what did you do?',
+                          hint: 'Short or older jobs count too.', expect: 'experience' },
+            education:  { text: 'What education, courses or qualifications do you have?',
+                          hint: 'School, apprenticeship, courses, certificates — it all counts.', expect: 'education' },
+            skills:     { text: 'What other strengths and skills do you have?',
+                          hint: 'Languages, computer, machines, soft skills…', expect: 'skills' },
+            target_job: { text: 'And what job are you looking for now?',
+                          hint: 'A job title or field is enough.', expect: 'target_job' },
+            contact:    { text: 'How can people reach you?',
+                          hint: 'City, phone, email — whatever you’d like to share.', expect: 'contact' },
+            name:       { text: 'What is your name? (First and last name)', hint: '', expect: 'name' },
+        },
+        dumpEnrichment: [
+            { key: 'languages',  expect: 'skills',     text: 'Which languages do you speak — and how well?', hint: 'e.g. German B1, Bosnian native, English basic.' },
+            { key: 'tools',      expect: 'skills',     text: 'Which computer programs, tools or machines can you operate?', hint: 'e.g. MS Office, forklift, CNC, POS system…' },
+            { key: 'certs',      expect: 'education',   text: 'Do you have any certificates, a driving licence or other proof?', hint: 'e.g. Driving licence B, forklift licence, first-aid course.' },
+            { key: 'strengths',  expect: 'skills',     text: 'What are your greatest personal strengths?', hint: 'e.g. reliable, team player, eager to learn, resilient.' },
+            { key: 'motivation', expect: 'motivation', text: 'Finally: why does this kind of work interest you?', hint: 'One or two sentences is enough — it makes your application personal.' },
+        ],
+        dumpAckPrefix: '✓ Captured:',
+        dumpAckName: 'Name', dumpAckTarget: 'Target job', dumpAckContact: 'Contact',
+        dumpAckExperience: 'Work experience', dumpAckEducation: 'Education', dumpAckSkills: 'Skills',
+        dumpAckNoted: '✓ Noted.',
         appSubtitle:          'Your professional CV — in any language',
         trustHeadline:        'We automatically turn your answers into a professional CV.',
         trustDetail1:         '⏱ About 10–15 minutes',
@@ -2072,6 +2138,11 @@ class APIClient {
         });
     }
 
+    // Reconstruct the captured/missing snapshot from stored answers (for resume).
+    dumpSnapshot(sessionId) {
+        return this._request(`/api/ai/dump-snapshot/${sessionId}`, 'GET');
+    }
+
     // AI Interview Coach — context-aware help during the interview
     coachMessage(message, opts = {}) {
         return this._request('/api/ai/interview-coach', 'POST', {
@@ -2852,22 +2923,62 @@ class InterviewManager {
         const savedId   = localStorage.getItem(SESSION_STORAGE_KEY);
         const savedUser = localStorage.getItem(USER_STORAGE_KEY);
         if (!savedId) return;
+        const sid = parseInt(savedId, 10);
 
         ui.hideResumeBanner();
         try {
             ui.updateSaveStatus(t('statusResuming'));
-            const resp = await api.resumeInterview(parseInt(savedId, 10));
+            // Make sure the session is recoverable / consistent.
+            const resp = await api.resumeInterview(sid);
             if (resp?.status !== 'success') throw new Error('resume failed');
 
-            const data = resp.data;
-            state.sessionId       = parseInt(savedId, 10);
-            state.userId          = savedUser ?? '';
-            state.totalQuestions  = data.progress?.total ?? 5;
-            state.currentQuestion = data.question;
+            // Resume into the SAME free-form dump experience the participant
+            // started in — not the legacy per-question UI.
+            state.sessionId      = sid;
+            state.userId         = savedUser ?? '';
+            state.dumpMode       = true;
+            state.currentGap     = null;
+            state.lastJob        = '';
+            state.askedGaps      = new Set();
+            state.lastGapKey     = null;
+            state.totalQuestions = 1;
 
-            ui.displayQuestion(data.question);
-            ui.updateProgress(data.progress?.current ?? 1, state.totalQuestions);
-            ui.showScreen('interview');
+            // Pull back everything captured so far and repaint the CV sheet.
+            let cap = {}, missing = [];
+            try {
+                const snap = await api.dumpSnapshot(sid);
+                cap     = snap?.data?.captured ?? {};
+                missing = snap?.data?.missing ?? [];
+                state.dumpHasContent = !!snap?.data?.has_content;
+                if (cap.target_job) state.lastJob = cap.target_job;
+            } catch (_e) {
+                state.dumpHasContent = false;
+            }
+
+            // Rebuild the screen chrome for dump mode.
+            this._enterDumpChrome();
+            cvDocReset();
+            const _cm = document.getElementById('convMessages');
+            [...(_cm?.querySelectorAll('.conv-row:not(#cvActivePrompt)') || [])].forEach(n => n.remove());
+            this._paintCaptured(cap);
+
+            // Welcome the participant back and pick up at the first open gap.
+            const welcome = t('resumeWelcome') || 'Willkommen zurück! Ihr Lebenslauf ist gespeichert. Machen wir weiter.';
+            const coreGap = (missing || []).find(g => this._gapQuestion(g, cap));
+            let q = null;
+            if (coreGap) { q = this._gapQuestion(coreGap, cap); state.askedGaps.add(coreGap); state.lastGapKey = coreGap; }
+            else {
+                const enr = this._nextEnrichment();
+                if (enr) { q = { text: enr.text, hint: enr.hint, expect: enr.expect }; state.askedGaps.add(enr.key); state.lastGapKey = enr.key; }
+            }
+            if (q) {
+                state.currentGap = q.expect;
+                convAddAI(welcome + ' ' + q.text, q.hint);
+            } else {
+                state.currentGap = null;
+                convAddAI(welcome + ' ' + (t('dumpAnythingElse') || 'Möchten Sie noch etwas ergänzen? Sonst klicken Sie auf „Lebenslauf erstellen".'));
+            }
+
             ui.updateSaveStatus(t('statusReady'));
         } catch (err) {
             console.warn('Resume failed, restarting:', err);
@@ -2875,6 +2986,18 @@ class InterviewManager {
             localStorage.removeItem(USER_STORAGE_KEY);
             ui.updateSaveStatus(t('statusReady'));
         }
+    }
+
+    /** Set up the interview screen chrome for free-form dump mode (shared by start + resume). */
+    _enterDumpChrome() {
+        ui.showScreen('interview');
+        ui.updateProgress(0, 1);
+        document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
+        if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
+        document.getElementById('skipBtn')?.style.setProperty('display', 'none');
+        const sb = document.getElementById('submitBtn');
+        if (sb) sb.textContent = t('dumpSend') || 'Senden →';
+        ui.updateSubmitButton();
     }
 
     handleDismissResume() {
@@ -3039,25 +3162,18 @@ class InterviewManager {
     // backend how to categorise the reply. Phrased warmly, like a real advisor.
     _gapQuestion(gap, cap) {
         const job = (cap && (cap.target_job)) || state.lastJob || '';
-        const map = {
-            experience_detail: {
-                text: job ? `Erzählen Sie mir mehr über Ihre Arbeit${job ? ' als ' + job : ''} — wo haben Sie gearbeitet, wie lange, und was waren Ihre Aufgaben?`
-                          : 'Erzählen Sie mir mehr über Ihre letzte Arbeit — wo, wie lange, und was haben Sie gemacht?',
-                hint: 'Firma, Zeitraum und Ihre wichtigsten Aufgaben.', expect: 'experience_detail',
-            },
-            experience: { text: 'Erzählen Sie mir von Ihrer Berufserfahrung — wo haben Sie gearbeitet und was haben Sie gemacht?',
-                          hint: 'Auch kurze oder ältere Jobs zählen.', expect: 'experience' },
-            education:  { text: 'Welche Ausbildung, Kurse oder Abschlüsse haben Sie?',
-                          hint: 'Schule, Lehre, Kurse, Zertifikate — alles zählt.', expect: 'education' },
-            skills:     { text: 'Welche Stärken und Kenntnisse haben Sie noch?',
-                          hint: 'Sprachen, Computer, Maschinen, Soft Skills…', expect: 'skills' },
-            target_job: { text: 'Und welche Stelle suchen Sie jetzt?',
-                          hint: 'Berufsbezeichnung oder Bereich reicht.', expect: 'target_job' },
-            contact:    { text: 'Wie kann man Sie erreichen?',
-                          hint: 'Stadt, Telefon, E-Mail — was Sie angeben möchten.', expect: 'contact' },
-            name:       { text: 'Wie heißen Sie? (Vor- und Nachname)', hint: '', expect: 'name' },
-        };
-        return map[gap];
+        const map = t('dumpGaps') || {};
+        const entry = map[gap];
+        if (!entry) return undefined;
+        if (gap === 'experience_detail') {
+            // Job-aware variant: interpolate {job}, or use the no-job phrasing.
+            const out = { ...entry };
+            out.text = job
+                ? (entry.text || '').replace('{job}', job)
+                : (entry.textNoJob || entry.text || '').replace('{job}', '');
+            return out;
+        }
+        return entry;
     }
 
     _paintCaptured(cap) {
@@ -3076,18 +3192,13 @@ class InterviewManager {
     // CV sections) — asked after the core gaps, each once. Returns the next
     // un-asked enrichment question, or null when done.
     _nextEnrichment() {
-        const list = [
-            { key: 'languages',  expect: 'skills',     text: 'Welche Sprachen sprechen Sie — und wie gut?', hint: 'z.B. Deutsch B1, Bosnisch Muttersprache, Englisch Grundkenntnisse.' },
-            { key: 'tools',      expect: 'skills',     text: 'Welche Computerprogramme, Werkzeuge oder Maschinen können Sie bedienen?', hint: 'z.B. MS Office, Stapler, CNC, Kassensystem…' },
-            { key: 'certs',      expect: 'education',   text: 'Haben Sie Zertifikate, einen Führerschein oder andere Nachweise?', hint: 'z.B. Führerschein B, Staplerschein, Erste-Hilfe-Kurs.' },
-            { key: 'strengths',  expect: 'skills',     text: 'Was sind Ihre größten persönlichen Stärken?', hint: 'z.B. zuverlässig, teamfähig, lernbereit, belastbar.' },
-            { key: 'motivation', expect: 'motivation', text: 'Zum Schluss: Warum interessiert Sie diese Art von Arbeit?', hint: 'Ein, zwei Sätze genügen — das macht Ihre Bewerbung persönlich.' },
-        ];
+        const list = t('dumpEnrichment') || [];
         state.askedGaps = state.askedGaps || new Set();
         return list.find(e => !state.askedGaps.has(e.key)) || null;
     }
 
     async handleDump() {
+        if (state.isWaitingForResponse) return;     // guard against double-submit
         const text = ui.answerInput?.value.trim() ?? '';
         if (text.length < 2) return;
         const expect = state.currentGap || null;   // which gap this reply answers
@@ -3109,13 +3220,13 @@ class InterviewManager {
 
             // Acknowledge what just landed, then ask the next gap.
             const bits = [];
-            if (cap.name) bits.push('Name');
-            if (cap.target_job) bits.push('Zielberuf');
-            if ([cap.city, cap.phone, cap.email].some(Boolean)) bits.push('Kontakt');
-            if ((cap.experiences || []).length) bits.push('Berufserfahrung');
-            if ((cap.education || []).length) bits.push('Ausbildung');
-            if ((cap.skills || []).length) bits.push('Kenntnisse');
-            const ack = bits.length ? `✓ Übernommen: ${bits.join(', ')}.` : '✓ Notiert.';
+            if (cap.name) bits.push(t('dumpAckName'));
+            if (cap.target_job) bits.push(t('dumpAckTarget'));
+            if ([cap.city, cap.phone, cap.email].some(Boolean)) bits.push(t('dumpAckContact'));
+            if ((cap.experiences || []).length) bits.push(t('dumpAckExperience'));
+            if ((cap.education || []).length) bits.push(t('dumpAckEducation'));
+            if ((cap.skills || []).length) bits.push(t('dumpAckSkills'));
+            const ack = bits.length ? `${t('dumpAckPrefix')} ${bits.join(', ')}.` : t('dumpAckNoted');
 
             // Pick the next thing to ask: first the core gaps the backend
             // reports, then the enrichment questions (languages, tools, certs,
@@ -3145,7 +3256,13 @@ class InterviewManager {
         } catch (err) {
             console.error('Dump error:', err);
             convThinking(false);
-            convAddAI(t('dumpError') || 'Das hat nicht ganz geklappt — erzählen Sie es einfach noch einmal.');
+            // Restore the participant's text so a slow/failed AI call doesn't
+            // make them retype everything.
+            if (ui.answerInput && !ui.answerInput.value.trim()) {
+                ui.answerInput.value = text;
+                ui.updateSubmitButton?.();
+            }
+            convAddAI(t('dumpError') || 'Das hat nicht ganz geklappt — Ihr Text ist noch da, bitte einfach erneut senden.');
             ui.updateSaveStatus(t('statusReady'));
         } finally {
             state.isWaitingForResponse = false;

@@ -171,6 +171,28 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning("Data retention configured but interview engine not ready — skipping background task")
 
+    # ---- Warm the local AI model in the background ----------------------------
+    # The first AI request otherwise pays a ~10-20s cold load of the ~1GB GGUF
+    # on the request path. Warming in a daemon thread keeps startup instant and
+    # the model resident before the first participant arrives. is_ready() only
+    # loads an existing model (it never triggers a download) and is idempotent.
+    if os.environ.get("AMS_WARM_MODEL", "1").lower() not in ("0", "false", "no"):
+        import threading as _threading
+
+        def _warm_model():
+            try:
+                from ai import local_llm
+                if local_llm.model_exists():
+                    if local_llm.is_ready():
+                        logger.info("Local AI model warmed on startup")
+                    else:
+                        logger.info("Local model present but could not be warmed")
+            except Exception as _exc:
+                logger.warning(f"Model warm-up skipped (non-fatal): {_exc}")
+
+        _threading.Thread(target=_warm_model, name="ams-model-warm", daemon=True).start()
+        print("[OK] Local AI model warming in background")
+
     yield
 
     # Shutdown
@@ -466,6 +488,44 @@ def _log_export(request: Request, session_id: int, export_type: str, path: Optio
         logger.warning(f"export_log: could not write export record (non-fatal): {_exc}")
 
 
+def _persist_cover_letter(request: Request, session_id, letter_dict: dict,
+                          tone: str, job_title: str, employer_name: str) -> None:
+    """Non-fatal: store the generated cover letter so trainers can review it."""
+    try:
+        db: DatabaseManager = request.app.state.db
+        db.execute_update(
+            """INSERT INTO cover_letters
+               (session_id, text, language, tone, job_title, employer_name, word_count)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (session_id, letter_dict.get("text", ""), letter_dict.get("language", "de"),
+             tone, job_title or None, employer_name or None,
+             letter_dict.get("word_count")),
+        )
+    except Exception as _exc:
+        logger.warning(f"cover_letter_log: could not persist (non-fatal): {_exc}")
+
+
+def _persist_ats_score(request: Request, session_id, result, suggestions: list,
+                       job_description: str = "") -> None:
+    """Non-fatal: store an ATS analysis result so trainers can review/compare."""
+    try:
+        import json as _json
+        db: DatabaseManager = request.app.state.db
+        db.execute_update(
+            """INSERT INTO ats_scores
+               (session_id, score, grade, matched_keywords, missing_keywords,
+                suggestions, job_description_snippet)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (session_id, result.score, result.grade,
+             _json.dumps(result.matched_keywords, ensure_ascii=False),
+             _json.dumps(result.missing_keywords, ensure_ascii=False),
+             _json.dumps(suggestions, ensure_ascii=False),
+             (job_description or "")[:200] or None),
+        )
+    except Exception as _exc:
+        logger.warning(f"ats_score_log: could not persist (non-fatal): {_exc}")
+
+
 @app.post("/api/export/json", tags=["Export"])
 async def export_cv_json(body: ExportRequest, request: Request):
     """Export CV as JSON (for Tool 2 import or download)."""
@@ -507,7 +567,7 @@ async def export_cv_docx(body: ExportRequest, request: Request):
 
 
 @app.post("/api/export/cover-letter", tags=["Export"])
-async def export_cover_letter(body: CoverLetterRequest, request: Request):
+def export_cover_letter(body: CoverLetterRequest, request: Request):
     """
     Generate a cover letter for a completed CV.
 
@@ -533,7 +593,7 @@ async def export_cover_letter(body: CoverLetterRequest, request: Request):
     if is_ready():
         try:
             from ai.local_llm import chat as llm_chat
-            raw_body = letter_dict.get("body", "")
+            raw_body = letter_dict.get("text", "")
             if raw_body:
                 enhanced = llm_chat(
                     system=(
@@ -546,12 +606,15 @@ async def export_cover_letter(body: CoverLetterRequest, request: Request):
                     max_tokens=600,
                 )
                 if enhanced and len(enhanced) > 100:
-                    letter_dict["body"] = enhanced
+                    letter_dict["text"] = enhanced
+                    letter_dict["word_count"] = len(enhanced.split())
                     letter_dict["ai_enhanced"] = True
         except Exception as _exc:
             logger.warning(f"AI cover letter enhancement failed (using template): {_exc}")
 
     _log_export(request, body.session_id, "cover-letter", None, body.language)
+    _persist_cover_letter(request, body.session_id, letter_dict,
+                          body.tone, body.job_title, body.employer_name)
     return {
         "status": "success",
         "data": letter_dict,
@@ -588,6 +651,10 @@ async def ats_score(body: ATSScoreRequest, request: Request):
         result = score_against_bank(cv_text)
 
     structural_warnings = validate_cv_structure(cv_data)
+    all_suggestions = result.suggestions + structural_warnings
+
+    _persist_ats_score(request, body.session_id, result, all_suggestions,
+                       body.job_description or "")
 
     return {
         "status": "success",
@@ -596,7 +663,7 @@ async def ats_score(body: ATSScoreRequest, request: Request):
             "grade": result.grade,
             "matched_keywords": result.matched_keywords,
             "missing_keywords": result.missing_keywords,
-            "suggestions": result.suggestions + structural_warnings,
+            "suggestions": all_suggestions,
         }
     }
 
@@ -656,7 +723,7 @@ class InterviewCoachRequest(BaseModel):
 
 
 @app.post("/api/ai/chat", tags=["AI"])
-async def ai_chat(body: ChatRequest, request: Request):
+def ai_chat(body: ChatRequest, request: Request):
     """
     Coach chat — context-aware conversation with the AI.
     Knows the user's CV if session_id is provided.
@@ -705,7 +772,7 @@ async def ai_chat(body: ChatRequest, request: Request):
 
 
 @app.post("/api/ai/interview-coach", tags=["AI"])
-async def ai_interview_coach(body: InterviewCoachRequest, request: Request):
+def ai_interview_coach(body: InterviewCoachRequest, request: Request):
     """
     In-interview coaching assistant.
 
@@ -825,7 +892,7 @@ async def ai_interview_coach(body: InterviewCoachRequest, request: Request):
 
 
 @app.post("/api/ai/dump-extract", tags=["AI"])
-async def ai_dump_extract(body: DumpExtractRequest, request: Request):
+def ai_dump_extract(body: DumpExtractRequest, request: Request):
     """
     Free-form "dump" mode: the participant writes everything about themselves in
     one block (any language); we extract structured CV fields, store them as
@@ -971,8 +1038,82 @@ async def ai_dump_extract(body: DumpExtractRequest, request: Request):
     return {"status": "success", "data": {"captured": captured, "missing": missing}}
 
 
+@app.get("/api/ai/dump-snapshot/{session_id}", tags=["AI"])
+async def ai_dump_snapshot(session_id: int, request: Request):
+    """
+    Reconstruct the captured/missing snapshot for a session from stored answers.
+
+    Used on RESUME so the living-CV sheet can be repainted and the conversation
+    can pick up at the right gap, instead of dropping the participant into the
+    legacy per-question flow with an empty CV.
+    """
+    import re as _re
+    db: DatabaseManager = request.app.state.db_manager
+    try:
+        rows = db.execute_query(
+            "SELECT question_id, answer_text FROM answers WHERE session_id = ? ORDER BY id",
+            (session_id,)) or []
+    except Exception:
+        rows = []
+    now = {r["question_id"]: (r.get("answer_text") or "") for r in rows}
+
+    def _has(qid):
+        v = now.get(qid, "")
+        return bool(v) and v.strip() and v.strip() != "[SKIPPED]"
+
+    # Parse the combined contact line into city / phone / email.
+    city = phone = email = ""
+    blob = now.get("id_contact", "") or ""
+    if blob:
+        m = _re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", blob)
+        if m:
+            email = m.group(0); blob = blob.replace(email, " ")
+        m = _re.search(r"(?<!\w)(\+?\d[\d\s/().\-]{6,}\d)", blob)
+        if m:
+            phone = m.group(1).strip(); blob = blob.replace(m.group(1), " ")
+        rest = [p.strip(" ,;·") for p in _re.split(r"[,\n;]", blob) if p.strip(" ,;·")]
+        if rest:
+            city = rest[0]
+
+    def _collect(prefix):
+        out = []
+        for k in sorted(now.keys()):
+            if k.startswith(prefix) and now[k].strip() and now[k].strip() != "[SKIPPED]":
+                out.append(now[k].strip())
+        return out
+
+    skills_raw = now.get("dump_skills_0", "") or ""
+    skills = [s.strip() for s in skills_raw.split(",") if s.strip()]
+
+    captured = {
+        "name": (now.get("id_name", "") or "").strip(),
+        "city": city, "phone": phone, "email": email,
+        "target_job": (now.get("id_target_job", "") or "").strip(),
+        "experiences": _collect("dump_exp_"),
+        "education": _collect("dump_edu_"),
+        "skills": skills,
+        "motivation": _collect("dump_mot_"),
+    }
+
+    n_exp = len(captured["experiences"])
+    has_edu = bool(captured["education"])
+    missing = []
+    if not _has("id_name"):       missing.append("name")
+    if n_exp == 0:                missing.append("experience")
+    elif n_exp == 1:             missing.append("experience_detail")
+    if not _has("dump_skills_0"): missing.append("skills")
+    if not _has("id_target_job"): missing.append("target_job")
+    if not has_edu:               missing.append("education")
+    if not _has("id_contact"):    missing.append("contact")
+
+    has_any = bool(captured["name"] or captured["target_job"] or captured["experiences"]
+                   or captured["skills"] or captured["education"] or blob)
+    return {"status": "success",
+            "data": {"captured": captured, "missing": missing, "has_content": has_any}}
+
+
 @app.post("/api/ai/interview-prep", tags=["AI"])
-async def ai_interview_prep(body: InterviewPrepRequest, request: Request):
+def ai_interview_prep(body: InterviewPrepRequest, request: Request):
     """Generate likely interview questions from the completed CV.
 
     Tries local LLM first, then Ollama, then falls back to a path-aware
@@ -1064,7 +1205,7 @@ async def ai_interview_prep(body: InterviewPrepRequest, request: Request):
 
 
 @app.post("/api/ai/job-match", tags=["AI"])
-async def ai_job_match(body: JobMatchRequest, request: Request):
+def ai_job_match(body: JobMatchRequest, request: Request):
     """Match CV against a job description and give actionable feedback.
 
     Tries local LLM first, then Ollama, then falls back to rule-based ATS
@@ -1309,7 +1450,7 @@ async def ai_knowledge_search(q: str = ""):
 
 
 @app.post("/api/ai/profile-summary", tags=["AI"])
-async def ai_profile_summary(body: ProfileSummaryRequest, request: Request):
+def ai_profile_summary(body: ProfileSummaryRequest, request: Request):
     """
     Generate a short, encouraging plain-language summary of the user's CV profile.
 

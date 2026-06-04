@@ -10,6 +10,7 @@ Handles:
 """
 
 import logging
+import re
 from typing import Dict, Optional, List, Set
 from datetime import datetime
 
@@ -20,7 +21,136 @@ from polish.engine import PolishEngine
 # Sentinel value used to mark skipped questions — must match engine.py
 ANSWER_SKIPPED = "[SKIPPED]"
 
+# Suffixes appended to a base experience question id for its structured
+# follow-ups (see interview/paths.py _make_employer/_title/_dates_question).
+_EXP_SUBQ_SUFFIXES = ("_employer", "_title", "_dates")
+
+# German month names → 2-digit month, for parsing free-text date ranges.
+_MONTHS_DE = {
+    "jänner": "01", "januar": "01", "jan": "01", "februar": "02", "feb": "02",
+    "märz": "03", "maerz": "03", "mär": "03", "april": "04", "apr": "04",
+    "mai": "05", "juni": "06", "jun": "06", "juli": "07", "jul": "07",
+    "august": "08", "aug": "08", "september": "09", "sep": "09", "sept": "09",
+    "oktober": "10", "okt": "10", "november": "11", "nov": "11",
+    "dezember": "12", "dez": "12",
+}
+_PRESENT_WORDS = ("heute", "jetzt", "aktuell", "laufend", "derzeit",
+                  "noch", "present", "now", "current", "ongoing")
+
 logger = logging.getLogger(__name__)
+
+
+def _parse_token_to_iso(token: str) -> Optional[str]:
+    """Parse a single date token like 'Jänner 2020' / '03/2020' / '2020' → ISO partial."""
+    token = token.strip().lower()
+    if not token:
+        return None
+    # Month name + year
+    m = re.search(r"([a-zä-ÿ]+)\.?\s+(\d{4})", token)
+    if m and m.group(1) in _MONTHS_DE:
+        return f"{m.group(2)}-{_MONTHS_DE[m.group(1)]}"
+    # MM/YYYY or MM.YYYY
+    m = re.search(r"(\d{1,2})[./](\d{4})", token)
+    if m:
+        return f"{m.group(2)}-{int(m.group(1)):02d}"
+    # Bare year
+    m = re.search(r"\b(19|20)\d{2}\b", token)
+    if m:
+        return m.group(0)
+    return None
+
+
+# Language name (any of several spellings) → (canonical English name, ISO 639-1).
+_LANGUAGE_MAP = {
+    "deutsch": ("German", "de"), "german": ("German", "de"),
+    "englisch": ("English", "en"), "english": ("English", "en"),
+    "bosnisch": ("Bosnian", "bs"), "bosnian": ("Bosnian", "bs"),
+    "kroatisch": ("Croatian", "hr"), "croatian": ("Croatian", "hr"),
+    "serbisch": ("Serbian", "sr"), "serbian": ("Serbian", "sr"),
+    "türkisch": ("Turkish", "tr"), "tuerkisch": ("Turkish", "tr"), "turkish": ("Turkish", "tr"),
+    "arabisch": ("Arabic", "ar"), "arabic": ("Arabic", "ar"),
+    "polnisch": ("Polish", "pl"), "polish": ("Polish", "pl"),
+    "rumänisch": ("Romanian", "ro"), "rumaenisch": ("Romanian", "ro"), "romanian": ("Romanian", "ro"),
+    "ukrainisch": ("Ukrainian", "uk"), "ukrainian": ("Ukrainian", "uk"),
+    "russisch": ("Russian", "ru"), "russian": ("Russian", "ru"),
+    "französisch": ("French", "fr"), "franzoesisch": ("French", "fr"), "french": ("French", "fr"),
+    "italienisch": ("Italian", "it"), "italian": ("Italian", "it"),
+    "spanisch": ("Spanish", "es"), "spanish": ("Spanish", "es"),
+    "slowakisch": ("Slovak", "sk"), "slovak": ("Slovak", "sk"),
+    "ungarisch": ("Hungarian", "hu"), "hungarian": ("Hungarian", "hu"),
+    "albanisch": ("Albanian", "sq"), "albanian": ("Albanian", "sq"),
+    "persisch": ("Persian", "fa"), "farsi": ("Persian", "fa"), "persian": ("Persian", "fa"),
+    "kurdisch": ("Kurdish", "ku"), "kurdish": ("Kurdish", "ku"),
+}
+
+
+def _detect_language_level(text: str) -> str:
+    """Map free-text proficiency wording to a CEFR level (or 'native')."""
+    low = text.lower()
+    m = re.search(r"\b([abc][12])\b", low)
+    if m:
+        return m.group(1).upper()
+    if re.search(r"muttersprache|muttersprachlich|native|mother\s*tongue|maternel", low):
+        return "native"
+    if re.search(r"fließend|fliessend|fluent|verhandlungssicher|sehr\s+gut|excellent", low):
+        return "C1"
+    if re.search(r"\bgut\b|good|advanced|fortgeschritten", low):
+        return "B2"
+    if re.search(r"grundkenntnisse|basic|basis|anfänger|anfaenger|beginner|wenig", low):
+        return "A2"
+    return ""
+
+
+def _extract_languages_from_skills(skills: List[str]):
+    """
+    Pull language proficiencies ("Deutsch B2", "Bosnisch Muttersprache") out of a
+    flat skills list. Returns (languages, remaining_skills) where languages is a
+    list of {language, code, level} dicts (deduped by code, best level kept).
+    """
+    _LEVEL_RANK = {"": 0, "A1": 1, "A2": 2, "B1": 3, "B2": 4, "C1": 5, "C2": 6, "native": 7}
+    languages: Dict[str, Dict[str, str]] = {}
+    remaining: List[str] = []
+    for skill in skills:
+        low = skill.lower()
+        matched = None
+        for name, (canon, code) in _LANGUAGE_MAP.items():
+            if re.search(r"\b" + re.escape(name) + r"\b", low):
+                matched = (canon, code)
+                break
+        if not matched:
+            remaining.append(skill)
+            continue
+        canon, code = matched
+        level = _detect_language_level(skill)
+        prev = languages.get(code)
+        if prev is None or _LEVEL_RANK.get(level, 0) > _LEVEL_RANK.get(prev["level"], 0):
+            languages[code] = {"language": canon, "code": code, "level": level}
+    return list(languages.values()), remaining
+
+
+def _parse_experience_period(text: str) -> Optional[Dict[str, Optional[str]]]:
+    """
+    Parse a free-text German/English date answer into {"start", "end"}.
+
+    Handles: "Jänner 2020 bis März 2022", "2018–2021", "seit 2019",
+    "von 2020 bis heute", "ca. 2 Jahre" (→ None, not a fixed range).
+    Returns None if nothing date-like is found.
+    """
+    if not text:
+        return None
+    low = text.strip().lower()
+    # Ongoing if a present-word appears with a start.
+    ongoing = any(w in low for w in _PRESENT_WORDS)
+    # Split on range separators.
+    parts = re.split(r"\s*(?:bis|to|–|—|-|until|until now)\s*", low)
+    parts = [p for p in parts if p.strip()]
+    start = _parse_token_to_iso(parts[0]) if parts else None
+    end = None
+    if len(parts) >= 2 and not ongoing:
+        end = _parse_token_to_iso(parts[-1])
+    if start is None and end is None:
+        return None
+    return {"start": start, "end": (None if ongoing else end)}
 
 
 class CVBuilder:
@@ -218,6 +348,19 @@ class CVBuilder:
         cv_data.all_skills = sorted(list(skill_set))
         logger.info(f"Deduped {len(skill_set)} unique skills from {len(cv_sections)} sections")
 
+        # Promote language proficiencies to a first-class CV section. Language
+        # answers otherwise sit inside the generic skills blob; pulling them out
+        # gives the export a proper "Sprachen" section with CEFR levels and stops
+        # them being listed twice (once as a skill, once as a language).
+        try:
+            langs, remaining = _extract_languages_from_skills(cv_data.all_skills)
+            if langs:
+                cv_data.languages = langs
+                cv_data.all_skills = sorted(remaining)
+                logger.info(f"Extracted {len(langs)} language(s) from skills")
+        except Exception as _lex:
+            logger.warning(f"Language extraction failed (non-fatal): {_lex}")
+
         # Calculate overall quality score
         if quality_scores:
             cv_data.overall_quality = sum(quality_scores) / len(quality_scores)
@@ -277,6 +420,19 @@ class CVBuilder:
             )
             native_lang = session_rows[0].get("user_native_language") if session_rows else None
 
+            # Index all answers so structured experience follow-ups
+            # (<base>_employer / _title / _dates) can be folded into the base
+            # entry instead of becoming 3 disconnected prose sections.
+            answers_by_id: Dict[str, str] = {}
+            for row in results:
+                qid = row["question_id"]
+                txt = (row["answer_text"] or "").strip()
+                if txt and txt != ANSWER_SKIPPED:
+                    answers_by_id[qid] = txt
+
+            def _subq(base: str, suffix: str) -> str:
+                return answers_by_id.get(f"{base}{suffix}", "").strip()
+
             cv_sections = []
             for row in results:
                 question_id = row["question_id"]
@@ -288,6 +444,11 @@ class CVBuilder:
                 # cv_data.target_job, so including it as a motivation section would
                 # make the target job appear twice in the exported CV.
                 if question_id in ("id_name", "id_contact", "id_location", "id_phone", "id_email", "id_target_job"):
+                    continue
+
+                # Structured experience follow-ups are folded into their base
+                # entry below — don't emit them as standalone sections.
+                if question_id.endswith(_EXP_SUBQ_SUFFIXES):
                     continue
 
                 # Skip skipped/empty answers
@@ -302,6 +463,20 @@ class CVBuilder:
                         question_id=question_id,
                         user_native_language=native_lang
                     )
+
+                    # Attach structured metadata from the follow-up questions.
+                    title = _subq(question_id, "_title")
+                    employer = _subq(question_id, "_employer")
+                    dates = _subq(question_id, "_dates")
+                    if title:
+                        cv_section.title = title
+                    if employer:
+                        cv_section.employer = employer
+                    if dates and not cv_section.period:
+                        parsed = _parse_experience_period(dates)
+                        if parsed:
+                            cv_section.period = parsed
+
                     cv_sections.append(cv_section)
                 except Exception as section_err:
                     logger.warning(f"Could not polish answer {question_id}: {section_err}")

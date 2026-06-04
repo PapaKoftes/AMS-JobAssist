@@ -299,8 +299,12 @@ def generate_from_cv_data(cv_data, job_title: str = "", employer_name: str = "",
     if cv_data.identity:
         full_name = cv_data.identity.full_name or ""
         location = cv_data.identity.location or ""
-        phone = getattr(cv_data.identity, "phone", "") or ""
-        email = getattr(cv_data.identity, "email", "") or ""
+        # CVIdentity stores these as contact_phone / contact_email (with
+        # legacy phone/email as fallbacks for older serialised objects).
+        phone = (getattr(cv_data.identity, "contact_phone", "")
+                 or getattr(cv_data.identity, "phone", "") or "")
+        email = (getattr(cv_data.identity, "contact_email", "")
+                 or getattr(cv_data.identity, "email", "") or "")
 
     skills = cv_data.all_skills[:8] if cv_data.all_skills else []
 

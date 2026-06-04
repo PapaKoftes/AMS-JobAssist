@@ -10,6 +10,26 @@ Security features:
 """
 
 import logging
+import os
+import sys
+from pathlib import Path as _Path
+
+# Offline mode is ON by default. Tool 2 holds the AGGREGATED participant PII
+# (every trainee's imported CV), so blocking external network access is a hard
+# DSGVO requirement. This must run BEFORE fastapi/uvicorn import so no module
+# pre-caches the unblocked socket primitives. Disable with AMS_ENFORCE_OFFLINE=0.
+if os.environ.get("AMS_ENFORCE_OFFLINE", "1").lower() not in ("0", "false", "no"):
+    try:
+        # Ensure the repo root is importable so `shared.*` resolves even when
+        # the package isn't pip-installed (zip / portable runs).
+        _repo_root = _Path(__file__).resolve().parents[3]
+        if str(_repo_root) not in sys.path:
+            sys.path.insert(0, str(_repo_root))
+        from shared.utils.network_block import enable_offline_mode
+        enable_offline_mode()
+    except Exception as _e:
+        logging.getLogger(__name__).warning(f"Could not enable offline mode: {_e}")
+
 import secrets
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response

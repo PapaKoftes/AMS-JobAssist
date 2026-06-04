@@ -450,8 +450,14 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
              "ein", "eine", "einen", "my", "i", "am", "name", "mein", "heisse",
              "heiße", "heisst", "wir", "sie", "es", "auch", "oder", "nicht", "gerne",
              "afghanistan", "wien", "graz", "linz", "wels"}
+    # Name-intro triggers across the main AMS languages. The structure is
+    # "<intro> <Name>" in German, English, Turkish (adım/ismim/benim adım),
+    # Bosnian/Croatian/Serbian (zovem se / ja sam / moje ime je) and
+    # Arabic-Latin transliteration (ismi). SOV-sensitive job/skill triggers are
+    # intentionally NOT added here — those are left to the multilingual LLM step.
     _name_re = _re.search(
-        r"\b(?:ich\s+(?:bin|heisse|heiße|heisst)|mein\s+name\s+ist|my\s+name\s+is|i\s*am|i'm)\s+"
+        r"\b(?:ich\s+(?:bin|heisse|heiße|heisst)|mein\s+name\s+ist|my\s+name\s+is|i\s*am|i'm|"
+        r"benim\s+adım|adım|ismim|zovem\s+se|ja\s+sam|moje\s+ime\s+je|ismi)\s+"
         r"([A-Za-zÀ-ÿ'’\-]{2,}(?:\s+[A-Za-zÀ-ÿ'’\-]{2,}){0,3})",
         text, flags=_re.IGNORECASE)
     _regex_name = ""
@@ -498,7 +504,11 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
     # ---- education (regex keywords) -------------------------------------------
     _EDU = (r"(lehre|matura|ausbildung|studium|bachelor|master|diplom|abschluss|"
             r"schule|gymnasium|htl|hlw|hak|\bfh\b|universit|hochschule|kurs|zertifikat|"
-            r"gesellenbrief|abgeschlossen|semester|studiere|maturiert|diplomiert)")
+            r"gesellenbrief|abgeschlossen|semester|studiere|maturiert|diplomiert|"
+            # Turkish: school / high-school / university / diploma / certificate
+            r"okul|lise|[uü]niversite|diploma|sertifika|fakülte|mezun|"
+            # Bosnian/Croatian/Serbian: school / faculty / university / diploma
+            r"škola|fakultet|univerzitet|sveučilište|diplom[ao]|svjedodžba)")
     _regex_edu = []
     for clause in _re.split(r"[.,;\n]", text):
         c = _clean(clause)
