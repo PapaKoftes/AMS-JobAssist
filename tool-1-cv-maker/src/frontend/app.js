@@ -227,6 +227,49 @@ function cvDocAddAnswer(question, rawText, polishedText) {
     _typeInto(entry, text);
 }
 
+// ---- Conversation thread (bottom pane) -------------------------------------
+function _convScroll() {
+    const m = document.getElementById('convMessages');
+    if (m) requestAnimationFrame(() => { m.scrollTop = m.scrollHeight; });
+}
+/** Append the participant's message to the conversation. */
+function convAddUser(text) {
+    const m = document.getElementById('convMessages');
+    if (!m) return;
+    const row = document.createElement('div');
+    row.className = 'conv-row conv-user';
+    row.innerHTML = `<div class="conv-user-bubble">${_escapeHtml(text)}</div>`;
+    m.appendChild(row);
+    _convScroll();
+}
+/** Append an assistant message (question / guidance) to the conversation. */
+function convAddAI(text, hint) {
+    const m = document.getElementById('convMessages');
+    if (!m) return;
+    const row = document.createElement('div');
+    row.className = 'conv-row conv-ai';
+    row.innerHTML = `<span class="advisor-avatar" aria-hidden="true">🧑‍💼</span>` +
+        `<div class="advisor-bubble"><div class="advisor-text">${_escapeHtml(text)}</div>` +
+        (hint ? `<div class="advisor-hint">${_escapeHtml(hint)}</div>` : '') + `</div>`;
+    m.appendChild(row);
+    _convScroll();
+}
+function convThinking(on) {
+    const m = document.getElementById('convMessages');
+    if (!m) return;
+    let t = document.getElementById('convThinking');
+    if (on) {
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'convThinking'; t.className = 'conv-row conv-ai';
+            t.innerHTML = `<span class="advisor-avatar">🧑‍💼</span><div class="advisor-bubble advisor-thinking">…</div>`;
+            m.appendChild(t); _convScroll();
+        }
+    } else if (t) {
+        t.remove();
+    }
+}
+
 // ============================================================================
 // i18n — UI label translations for 12 languages
 // Interview questions come from the backend already translated.
@@ -2020,10 +2063,11 @@ class APIClient {
         });
     }
 
-    // Free-form "dump" extraction — structure a big block of text into CV fields
-    dumpExtract(sessionId, text, language = 'de') {
+    // Free-form "dump" extraction — structure a big block of text into CV fields.
+    // `expect` (optional) tells the backend which gap a short reply answers.
+    dumpExtract(sessionId, text, language = 'de', expect = null) {
         return this._request('/api/ai/dump-extract', 'POST', {
-            session_id: sessionId, text, language,
+            session_id: sessionId, text, language, expect,
         });
     }
 
@@ -2894,6 +2938,13 @@ class InterviewManager {
             state.totalQuestions       = data.progress.total;
             state.currentQuestion      = data.question;
             state.dumpMode             = true;   // start in free-form "dump" mode
+            state.currentGap           = null;   // first message is the big dump
+            state.lastJob              = '';
+            state.dumpHasContent       = false;
+            state.askedGaps            = new Set();
+            const _cm = document.getElementById('convMessages');
+            // keep only the initial advisor prompt; clear any old appended turns
+            [...(_cm?.querySelectorAll('.conv-row:not(#cvActivePrompt)') || [])].forEach(n => n.remove());
             cvDocReset();                      // fresh, empty CV sheet
 
             // Persist for resume
@@ -2982,51 +3033,92 @@ class InterviewManager {
     // Free-form dump: the participant writes everything; the AI structures it
     // onto the CV, then we converse about what's missing.
     // -------------------------------------------------------------------------
+    // The gap questions the assistant asks, one at a time. `expect` tells the
+    // backend how to categorise the reply. Phrased warmly, like a real advisor.
+    _gapQuestion(gap, cap) {
+        const job = (cap && (cap.target_job)) || state.lastJob || '';
+        const map = {
+            experience_detail: {
+                text: job ? `Erzählen Sie mir mehr über Ihre Arbeit${job ? ' als ' + job : ''} — wo haben Sie gearbeitet, wie lange, und was waren Ihre Aufgaben?`
+                          : 'Erzählen Sie mir mehr über Ihre letzte Arbeit — wo, wie lange, und was haben Sie gemacht?',
+                hint: 'Firma, Zeitraum und Ihre wichtigsten Aufgaben.', expect: 'experience_detail',
+            },
+            experience: { text: 'Erzählen Sie mir von Ihrer Berufserfahrung — wo haben Sie gearbeitet und was haben Sie gemacht?',
+                          hint: 'Auch kurze oder ältere Jobs zählen.', expect: 'experience' },
+            education:  { text: 'Welche Ausbildung, Kurse oder Abschlüsse haben Sie?',
+                          hint: 'Schule, Lehre, Kurse, Zertifikate — alles zählt.', expect: 'education' },
+            skills:     { text: 'Welche Stärken und Kenntnisse haben Sie noch?',
+                          hint: 'Sprachen, Computer, Maschinen, Soft Skills…', expect: 'skills' },
+            target_job: { text: 'Und welche Stelle suchen Sie jetzt?',
+                          hint: 'Berufsbezeichnung oder Bereich reicht.', expect: 'target_job' },
+            contact:    { text: 'Wie kann man Sie erreichen?',
+                          hint: 'Stadt, Telefon, E-Mail — was Sie angeben möchten.', expect: 'contact' },
+            name:       { text: 'Wie heißen Sie? (Vor- und Nachname)', hint: '', expect: 'name' },
+        };
+        return map[gap];
+    }
+
+    _paintCaptured(cap) {
+        if (cap.name)       cvDocAddAnswer({ id: 'id_name' }, cap.name, cap.name);
+        if (cap.target_job) { cvDocAddAnswer({ id: 'id_target_job' }, cap.target_job, cap.target_job); state.lastJob = cap.target_job; }
+        const contact = [cap.city, cap.phone, cap.email].filter(Boolean).join(', ');
+        if (contact)        cvDocAddAnswer({ id: 'id_contact' }, contact, contact);
+        (cap.experiences || []).forEach(e => cvDocAddAnswer({ category: 'experience', flags: ['work_experience'] }, e, e));
+        (cap.education   || []).forEach(e => cvDocAddAnswer({ category: 'training',    flags: ['education'] }, e, e));
+        if ((cap.skills || []).length)
+            cvDocAddAnswer({ category: 'skills', flags: ['soft_skills'] }, cap.skills.join(', '), cap.skills.join(', '));
+    }
+
     async handleDump() {
         const text = ui.answerInput?.value.trim() ?? '';
         if (text.length < 2) return;
+        const expect = state.currentGap || null;   // which gap this reply answers
         try {
             state.isWaitingForResponse = true;
             if (ui.answerInput) ui.answerInput.value = '';
+            ui.updateSubmitButton?.();
+            convAddUser(text);                       // show the participant's message
+            convThinking(true);                      // typing indicator
             ui.updateSaveStatus(t('statusBuilding') || 'Wird strukturiert…');
-            // Show a "thinking" advisor line while the model works.
-            cvDocSetPrompt({ text: t('dumpThinking') || 'Einen Moment — ich ordne das für Ihren Lebenslauf…', hint: '', examples: {} });
 
-            const resp = await api.dumpExtract(state.sessionId, text, state.inputLanguage);
+            const resp = await api.dumpExtract(state.sessionId, text, state.inputLanguage, expect);
             const cap = resp?.data?.captured ?? {};
             const missing = resp?.data?.missing ?? [];
 
-            // Paint everything captured onto the CV (top pane).
-            if (cap.name)        cvDocAddAnswer({ id: 'id_name' }, cap.name, cap.name);
-            if (cap.target_job)  cvDocAddAnswer({ id: 'id_target_job' }, cap.target_job, cap.target_job);
-            const contact = [cap.city, cap.phone, cap.email].filter(Boolean).join(', ');
-            if (contact)         cvDocAddAnswer({ id: 'id_contact' }, contact, contact);
-            (cap.experiences || []).forEach(e =>
-                cvDocAddAnswer({ category: 'experience', flags: ['work_experience'] }, e, e));
-            (cap.education || []).forEach(e =>
-                cvDocAddAnswer({ category: 'training', flags: ['education'] }, e, e));
-            if ((cap.skills || []).length)
-                cvDocAddAnswer({ category: 'skills', flags: ['soft_skills'] }, cap.skills.join(', '), cap.skills.join(', '));
-
+            convThinking(false);
+            this._paintCaptured(cap);
             state.dumpHasContent = true;
 
-            // Ask, conversationally, about the most important missing piece.
-            const ask = {
-                name:       { text: t('askName')    || 'Wie heißen Sie? (Vor- und Nachname)' },
-                contact:    { text: t('askContact') || 'Wo wohnen Sie, und wie kann man Sie erreichen?' },
-                target_job: { text: t('askTarget')  || 'Welche Stelle suchen Sie?' },
-                skills:     { text: t('askSkills')  || 'Welche Stärken oder Kenntnisse haben Sie? (z.B. Sprachen, Computer, Maschinen)' },
-            };
-            const firstGap = missing.find(m => ask[m]);
-            if (firstGap) {
-                cvDocSetPrompt({ text: ask[firstGap].text, hint: t('dumpKeepGoing') || 'Oder erzählen Sie einfach weiter.', examples: {} });
+            // Acknowledge what just landed, then ask the next gap.
+            const bits = [];
+            if (cap.name) bits.push('Name');
+            if (cap.target_job) bits.push('Zielberuf');
+            if ([cap.city, cap.phone, cap.email].some(Boolean)) bits.push('Kontakt');
+            if ((cap.experiences || []).length) bits.push('Berufserfahrung');
+            if ((cap.education || []).length) bits.push('Ausbildung');
+            if ((cap.skills || []).length) bits.push('Kenntnisse');
+            const ack = bits.length ? `✓ Übernommen: ${bits.join(', ')}.` : '✓ Notiert.';
+
+            // Don't re-ask a gap we've already asked (prevents loops if a reply
+            // doesn't fully resolve it); progress to the next unasked gap.
+            state.askedGaps = state.askedGaps || new Set();
+            if (expect) state.askedGaps.add(expect);
+            const nextGap = missing.find(g => this._gapQuestion(g, cap) && !state.askedGaps.has(g));
+            if (nextGap) {
+                const q = this._gapQuestion(nextGap, cap);
+                state.currentGap = q.expect;
+                state.askedGaps.add(nextGap);
+                convAddAI(ack + ' ' + q.text, q.hint);
             } else {
-                cvDocSetPrompt({ text: t('dumpAnythingElse') || 'Super! Möchten Sie noch etwas ergänzen? Wenn nicht, klicken Sie auf „Lebenslauf erstellen".', hint: '', examples: {} });
+                state.currentGap = null;
+                const done = t('dumpAnythingElse') || 'Super! Möchten Sie noch etwas ergänzen? Wenn nicht, klicken Sie auf „Lebenslauf erstellen".';
+                convAddAI(ack + ' ' + done);
             }
             ui.updateSaveStatus(t('statusReady'));
         } catch (err) {
             console.error('Dump error:', err);
-            cvDocSetPrompt({ text: t('dumpError') || 'Das hat nicht ganz geklappt — erzählen Sie es einfach noch einmal.', hint: '', examples: {} });
+            convThinking(false);
+            convAddAI(t('dumpError') || 'Das hat nicht ganz geklappt — erzählen Sie es einfach noch einmal.');
             ui.updateSaveStatus(t('statusReady'));
         } finally {
             state.isWaitingForResponse = false;

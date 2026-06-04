@@ -637,6 +637,7 @@ class DumpExtractRequest(BaseModel):
     session_id: int
     text: str
     language: str = "de"
+    expect: Optional[str] = None  # gap being answered: contact|target_job|experience|education|skills|name
 
 class ModelDownloadRequest(BaseModel):
     confirm: bool = False
@@ -836,8 +837,6 @@ async def ai_dump_extract(body: DumpExtractRequest, request: Request):
     db: DatabaseManager = request.app.state.db_manager
     sid = body.session_id
 
-    fields = extract_cv_fields(body.text or "", body.language)
-
     def _save(qid: str, txt: str):
         if txt and txt.strip():
             try:
@@ -861,34 +860,112 @@ async def ai_dump_extract(body: DumpExtractRequest, request: Request):
             logger.warning(f"dump-extract register {qid} failed: {_e}")
         _save(qid, txt)
 
-    # Identity → existing identity answers
-    _save("id_name", fields["name"])
-    contact_parts = [p for p in (fields["city"], fields["phone"], fields["email"]) if p]
-    if contact_parts:
-        _save("id_contact", ", ".join(contact_parts))
-    _save("id_target_job", fields["target_job"])
+    # What's already on file (so multi-turn conversation APPENDS, never blanks).
+    try:
+        _rows = db.execute_query(
+            "SELECT question_id, answer_text FROM answers WHERE session_id = ?", (sid,)) or []
+        existing = {r["question_id"]: (r.get("answer_text") or "") for r in _rows}
+    except Exception:
+        existing = {}
+    def _have(qid):
+        v = existing.get(qid, "")
+        return bool(v) and v.strip() and v.strip() != "[SKIPPED]"
 
-    # Content → synthetic categorised answers
-    for i, item in enumerate(fields["experiences"][:6]):
-        _register_and_save(f"dump_exp_{i}", "experience", item)
-    for i, item in enumerate(fields["education"][:4]):
-        _register_and_save(f"dump_edu_{i}", "background", item)
-    if fields["skills"]:
-        _register_and_save("dump_skills_0", "skills", ", ".join(fields["skills"][:12]))
+    def _next_idx(prefix):
+        n = 0
+        while f"{prefix}{n}" in existing:
+            n += 1
+        return n
 
+    txt = (body.text or "").strip()
+    captured = {"name": "", "city": "", "phone": "", "email": "",
+                "target_job": "", "experiences": [], "education": [], "skills": []}
+
+    if body.expect:
+        # Targeted reply to one gap question — categorise it directly (fast, no
+        # reliance on the small model) so the answer lands in the right section.
+        import re as _re
+        exp = body.expect
+        if exp == "name":
+            captured["name"] = txt[:80]
+            _save("id_name", txt[:80])
+        elif exp == "contact":
+            f = extract_cv_fields(txt, body.language)  # reuse the email/phone regex
+            parts = [p for p in (f.get("city"), f.get("phone"), f.get("email")) if p] or [txt]
+            captured.update({"city": f.get("city", ""), "phone": f.get("phone", ""), "email": f.get("email", "")})
+            _save("id_contact", ", ".join(parts))
+        elif exp == "target_job":
+            captured["target_job"] = txt[:120]
+            _save("id_target_job", txt[:120])
+        elif exp in ("experience", "experience_detail"):
+            captured["experiences"] = [txt[:600]]
+            _register_and_save(f"dump_exp_{_next_idx('dump_exp_')}", "experience", txt[:600])
+        elif exp == "education":
+            captured["education"] = [txt[:400]]
+            _register_and_save(f"dump_edu_{_next_idx('dump_edu_')}", "background", txt[:400])
+        elif exp == "skills":
+            new = [s.strip() for s in _re.split(r"[,\n;|]", txt) if len(s.strip()) > 1]
+            captured["skills"] = new
+            prev = existing.get("dump_skills_0", "")
+            merged = [s.strip() for s in (prev.split(",") if prev else []) if s.strip()]
+            for s in new:
+                if s not in merged:
+                    merged.append(s)
+            _register_and_save("dump_skills_0", "skills", ", ".join(merged))
+        else:
+            # unknown hint: treat as more experience
+            captured["experiences"] = [txt[:600]]
+            _register_and_save(f"dump_exp_{_next_idx('dump_exp_')}", "experience", txt[:600])
+    else:
+        # Initial free-form dump — full AI-assisted extraction.
+        captured = extract_cv_fields(txt, body.language)
+        if captured["name"]:
+            _save("id_name", captured["name"])
+        contact_parts = [p for p in (captured["city"], captured["phone"], captured["email"]) if p]
+        if contact_parts:
+            _save("id_contact", ", ".join(contact_parts))
+        if captured["target_job"]:
+            _save("id_target_job", captured["target_job"])
+        ei = _next_idx("dump_exp_")
+        for item in captured["experiences"][:6]:
+            _register_and_save(f"dump_exp_{ei}", "experience", item); ei += 1
+        di = _next_idx("dump_edu_")
+        for item in captured["education"][:4]:
+            _register_and_save(f"dump_edu_{di}", "background", item); di += 1
+        if captured["skills"]:
+            prev = existing.get("dump_skills_0", "")
+            merged = [s.strip() for s in (prev.split(",") if prev else []) if s.strip()]
+            for s in captured["skills"][:12]:
+                if s and s not in merged:
+                    merged.append(s)
+            _register_and_save("dump_skills_0", "skills", ", ".join(merged))
+
+    # Re-read what's on file now and decide what to still ask about.
+    try:
+        _rows2 = db.execute_query(
+            "SELECT question_id, answer_text FROM answers WHERE session_id = ?", (sid,)) or []
+        now = {r["question_id"]: (r.get("answer_text") or "") for r in _rows2}
+    except Exception:
+        now = existing
+    def _has(qid):
+        v = now.get(qid, "")
+        return bool(v) and v.strip() and v.strip() != "[SKIPPED]"
+    n_exp = sum(1 for k in now if k.startswith("dump_exp_") and now[k].strip())
+    has_edu = any(k.startswith("dump_edu_") and now[k].strip() for k in now)
+
+    # Ordered gaps the assistant should still ask about. experience_detail is
+    # asked only ONCE (when there's a single thin experience and we haven't dug
+    # deeper yet); after a 2nd experience entry exists, we stop probing it.
     missing = []
-    if not fields["name"]:
-        missing.append("name")
-    if not contact_parts:
-        missing.append("contact")
-    if not fields["target_job"]:
-        missing.append("target_job")
-    if not fields["experiences"]:
-        missing.append("experience")
-    if not fields["skills"]:
-        missing.append("skills")
+    if not _has("id_name"):       missing.append("name")
+    if n_exp == 0:                missing.append("experience")
+    elif n_exp == 1:             missing.append("experience_detail")
+    if not _has("dump_skills_0"): missing.append("skills")
+    if not _has("id_target_job"): missing.append("target_job")
+    if not has_edu:               missing.append("education")
+    if not _has("id_contact"):    missing.append("contact")
 
-    return {"status": "success", "data": {"captured": fields, "missing": missing}}
+    return {"status": "success", "data": {"captured": captured, "missing": missing}}
 
 
 @app.post("/api/ai/interview-prep", tags=["AI"])

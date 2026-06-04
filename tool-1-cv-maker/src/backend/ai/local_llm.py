@@ -437,6 +437,15 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
     if m:
         result["phone"] = m.group(1).strip()
 
+    # Name via regex from the literal text — more reliable than a small model,
+    # which can mis-spell it. Matches "ich bin/heisse/heiße <First [Last]>" or
+    # "mein name ist <…>". Used as the trusted name below.
+    _name_re = _re.search(
+        r"\b(?:ich\s+(?:bin|heisse|heiße|heisst)|mein\s+name\s+ist|my\s+name\s+is|i\s*am|i'm)\s+"
+        r"([A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ]{2,}){0,2})",
+        text, flags=_re.IGNORECASE)
+    _regex_name = _name_re.group(1).strip() if _name_re else ""
+
     def _split_items(val: str):
         parts = [p.strip(" -•·\t") for p in _re.split(r"\s*\|\s*|\n", val)]
         return [p for p in parts if len(p) > 1]
@@ -475,21 +484,37 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
     except Exception as _e:
         logger.warning(f"extract_cv_fields LLM step failed (using fallback): {_e}")
 
+    # Trust the regex name over the model (which can mis-spell it). Then tidy
+    # casing so an all-lowercase name shows correctly in the CV header.
+    if _regex_name:
+        result["name"] = _regex_name
+    nm = result.get("name", "")
+    if nm and nm == nm.lower():
+        result["name"] = " ".join(w.capitalize() for w in nm.split())
+
     # Never lose the participant's experience. Small models often fill NAME/ORT/
-    # SKILLS but leave ERFAHRUNG empty — in that case keep the original dump as a
-    # single experience entry (the polish layer cleans it up). Strip the bits we
-    # already captured (email/phone, and a leading "Ich bin/heisse <name>" intro)
-    # so the experience line doesn't repeat the contact details.
+    # SKILLS but leave ERFAHRUNG empty — keep the original dump as a single
+    # experience entry, but first strip the bits we already captured elsewhere
+    # (email/phone, a leading "ich bin/heisse <name>" intro, age phrases, and the
+    # trailing comma-separated skill list) so the experience line reads cleanly.
     if not result["experiences"]:
         leftover = text.strip()
         if result["email"]:
             leftover = leftover.replace(result["email"], " ")
         if result["phone"]:
             leftover = leftover.replace(result["phone"], " ")
+        # drop "ich bin/heisse Mina," and "ich bin 27 jahre alt," style clauses
         leftover = _re.sub(
-            r"^\s*(ich\s+(?:bin|heisse|heiße|heisst|wohne|komme)[^.,;]*[.,;]\s*)",
-            "", leftover, flags=_re.IGNORECASE,
-        )
+            r"\bich\s+(?:bin|heisse|heiße|heisst|wohne|komme)\s+[^.,;]*[.,;]",
+            " ", leftover, flags=_re.IGNORECASE)
+        leftover = _re.sub(r"\bich\s+(?:bin|habe)\s+\d{1,2}\s*jahre?\s*(alt)?[^.,;]*[.,;]?",
+                           " ", leftover, flags=_re.IGNORECASE)
+        # drop the captured skills from the experience text (avoid duplication)
+        for sk in (result.get("skills") or []):
+            leftover = leftover.replace(sk, " ")
+        # drop a trailing "ich kenne X, Y, Z, lots" skill enumeration
+        leftover = _re.sub(r"\bich\s+kenne\b.*$", " ", leftover, flags=_re.IGNORECASE | _re.DOTALL)
+        leftover = _re.sub(r"\s*,\s*lots\b\.?", " ", leftover, flags=_re.IGNORECASE)
         leftover = _re.sub(r"\s{2,}", " ", leftover).strip(" ,;.-")
         result["experiences"] = [leftover[:600]] if len(leftover) > 4 else [text.strip()[:600]]
     return result
