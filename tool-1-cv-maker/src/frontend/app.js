@@ -2943,6 +2943,7 @@ class InterviewManager {
             state.lastJob              = '';
             state.dumpHasContent       = false;
             state.askedGaps            = new Set();
+            state.lastGapKey           = null;
             const _cm = document.getElementById('convMessages');
             // keep only the initial advisor prompt; clear any old appended turns
             [...(_cm?.querySelectorAll('.conv-row:not(#cvActivePrompt)') || [])].forEach(n => n.remove());
@@ -3066,8 +3067,24 @@ class InterviewManager {
         if (contact)        cvDocAddAnswer({ id: 'id_contact' }, contact, contact);
         (cap.experiences || []).forEach(e => cvDocAddAnswer({ category: 'experience', flags: ['work_experience'] }, e, e));
         (cap.education   || []).forEach(e => cvDocAddAnswer({ category: 'training',    flags: ['education'] }, e, e));
+        (cap.motivation  || []).forEach(e => cvDocAddAnswer({ category: 'motivation',  flags: ['motivation'] }, e, e));
         if ((cap.skills || []).length)
             cvDocAddAnswer({ category: 'skills', flags: ['soft_skills'] }, cap.skills.join(', '), cap.skills.join(', '));
+    }
+
+    // Extra questions that make the CV comprehensive (drawn from the documented
+    // CV sections) — asked after the core gaps, each once. Returns the next
+    // un-asked enrichment question, or null when done.
+    _nextEnrichment() {
+        const list = [
+            { key: 'languages',  expect: 'skills',     text: 'Welche Sprachen sprechen Sie — und wie gut?', hint: 'z.B. Deutsch B1, Bosnisch Muttersprache, Englisch Grundkenntnisse.' },
+            { key: 'tools',      expect: 'skills',     text: 'Welche Computerprogramme, Werkzeuge oder Maschinen können Sie bedienen?', hint: 'z.B. MS Office, Stapler, CNC, Kassensystem…' },
+            { key: 'certs',      expect: 'education',   text: 'Haben Sie Zertifikate, einen Führerschein oder andere Nachweise?', hint: 'z.B. Führerschein B, Staplerschein, Erste-Hilfe-Kurs.' },
+            { key: 'strengths',  expect: 'skills',     text: 'Was sind Ihre größten persönlichen Stärken?', hint: 'z.B. zuverlässig, teamfähig, lernbereit, belastbar.' },
+            { key: 'motivation', expect: 'motivation', text: 'Zum Schluss: Warum interessiert Sie diese Art von Arbeit?', hint: 'Ein, zwei Sätze genügen — das macht Ihre Bewerbung persönlich.' },
+        ];
+        state.askedGaps = state.askedGaps || new Set();
+        return list.find(e => !state.askedGaps.has(e.key)) || null;
     }
 
     async handleDump() {
@@ -3100,19 +3117,28 @@ class InterviewManager {
             if ((cap.skills || []).length) bits.push('Kenntnisse');
             const ack = bits.length ? `✓ Übernommen: ${bits.join(', ')}.` : '✓ Notiert.';
 
-            // Don't re-ask a gap we've already asked (prevents loops if a reply
-            // doesn't fully resolve it); progress to the next unasked gap.
+            // Pick the next thing to ask: first the core gaps the backend
+            // reports, then the enrichment questions (languages, tools, certs,
+            // strengths, motivation) so the CV ends up comprehensive. Each is
+            // asked once (askedGaps) to avoid loops.
             state.askedGaps = state.askedGaps || new Set();
             if (expect) state.askedGaps.add(expect);
-            const nextGap = missing.find(g => this._gapQuestion(g, cap) && !state.askedGaps.has(g));
-            if (nextGap) {
-                const q = this._gapQuestion(nextGap, cap);
+            if (state.lastGapKey) state.askedGaps.add(state.lastGapKey);
+
+            const coreGap = missing.find(g => this._gapQuestion(g, cap) && !state.askedGaps.has(g));
+            let q = null;
+            if (coreGap) { q = this._gapQuestion(coreGap, cap); state.askedGaps.add(coreGap); state.lastGapKey = coreGap; }
+            else {
+                const enr = this._nextEnrichment();
+                if (enr) { q = { text: enr.text, hint: enr.hint, expect: enr.expect }; state.askedGaps.add(enr.key); state.lastGapKey = enr.key; }
+            }
+            if (q) {
                 state.currentGap = q.expect;
-                state.askedGaps.add(nextGap);
                 convAddAI(ack + ' ' + q.text, q.hint);
             } else {
                 state.currentGap = null;
-                const done = t('dumpAnythingElse') || 'Super! Möchten Sie noch etwas ergänzen? Wenn nicht, klicken Sie auf „Lebenslauf erstellen".';
+                state.lastGapKey = null;
+                const done = t('dumpAnythingElse') || 'Super! Ihr Lebenslauf ist gut gefüllt. Möchten Sie noch etwas ergänzen? Wenn nicht, klicken Sie auf „Lebenslauf erstellen".';
                 convAddAI(ack + ' ' + done);
             }
             ui.updateSaveStatus(t('statusReady'));

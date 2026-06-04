@@ -879,7 +879,7 @@ async def ai_dump_extract(body: DumpExtractRequest, request: Request):
 
     txt = (body.text or "").strip()
     captured = {"name": "", "city": "", "phone": "", "email": "",
-                "target_job": "", "experiences": [], "education": [], "skills": []}
+                "target_job": "", "experiences": [], "education": [], "skills": [], "motivation": []}
 
     if body.expect:
         # Targeted reply to one gap question — categorise it directly (fast, no
@@ -903,6 +903,9 @@ async def ai_dump_extract(body: DumpExtractRequest, request: Request):
         elif exp == "education":
             captured["education"] = [txt[:400]]
             _register_and_save(f"dump_edu_{_next_idx('dump_edu_')}", "background", txt[:400])
+        elif exp == "motivation":
+            captured["motivation"] = [txt[:400]]
+            _register_and_save(f"dump_mot_{_next_idx('dump_mot_')}", "motivation", txt[:400])
         elif exp == "skills":
             new = [s.strip() for s in _re.split(r"[,\n;|]", txt) if len(s.strip()) > 1]
             captured["skills"] = new
