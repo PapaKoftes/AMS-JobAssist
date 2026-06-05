@@ -358,50 +358,6 @@
         </div>
 
         <!-- ================================================================
-             AI COACH WIDGET — floating helper during interview
-             ================================================================ -->
-        <div id="aiCoachWidget" class="ai-coach-widget" style="display:none;" aria-label="KI-Hilfe">
-            <!-- Toggle button -->
-            <button id="aiCoachToggle" class="ai-coach-toggle" aria-expanded="false" title="KI-Hilfe öffnen">
-                <span class="ai-coach-icon">💬</span>
-                <span class="ai-coach-label" id="aiCoachLabel">Hilfe</span>
-            </button>
-
-            <!-- Chat panel -->
-            <div id="aiCoachPanel" class="ai-coach-panel" aria-hidden="true">
-                <div class="ai-coach-header">
-                    <span>🤖 KI-Coach</span>
-                    <button class="ai-coach-close" id="aiCoachClose" aria-label="Schließen">✕</button>
-                </div>
-
-                <div class="ai-coach-messages" id="aiCoachMessages">
-                    <div class="ai-coach-msg ai-coach-msg--bot" id="aiCoachWelcome">
-                        Hallo! Ich bin Ihr persönlicher KI-Coach. Schreiben Sie mir, wenn Sie Hilfe mit einer Frage brauchen.
-                    </div>
-                </div>
-
-                <!-- Quick-action buttons -->
-                <div class="ai-coach-quick" id="aiCoachQuick">
-                    <button class="ai-coach-quick-btn" data-msg="stuck">Ich weiß nicht weiter</button>
-                    <button class="ai-coach-quick-btn" data-msg="example">Gib mir ein Beispiel</button>
-                    <button class="ai-coach-quick-btn" data-msg="explain">Erkläre die Frage</button>
-                </div>
-
-                <div class="ai-coach-input-row">
-                    <input
-                        id="aiCoachInput"
-                        class="ai-coach-input"
-                        type="text"
-                        placeholder="Schreiben Sie Ihre Frage…"
-                        maxlength="300"
-                        autocomplete="off"
-                    />
-                    <button id="aiCoachSend" class="ai-coach-send" title="Senden">➤</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ================================================================
              COMPLETION SCREEN
              ================================================================ -->
         <div id="completionScreen" class="screen">
@@ -674,47 +630,6 @@
 .btn-link:hover { opacity: 0.75; }
 </style>
 
-<!-- ============================================================
-     AI COACH CHAT (floating, available on all screens)
-     ============================================================ -->
-<div id="aiChatBubble" class="ai-chat-bubble" title="KI-Coach fragen" style="display:none">
-    💬
-    <span class="ai-chat-badge" id="aiChatBadge" style="display:none">●</span>
-</div>
-
-<div id="aiChatPanel" class="ai-chat-panel hidden">
-    <div class="ai-chat-header">
-        <span class="ai-chat-title">🤖 KI-Coach</span>
-        <div class="ai-chat-header-actions">
-            <button class="btn-icon" id="aiInterviewPrepBtn" title="Vorstellungsgespräch-Fragen">🎯</button>
-            <button class="btn-icon" id="aiJobMatchBtn" title="Stelle analysieren">📋</button>
-            <button class="btn-icon" id="aiChatCloseBtn" title="Schließen">✕</button>
-        </div>
-    </div>
-
-    <div class="ai-chat-messages" id="aiChatMessages">
-        <div class="ai-msg ai-msg-bot">
-            Hallo! Ich bin Ihr KI-Coach. Ich kenne Ihren Lebenslauf und helfe Ihnen gerne weiter.
-            Stellen Sie mir eine Frage — z.B. „Ist meine Erfahrung gut beschrieben?" oder
-            „Was sollte ich noch hinzufügen?"
-        </div>
-    </div>
-
-    <!-- Job match input (hidden until 📋 clicked) -->
-    <div id="aiJobMatchInput" class="ai-job-input hidden">
-        <textarea id="aiJobDescText" class="input ai-job-textarea"
-                  placeholder="Stellenanzeige hier einfügen…" rows="4"></textarea>
-        <button class="btn btn-primary btn-sm" id="aiJobMatchRunBtn">Analysieren →</button>
-    </div>
-
-    <div class="ai-chat-input-row">
-        <input type="text" id="aiChatInput" class="input ai-chat-input"
-               placeholder="Fragen Sie Ihren KI-Coach…">
-        <button class="btn btn-primary btn-sm" id="aiChatSendBtn">→</button>
-    </div>
-    <div id="aiModelStatus" class="ai-model-status"></div>
-</div>
-
-<script src="/static/app.js?v=rich1"></script>
+<script src="/static/app.js?v=nobubble"></script>
 </body>
 </html>
