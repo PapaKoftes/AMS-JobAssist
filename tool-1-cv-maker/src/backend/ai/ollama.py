@@ -16,7 +16,8 @@ from typing import Optional, Tuple
 logger = logging.getLogger(__name__)
 
 OLLAMA_BASE = "http://localhost:11434"
-PREFERRED_MODELS = ["llama3.2", "mistral", "phi3", "gemma2", "llama2", "qwen2"]
+# Prefer strong multilingual instruct models first (good German + JSON).
+PREFERRED_MODELS = ["qwen2.5", "llama3.1", "llama3.2", "qwen2", "mistral", "gemma2", "phi3", "llama2"]
 
 _ollama_available: Optional[bool] = None
 _ollama_model: Optional[str] = None
@@ -211,6 +212,135 @@ def _clean_response(response: str, original: str) -> str:
         return ""
 
     return cleaned
+
+
+def generate_ollama(system: str, user: str, num_predict: int = 500,
+                    temperature: float = 0.3) -> Optional[str]:
+    """
+    Generic chat/generation via Ollama (used for coach chat, interview prep,
+    job match, etc. when a real model is available). Returns None on failure so
+    callers fall back to the local 1.5B / rules path.
+    """
+    available, model = detect_ollama()
+    if not available or not model:
+        return None
+    payload = {
+        "model": model,
+        "prompt": user,
+        "system": system,
+        "stream": False,
+        "options": {"temperature": temperature, "top_p": 0.9, "num_predict": num_predict},
+    }
+    result = _http_post(f"{OLLAMA_BASE}/api/generate", payload, timeout=90)
+    if not result:
+        return None
+    resp = (result.get("response") or "").strip()
+    return resp or None
+
+
+_EXTRACT_SCHEMA_KEYS = ("name", "city", "phone", "email", "target_job",
+                        "experiences", "education", "skills", "languages", "motivation")
+
+
+def extract_cv_fields_ollama(text: str, language: str = "de") -> Optional[dict]:
+    """
+    LLM-FIRST structured extraction via Ollama (format=json).
+
+    Reads free-form text in ANY language and returns a structured CV dict with
+    professional GERMAN content. This is the real "AI does the parsing" path —
+    no regex-first override. Returns None if Ollama is unavailable or the output
+    can't be parsed, so the caller can fall back to the rules/1.5B path.
+    """
+    available, model = detect_ollama()
+    if not available or not model:
+        return None
+
+    lang_name = _LANG_NAMES.get(language, language.upper())
+    system = (
+        "Du bist ein präziser Lebenslauf-Datenextraktor für AMS Österreich. "
+        "Du liest die freie Erzählung einer arbeitssuchenden Person (in irgendeiner "
+        "Sprache) und gibst NUR ein JSON-Objekt zurück. Erfinde nichts; lass Felder "
+        "leer, wenn die Info fehlt. Schreibe alle Inhalte auf professionellem Deutsch."
+    )
+    prompt = f"""Sprache der Eingabe: {lang_name}.
+
+Extrahiere die Lebenslauf-Daten aus folgendem Text und gib NUR dieses JSON zurück
+(keine Erklärung, keine Markdown-Zeichen):
+
+{{
+  "name": "Vor- und Nachname, falls genannt",
+  "city": "Wohnort",
+  "phone": "Telefonnummer",
+  "email": "E-Mail",
+  "target_job": "gewünschter Beruf / Zielposition",
+  "experiences": ["je EIN kurzer, professioneller deutscher Satz pro Job, z.B. 'Kassa und Verkauf bei Spar (6 Jahre)'"],
+  "education": ["Ausbildung/Abschluss, je ein Eintrag"],
+  "skills": ["einzelne Fähigkeiten, keine Sprachen"],
+  "languages": ["Sprache mit Niveau, z.B. 'Deutsch (Muttersprache)', 'Englisch (Grundkenntnisse)'"],
+  "motivation": "ein Satz zur Motivation, falls erkennbar"
+}}
+
+Text:
+{text}
+"""
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "system": system,
+        "stream": False,
+        "format": "json",           # force valid JSON output
+        "options": {"temperature": 0.1, "top_p": 0.9, "num_predict": 700},
+    }
+    result = _http_post(f"{OLLAMA_BASE}/api/generate", payload, timeout=90)
+    if not result:
+        return None
+    raw = (result.get("response") or "").strip()
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except Exception:
+        # Salvage the first {...} block if the model wrapped it in prose.
+        import re as _re
+        m = _re.search(r"\{.*\}", raw, _re.DOTALL)
+        if not m:
+            logger.warning("Ollama extraction returned non-JSON")
+            return None
+        try:
+            data = json.loads(m.group(0))
+        except Exception:
+            return None
+    if not isinstance(data, dict):
+        return None
+
+    def _as_list(v):
+        if isinstance(v, list):
+            return [str(x).strip() for x in v if str(x).strip()]
+        if isinstance(v, str) and v.strip():
+            return [v.strip()]
+        return []
+
+    def _as_str(v):
+        return str(v).strip() if isinstance(v, (str, int, float)) else ""
+
+    out = {
+        "name": _as_str(data.get("name"))[:80],
+        "city": _as_str(data.get("city"))[:80],
+        "phone": _as_str(data.get("phone"))[:40],
+        "email": _as_str(data.get("email"))[:80],
+        "target_job": _as_str(data.get("target_job"))[:120],
+        "experiences": _as_list(data.get("experiences"))[:8],
+        "education": _as_list(data.get("education"))[:6],
+        "skills": _as_list(data.get("skills"))[:16],
+        "motivation": " ".join(_as_list(data.get("motivation"))) or _as_str(data.get("motivation")),
+    }
+    # Languages are first-class downstream (builder pulls them into a Sprachen
+    # section); merge them into skills so the existing pipeline picks them up.
+    langs = _as_list(data.get("languages"))
+    for lg in langs:
+        if lg and lg not in out["skills"]:
+            out["skills"].append(lg)
+    return out
 
 
 def get_status() -> dict:

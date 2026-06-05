@@ -93,6 +93,49 @@ def _model_present(port):
     return bool(local.get("model_exists_on_disk"))
 
 
+def _find_ollama():
+    """Locate the ollama executable (PATH or the winget default location)."""
+    exe = shutil.which("ollama")
+    if exe:
+        return exe
+    cand = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "ollama.exe"
+    return str(cand) if cand.exists() else None
+
+
+def _ollama_models():
+    """Return the list of installed Ollama model names, or None if not serving."""
+    data = _get("http://127.0.0.1:11434/api/tags", timeout=3)
+    if not data:
+        return None
+    return [m.get("name", "") for m in data.get("models", [])]
+
+
+def _ensure_ollama():
+    """
+    Ensure Ollama is serving (start it if installed but down). Returns the list of
+    installed models, or None if Ollama isn't available at all. The app talks to
+    Ollama on 127.0.0.1:11434 (loopback → allowed by offline mode).
+    """
+    models = _ollama_models()
+    if models is not None:
+        return models
+    exe = _find_ollama()
+    if not exe:
+        return None
+    print("Starting Ollama server ...")
+    try:
+        subprocess.Popen([exe, "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"  [!!] could not start ollama serve: {e}")
+        return None
+    for _ in range(20):
+        time.sleep(1)
+        models = _ollama_models()
+        if models is not None:
+            return models
+    return None
+
+
 def _start_tool(backend: Path, port: int, name: str, env: dict, log: Path):
     log.parent.mkdir(parents=True, exist_ok=True)
     fh = open(log, "w", encoding="utf-8")
@@ -112,6 +155,19 @@ def main():
     if reset and DEMO_DATA.exists():
         print("Resetting demo data (clean slate) ...")
         shutil.rmtree(DEMO_DATA, ignore_errors=True)
+
+    # Bring up Ollama first so the app detects it at startup and routes the AI
+    # through the better model (extraction + coach). Loopback → offline-safe.
+    print("Checking the local AI engine (Ollama) ...")
+    _models = _ensure_ollama()
+    if _models:
+        _has_good = any(m.split(":")[0] in ("qwen2.5", "llama3.1", "llama3.2", "qwen2", "mistral")
+                        for m in _models)
+        print(f"  [OK] Ollama serving with models: {', '.join(_models) or '(none)'}")
+        if not _has_good:
+            print("  [!!] No strong instruct model found. Run:  ollama pull qwen2.5:7b")
+    else:
+        print("  [i] Ollama not available - falling back to the bundled 1.5B model.")
 
     base_env = dict(os.environ)
     base_env["AMS_WARM_MODEL"] = "1"          # warm the model on startup

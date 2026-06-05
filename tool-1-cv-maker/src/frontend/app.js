@@ -353,6 +353,7 @@ const TRANSLATIONS = {
         startHintName:        'Bitte geben Sie Ihren Vornamen ein.',
         startHintConsent:     '☑ Bitte bestätigen Sie das Kästchen oben (Datenschutz).',
         progressLabel:        (cur, tot) => `Frage ${cur} von ${tot}`,
+        cvProgressLabel:      'Ihr Lebenslauf entsteht',
         detectedLang:         (lang) => `Erkannte Sprache: ${lang}`,
         resumeWelcomeStrong:  'Willkommen zurück!',
         resumeBtn:            'Weiter wo ich aufgehört habe',
@@ -541,6 +542,7 @@ const TRANSLATIONS = {
         dumpAckExperience: 'Work experience', dumpAckEducation: 'Education', dumpAckSkills: 'Skills',
         dumpAckNoted: '✓ Noted.',
         appSubtitle:          'Your professional CV — in any language',
+        cvProgressLabel:      'Your CV is taking shape',
         trustHeadline:        'We automatically turn your answers into a professional CV.',
         trustDetail1:         '⏱ About 10–15 minutes',
         trustDetail2:         '💾 Progress saved after every answer',
@@ -2603,6 +2605,25 @@ class UIManager {
         if (this.progressFill)    this.progressFill.style.width    = `${pct}%`;
     }
 
+    // Dump mode has no numbered questions — show how complete the CV is instead
+    // of a meaningless "Frage 0 von 1". `cap` is the captured snapshot.
+    updateDumpProgress(cap) {
+        cap = cap || {};
+        const have = [
+            !!cap.name,
+            !!(cap.city || cap.phone || cap.email),
+            (cap.experiences || []).length > 0,
+            (cap.skills || []).length > 0,
+            !!cap.target_job,
+            (cap.education || []).length > 0,
+        ];
+        const filled = have.filter(Boolean).length;
+        const pct = Math.round((filled / have.length) * 100);
+        if (this.progressLabel)   this.progressLabel.textContent   = t('cvProgressLabel') || 'Ihr Lebenslauf entsteht';
+        if (this.progressPercent) this.progressPercent.textContent = `${pct}%`;
+        if (this.progressFill)    this.progressFill.style.width    = `${pct}%`;
+    }
+
     showReaskMessage(message, suggestion) {
         if (!this.reaskMessage) return;
         this.reaskMessage.style.display = 'block';
@@ -3018,7 +3039,7 @@ class InterviewManager {
     /** Set up the interview screen chrome for free-form dump mode (shared by start + resume). */
     _enterDumpChrome() {
         ui.showScreen('interview');
-        ui.updateProgress(0, 1);
+        ui.updateDumpProgress({});
         document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
         if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
         document.getElementById('skipBtn')?.style.setProperty('display', 'none');
@@ -3109,7 +3130,7 @@ class InterviewManager {
             // Free-form start: invite the participant to dump everything; the AI
             // structures it onto the CV, then we converse about any gaps.
             cvDocSetPrompt({ text: t('dumpPrompt'), hint: t('dumpHint'), examples: {} });
-            ui.updateProgress(0, 1);
+            ui.updateDumpProgress({});
             document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
             if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
             // Dump mode: no "skip", and the send button just sends.
@@ -3245,6 +3266,7 @@ class InterviewManager {
 
             convThinking(false);
             this._paintCaptured(cap);
+            ui.updateDumpProgress(cap);
             state.dumpHasContent = true;
 
             // Acknowledge what just landed, then ask the next gap.

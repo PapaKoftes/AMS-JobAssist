@@ -223,6 +223,20 @@ def _load():
 
 
 def is_ready() -> bool:
+    """
+    True when AI is available for the request endpoints.
+
+    Prefers Ollama (a real model): if it's up we report ready WITHOUT loading the
+    local 1.5B GGUF - saving ~1GB RAM and routing all generation to the better
+    model. Only when Ollama is absent do we load/use the local GGUF.
+    """
+    try:
+        from ai import ollama as _ollama
+        av, _ = _ollama.detect_ollama()
+        if av:
+            return True
+    except Exception:
+        pass
     return _load()
 
 
@@ -248,7 +262,19 @@ def _run(prompt: str, max_tokens: int = 400, temperature: float = 0.3) -> Option
 # ── Chat-style wrapper (system + user turns) ────────────────────────────────
 
 def chat(system: str, user: str, max_tokens: int = 500) -> Optional[str]:
-    """Send a chat-formatted prompt using Qwen's ChatML template."""
+    """
+    Send a chat prompt. Prefers a real model via Ollama when available (much
+    better coach/prep/job-match output), otherwise uses the local 1.5B GGUF.
+    """
+    try:
+        from ai import ollama as _ollama
+        _av, _ = _ollama.detect_ollama()
+        if _av:
+            out = _ollama.generate_ollama(system, user, num_predict=max_tokens, temperature=0.4)
+            if out:
+                return out
+    except Exception:
+        pass
     prompt = (
         f"<|im_start|>system\n{system}<|im_end|>\n"
         f"<|im_start|>user\n{user}<|im_end|>\n"
@@ -434,9 +460,45 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
         return _re.sub(r"\s{2,}", " ", str(s or "")).strip(" ,;.:-")
 
     # ---- email / phone (regex) -------------------------------------------------
+    # These two are extracted by regex regardless of engine — a model has no
+    # advantage on them and regex is 100% reliable.
     m = _re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
     if m:
         result["email"] = m.group(0).rstrip(".,;")
+
+    # ---- LLM-FIRST path: a real model (Ollama) does the structuring -----------
+    # If Ollama is available, let it parse the messy free text into structured,
+    # professional German fields (the thing a 1.5B + regex does poorly). Regex
+    # email/phone still win (reliable). This is what makes the "AI" actually do
+    # the work instead of being overridden by regex.
+    try:
+        from ai import ollama as _ollama
+        _av, _ = _ollama.detect_ollama()
+        if _av:
+            _o = _ollama.extract_cv_fields_ollama(text, language)
+            if _o:
+                # phone via regex below if the model missed it
+                m2 = _re.search(r"(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)", text)
+                phone = (m2.group(1).strip() if m2 else "") or _o.get("phone", "")
+                return {
+                    "name": _o.get("name", ""),
+                    "city": _o.get("city", ""),
+                    "phone": phone,
+                    "email": result["email"] or _o.get("email", ""),
+                    "target_job": _o.get("target_job", ""),
+                    "experiences": _o.get("experiences", []),
+                    "education": _o.get("education", []),
+                    "skills": _o.get("skills", []),
+                    "motivation": _o.get("motivation", ""),
+                }
+    except Exception as _oe:
+        logger.warning(f"Ollama extraction unavailable, using rules/1.5B: {_oe}")
+
+    # No '.' in the phone char class, so it can't spill into the next sentence
+    # ("…7778899. 12 Jahre…" no longer captures the "12").
+    m = _re.search(r"(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)", text)
+    if m:
+        result["phone"] = m.group(1).strip()
     # No '.' in the phone char class, so it can't spill into the next sentence
     # ("…7778899. 12 Jahre…" no longer captures the "12").
     m = _re.search(r"(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)", text)
