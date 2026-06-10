@@ -433,6 +433,35 @@ def coach_chat(user_message: str, cv_context: dict, language: str = "de") -> Opt
     return chat(system, user_message, max_tokens=400)
 
 
+import re as _re_mod
+
+# Skill-mention triggers (broader than the inline name/target ones — includes bare
+# "kenne", "beherrsche", "Erfahrung mit", English variants). Used as a deterministic
+# backstop so explicitly-listed skills are never lost even when the model misses
+# skills embedded in a work description (diagnosed gap on the 3B).
+_SKILL_TRIGGERS = _re_mod.compile(
+    r"\b(?:ich\s+kann|ich\s+kenne|kenne|kann\s+gut|beherrsche|ich\s+spreche|"
+    r"erfahrung\s+(?:mit|in)|kenntnisse\s+(?:in|von)|i\s+can|i\s+know|skilled\s+in|"
+    r"experience\s+(?:with|in)|knowledge\s+of)\b[\s:]*([A-Za-zÀ-ÿ][^.;\n]{2,160})",
+    _re_mod.IGNORECASE)
+_SKILL_STOP = {"alles", "lots", "gut", "viel", "vieles", "etwas", "ein", "bisschen",
+               "ein bisschen", "gearbeitet", "deutsch", "englisch"}
+
+
+def _extract_skills_regex(text: str) -> list:
+    """Deterministic skill extraction from 'ich kann/kenne/beherrsche … X, Y und Z'."""
+    out = []
+    for m in _SKILL_TRIGGERS.finditer(text or ""):
+        frag = m.group(1)
+        # cut off any trailing clause ("… und habe …", "… gearbeitet", "… von 2020")
+        frag = _re_mod.split(r"\b(?:und\s+habe|gearbeitet|von\s+\d|seit\s+\d)\b", frag)[0]
+        for part in _re_mod.split(r"\s*(?:,|\bund\b|\band\b|/|\|)\s*", frag):
+            p = _re_mod.sub(r"\s{2,}", " ", part).strip(" ,;.:-")
+            if p and p.lower() not in _SKILL_STOP and 1 < len(p) <= 40 and p not in out:
+                out.append(p)
+    return out
+
+
 def extract_cv_fields(text: str, language: str = "de") -> dict:
     """
     Free-form "dump" extraction: pull structured CV fields out of one big block
@@ -480,6 +509,13 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
                 # phone via regex below if the model missed it
                 m2 = _re.search(r"(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)", text)
                 phone = (m2.group(1).strip() if m2 else "") or _o.get("phone", "")
+                # Backstop: merge explicitly-listed skills (regex) that the model
+                # may have left in the work description instead of the skills field.
+                skills = list(_o.get("skills", []))
+                _lower = {s.lower() for s in skills}
+                for sk in _extract_skills_regex(text):
+                    if sk.lower() not in _lower:
+                        skills.append(sk); _lower.add(sk.lower())
                 return {
                     "name": _o.get("name", ""),
                     "city": _o.get("city", ""),
@@ -488,7 +524,7 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
                     "target_job": _o.get("target_job", ""),
                     "experiences": _o.get("experiences", []),
                     "education": _o.get("education", []),
-                    "skills": _o.get("skills", []),
+                    "skills": skills,
                     "motivation": _o.get("motivation", ""),
                 }
     except Exception as _oe:

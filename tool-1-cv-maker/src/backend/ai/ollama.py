@@ -269,7 +269,7 @@ Person weißt. Gehe diese Punkte durch (lass weg, was fehlt):
 - Gewünschter Beruf
 - Berufserfahrung: für JEDE Stelle eine Zeile mit Tätigkeit, Arbeitgeber und Zeitraum
 - Ausbildung / Abschlüsse
-- Fähigkeiten / Kenntnisse (keine Sprachen)
+- Fähigkeiten / Kenntnisse / Werkzeuge / Programme / Tätigkeiten, die im Text vorkommen — auch aus der Berufserfahrung; nur was genannt wird, nichts erfinden; keine Sprachen
 - Sprachen mit Niveau
 
 Schreibe NUR die Stichworte, KEIN JSON, keine Einleitung.
@@ -309,7 +309,7 @@ def _ollama_to_json(source: str, language: str, model: str) -> Optional[dict]:
   "target_job": "gewünschter Beruf / Zielposition",
   "experiences": ["je EIN kurzer, professioneller deutscher Satz pro Job, z.B. 'Kassa und Verkauf bei Spar (6 Jahre)'"],
   "education": ["Ausbildung/Abschluss, je ein Eintrag"],
-  "skills": ["einzelne Fähigkeiten, keine Sprachen"],
+  "skills": ["Fähigkeiten, Werkzeuge, Programme, Maschinen und Tätigkeiten, die IM TEXT vorkommen — auch solche, die in der Berufserfahrung stecken. NUR was wirklich genannt wird, NICHTS erfinden. KEINE Sprachen"],
   "languages": ["Sprache mit Niveau, z.B. 'Deutsch (Muttersprache)', 'Englisch (Grundkenntnisse)'"],
   "motivation": "ein Satz zur Motivation, falls erkennbar"
 }}
