@@ -393,6 +393,16 @@ const TRANSLATIONS = {
         atsMissingLabel:      'Fehlende Schlüsselwörter',
         atsBtn:               '🎯 Lebenslauf analysieren',
         atsAnalyzing:         'Wird analysiert...',
+        jobSearchBtn:         '🔎 Passende Jobs beim AMS finden',
+        jobSearchNotice:      (occ) => `Wir öffnen die AMS-Jobbörse in Ihrem Browser` +
+                              (occ ? ` mit der Suche „${occ}“` : '') +
+                              `. Dabei wird NUR Ihr Suchbegriff an das AMS übermittelt — ` +
+                              `Ihr Name, Ihre Kontaktdaten und Ihr Lebenslauf werden NICHT gesendet.`,
+        jobSearchOpen:        'Beim AMS suchen ↗',
+        jobSearchCancel:      'Abbrechen',
+        jobSearchLoopHint:    'Tipp: Kopieren Sie eine passende Stelle und fügen Sie sie ' +
+                              'oben bei „Stellenanzeige einfügen“ ein — dann sehen Sie, ' +
+                              'wie gut Ihr Lebenslauf dazu passt.',
         coverLetterHeading:   '✉️ Ihr Anschreiben',
         coverLetterBtn:       '✉️ Anschreiben erstellen',
         coverLetterCreating:  'Wird erstellt...',
@@ -579,6 +589,15 @@ const TRANSLATIONS = {
         atsMissingLabel:      'Missing keywords',
         atsBtn:               '🎯 Analyse CV',
         atsAnalyzing:         'Analysing...',
+        jobSearchBtn:         '🔎 Find matching jobs at the AMS',
+        jobSearchNotice:      (occ) => `We will open the AMS job portal in your browser` +
+                              (occ ? ` with the search “${occ}”` : '') +
+                              `. Only your search term is sent to the AMS — ` +
+                              `your name, contact details and CV are NOT sent.`,
+        jobSearchOpen:        'Search at the AMS ↗',
+        jobSearchCancel:      'Cancel',
+        jobSearchLoopHint:    'Tip: copy a job you like and paste it above under ' +
+                              '“Paste job posting” to see how well your CV matches it.',
         coverLetterHeading:   '✉️ Your cover letter',
         coverLetterBtn:       '✉️ Create cover letter',
         coverLetterCreating:  'Creating...',
@@ -1891,6 +1910,8 @@ function applyTranslations() {
     setText('atsMatchedLabel',    'atsMatchedLabel');
     setText('atsMissingLabel',    'atsMissingLabel');
     setText('atsBtn',             'atsBtn');
+    setText('amsJobsBtn',         'jobSearchBtn');
+    setText('amsJobsCancelBtn',   'jobSearchCancel');
     setText('coverLetterHeading', 'coverLetterHeading');
     setText('coverLetterBtn',     'coverLetterBtn');
     setText('reviewBtn',          'reviewBtn');
@@ -2099,6 +2120,13 @@ class APIClient {
             session_id: sessionId,
             job_description: jobDescription,
         });
+    }
+
+    // AMS job-search bridge (Tier 0 deep-link). Backend only builds a URL string —
+    // no data is transmitted; the user's own browser opens the link.
+    getAmsJobLink(targetJob = '', location = '') {
+        const q = new URLSearchParams({ target_job: targetJob, location });
+        return this._request(`/api/jobs/ams-search?${q.toString()}`);
     }
 
     getAIStatus() {
@@ -3652,6 +3680,43 @@ class InterviewManager {
         inputSection?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    // AMS job-search bridge (Tier 0). Show a transparency notice, then on confirm
+    // open the AMS job portal (pre-filled from the user's target job) in a NEW TAB
+    // and reveal the paste-back analyzer so the CV→jobs loop is obvious. The app
+    // itself transmits nothing — only the user's browser hits the AMS portal.
+    async handleFindAmsJobs() {
+        const cap = state.cvCaptured || {};
+        const targetJob = cap.target_job || state.lastJob || '';
+        const location  = cap.city || '';
+        const notice    = document.getElementById('amsJobsNotice');
+        const noticeText = document.getElementById('amsJobsNoticeText');
+        const loopHint  = document.getElementById('amsJobsLoopHint');
+        const openBtn   = document.getElementById('amsJobsOpenBtn');
+        try {
+            const resp = await api.getAmsJobLink(targetJob, location);
+            const url  = resp?.data?.url;
+            const occ  = resp?.data?.occupation || targetJob;
+            if (!url) return;
+            if (noticeText) noticeText.textContent = t('jobSearchNotice', occ);
+            if (loopHint)   loopHint.textContent   = t('jobSearchLoopHint');
+            if (openBtn) openBtn.textContent = t('jobSearchOpen');
+            if (openBtn) openBtn.onclick = () => {
+                window.open(url, '_blank', 'noopener');
+                if (notice) notice.style.display = 'none';
+                this.handleATSScore();  // reveal the paste-back match analyzer
+            };
+            if (notice) notice.style.display = 'block';
+            notice?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (err) {
+            console.warn('AMS job search error:', err);
+        }
+    }
+
+    _cancelAmsJobs() {
+        const notice = document.getElementById('amsJobsNotice');
+        if (notice) notice.style.display = 'none';
+    }
+
     async _runATSAnalysis() {
         if (!state.sessionId) return;
         const inputSection = document.getElementById('atsInputSection');
@@ -3967,6 +4032,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // §5 ATS score — two-step flow
     document.getElementById('atsBtn')?.addEventListener('click',    () => interview.handleATSScore());
     document.getElementById('runAtsBtn')?.addEventListener('click', () => interview._runATSAnalysis());
+    document.getElementById('amsJobsBtn')?.addEventListener('click',     () => interview.handleFindAmsJobs());
+    document.getElementById('amsJobsCancelBtn')?.addEventListener('click', () => interview._cancelAmsJobs());
     document.getElementById('cancelAtsBtn')?.addEventListener('click',() => interview._cancelATS());
 
     // §6 Cover letter — two-step flow

@@ -1340,6 +1340,29 @@ body {
     margin-bottom: var(--spacing-md);
 }
 
+/* AMS job-search bridge — transparency notice */
+.ams-jobs-notice {
+    background: #f4f7fb;
+    border: 1px solid #d6e0ec;
+    border-left: 4px solid var(--secondary, #6c3483);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 4px 0 12px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+.ams-jobs-notice-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.ams-jobs-loop-hint {
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: #5a6b7b;
+}
+
 .ats-score-row {
     display: flex;
     align-items: center;

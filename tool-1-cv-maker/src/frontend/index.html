@@ -444,6 +444,21 @@
                     </div>
                     <ul class="ats-suggestions" id="atsSuggestions"></ul>
                 </div>
+
+                <!-- AMS job-search bridge (Tier 0 deep-link). Opens the AMS job
+                     portal in the participant's OWN browser, pre-filled with their
+                     target job. The app transmits nothing; a transparency notice
+                     is shown first. -->
+                <button class="btn btn-secondary" id="amsJobsBtn" style="margin-bottom:8px;">🔎 Passende Jobs beim AMS finden</button>
+                <div class="ams-jobs-notice" id="amsJobsNotice" style="display:none;">
+                    <p id="amsJobsNoticeText"></p>
+                    <div class="ams-jobs-notice-actions">
+                        <button class="btn btn-primary btn-sm" id="amsJobsOpenBtn" type="button">Beim AMS suchen ↗</button>
+                        <button class="btn btn-ghost btn-sm" id="amsJobsCancelBtn" type="button">Abbrechen</button>
+                    </div>
+                    <p class="ams-jobs-loop-hint" id="amsJobsLoopHint"></p>
+                </div>
+
                 <button class="btn btn-secondary" id="atsBtn" style="margin-bottom:8px;">🎯 Lebenslauf analysieren</button>
 
                 <!-- Cover Letter Input -->
