@@ -1295,7 +1295,10 @@ def ai_interview_prep(body: InterviewPrepRequest, request: Request):
         target_job = getattr(cv_data, "target_job", "") or ""
         interview_path = getattr(cv_data, "interview_path", "unemployed") or "unemployed"
 
-    # Try AI first
+    # Try AI first. Keep any questions it produces, but NEVER return fewer than 3
+    # — a small model sometimes yields only 1–2 usable lines, so we top up from the
+    # rule bank below rather than shipping a too-short list.
+    ai_questions: list = []
     try:
         from ai.local_llm import generate_interview_prep, is_ready
         if is_ready():
@@ -1307,12 +1310,12 @@ def ai_interview_prep(body: InterviewPrepRequest, request: Request):
                 import re as _re
                 if isinstance(result, str):
                     lines = [l.strip() for l in result.splitlines() if l.strip()]
-                    questions = [_re.sub(r"^\s*\d+[\.\)]\s*", "", l).strip() for l in lines]
-                    questions = [q for q in questions if len(q) > 5]
+                    ai_questions = [_re.sub(r"^\s*\d+[\.\)]\s*", "", l).strip() for l in lines]
+                    ai_questions = [q for q in ai_questions if len(q) > 5]
                 else:
-                    questions = result
-                if questions:
-                    return {"status": "success", "data": {"questions": questions, "target_job": target_job, "source": "ai"}}
+                    ai_questions = [q for q in result if isinstance(q, str) and len(q) > 5]
+                if len(ai_questions) >= 3:
+                    return {"status": "success", "data": {"questions": ai_questions, "target_job": target_job, "source": "ai"}}
     except Exception:
         pass
 
@@ -1354,11 +1357,22 @@ def ai_interview_prep(body: InterviewPrepRequest, request: Request):
             "Warum möchten Sie für dieses Unternehmen arbeiten?",
         ],
     }
-    questions = _PREP_QUESTIONS.get(interview_path, _PREP_QUESTIONS["other"])
+    rule_questions = list(_PREP_QUESTIONS.get(interview_path, _PREP_QUESTIONS["other"]))
     if target_job:
-        questions = [f"[Für die Stelle: {target_job}] " + q for q in questions[:3]] + questions[3:]
+        rule_questions = [f"[Für die Stelle: {target_job}] " + q for q in rule_questions[:3]] + rule_questions[3:]
 
-    return {"status": "success", "data": {"questions": questions, "target_job": target_job, "source": "rules"}}
+    # Keep the model's questions (if any) and top up from the rule bank to >= 3.
+    questions = list(ai_questions)
+    for q in rule_questions:
+        if len(questions) >= max(3, len(ai_questions)):
+            break
+        if q not in questions:
+            questions.append(q)
+    if len(questions) < 3:  # extreme edge — ensure the contract holds
+        questions = (questions + rule_questions)[:5] or rule_questions[:5]
+
+    source = "ai+rules" if ai_questions else "rules"
+    return {"status": "success", "data": {"questions": questions, "target_job": target_job, "source": source}}
 
 
 @app.get("/api/jobs/ams-search", tags=["Jobs"])

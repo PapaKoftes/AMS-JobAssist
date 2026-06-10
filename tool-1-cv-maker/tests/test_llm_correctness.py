@@ -376,13 +376,17 @@ def live_server():
         proc.kill()
 
 
-def _api(base, method, path, body=None):
+def _api(base, method, path, body=None, timeout=180):
+    # The live server runs the 3B GGUF IN-PROCESS on a single worker; a generative
+    # endpoint (chat/coach/prep/job-match) plus the multi-inference CV build can take
+    # well over a minute on CPU. 180s avoids false TimeoutErrors that the old 60s
+    # (calibrated for the faster Ollama path) produced under the in-process engine.
     import urllib.request, urllib.error, json as _json
     url = base + path
     data = _json.dumps(body).encode() if body else None
     req = urllib.request.Request(url, data=data, method=method,
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         return _json.loads(r.read())
 
 
