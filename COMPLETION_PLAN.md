@@ -7,6 +7,23 @@ Status legend: [x] done · [~] doing · [ ] todo · [-] removed (decided against
 
 ---
 
+## ✅ STATUS: COMPLETE — all phases A–E passed their gates
+
+| Phase | Gate result |
+|---|---|
+| A — single in-process 3B engine | **macro-F1 0.742** ≥ 0.73 floor (beats Ollama-3B 0.738); single-track, Ollama opt-in. |
+| B — Tool 2 trainer fixes | trainer notes reload + real name on canonical import; **53 Tool 2 tests** pass. |
+| C — packaging completeness | `build_all.bat` produced `dist/`: 3 exes + installer + **3B GGUF (1.84 GB, 3B only)**; knowledge bundled; install.bat copies model beside exe. |
+| D — clean-machine smoke | **smoke_test.py PASS** on the built launcher: both `/health`, bundled 3B loads in the frozen exe, offline. |
+| E — end-to-end + docs | cross-tool E2E (real Tool1 export → Tool2 import → edit → notes → approve → PDF) passes; FOR_MARKO refreshed. **Full suite green: Tool1 761, Tool2 53, packaging 9.** |
+
+Remaining hand-off item (needs a separate clean Windows VM, can't be automated here):
+run the installer on a fresh machine with the network physically off and confirm the
+double-click → working product flow. All logic it would exercise is already certified
+above from source + on the built exes.
+
+---
+
 ## 0. End-goal (Definition of Done)
 
 Marko receives **one installer**, double-clicks it on a normal Windows PC (no admin,

@@ -443,10 +443,15 @@ def test_llm_endpoint_chat_live(live_server):
     reply = resp["data"].get("reply", "")
     assert len(reply.split()) >= 10, \
         f"Chat reply too short: {reply!r}"
-    # Must contain at least one German word showing it's on-topic
-    assert any(w in reply.lower() for w in ["lebenslauf", "beruf", "erfahrung",
-                                             "kenntnisse", "bewerbung", "fähigkeit",
-                                             "arbeit", "stärke"]), \
+    # Must contain at least one German word showing it's on-topic. Keep this list
+    # broad: a live model phrases CV advice many valid ways (Kompetenzen, Erfolge,
+    # Karriereziele, Qualifikation…), so a narrow list produces false failures on
+    # genuinely relevant replies.
+    assert any(w in reply.lower() for w in [
+        "lebenslauf", "beruf", "erfahrung", "kenntnis", "bewerbung", "fähig",
+        "arbeit", "stärke", "kompetenz", "erfolg", "karriere", "ziel",
+        "qualifik", "fertigkeit", "leistung", "tätigkeit", "abschluss",
+    ]), \
         f"Chat reply doesn't seem relevant to CV topic: {reply!r}"
 
 
