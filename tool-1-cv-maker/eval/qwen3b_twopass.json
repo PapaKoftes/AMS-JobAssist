@@ -1,0 +1,179 @@
+{
+  "tag": "qwen3b-twopass",
+  "n_cases": 8,
+  "elapsed_s": 515.4,
+  "overall": {
+    "precision": 0.817,
+    "recall": 0.801,
+    "macro_f1": 0.803,
+    "fields": 9
+  },
+  "per_field": {
+    "name": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "n": 8
+    },
+    "city": {
+      "precision": 0.875,
+      "recall": 0.875,
+      "f1": 0.875,
+      "n": 8
+    },
+    "phone": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "n": 7
+    },
+    "email": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "n": 8
+    },
+    "target_job": {
+      "precision": 0.875,
+      "recall": 0.875,
+      "f1": 0.875,
+      "n": 8
+    },
+    "experiences": {
+      "precision": 0.875,
+      "recall": 0.812,
+      "f1": 0.833,
+      "n": 8
+    },
+    "education": {
+      "precision": 0.75,
+      "recall": 0.625,
+      "f1": 0.667,
+      "n": 4
+    },
+    "skills": {
+      "precision": 0.125,
+      "recall": 0.167,
+      "f1": 0.143,
+      "n": 4
+    },
+    "languages": {
+      "precision": 0.857,
+      "recall": 0.857,
+      "f1": 0.837,
+      "n": 7
+    }
+  },
+  "per_case": [
+    {
+      "id": "de-retail-01",
+      "seconds": 66.0,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "skills": 0.0,
+        "languages": 1.0
+      }
+    },
+    {
+      "id": "de-care-02",
+      "seconds": 62.7,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "languages": 1.0
+      }
+    },
+    {
+      "id": "de-trade-03",
+      "seconds": 55.7,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 0.67,
+        "skills": 0.57
+      }
+    },
+    {
+      "id": "de-gastro-04",
+      "seconds": 64.0,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "languages": 1.0
+      }
+    },
+    {
+      "id": "tr-construction-05",
+      "seconds": 86.3,
+      "f1": {
+        "name": 1.0,
+        "city": 0.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 0.67,
+        "languages": 0.86
+      }
+    },
+    {
+      "id": "en-office-06",
+      "seconds": 75.3,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 0.0,
+        "experiences": 0.0,
+        "skills": 0.0,
+        "languages": 0.33
+      }
+    },
+    {
+      "id": "de-cleaning-07",
+      "seconds": 49.5,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "languages": 1.0
+      }
+    },
+    {
+      "id": "de-driver-08",
+      "seconds": 55.9,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 0.0,
+        "skills": 0.0,
+        "languages": 0.67
+      }
+    }
+  ]
+}

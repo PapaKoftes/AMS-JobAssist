@@ -381,7 +381,13 @@ def extract_cv_fields_ollama(text: str, language: str = "de") -> Optional[dict]:
     available, model = detect_ollama()
     if not available or not model:
         return None
-    two_pass = os.environ.get("AMS_EXTRACT_TWOPASS", "1").lower() not in ("0", "false", "no")
+    # MEASURED on the eval gold set (qwen2.5:3b, 8 cases): two-pass did NOT beat
+    # single-pass (0.825 vs 0.837 macro-F1) — it helped education (+0.17) but hurt
+    # skills (-0.26), net wash, and is slower. The Format-Tax paper's +7pp does
+    # not reproduce at this task/scale, so two-pass is OFF by default. The code +
+    # AMS_EXTRACT_TWOPASS=1 flag are kept for re-testing on larger models / a
+    # larger gold set. (See tool-1-cv-maker/eval/qwen3b_*.json.)
+    two_pass = os.environ.get("AMS_EXTRACT_TWOPASS", "0").lower() not in ("0", "false", "no")
     source = text
     if two_pass:
         notes = _ollama_freeform(text, language, model)
