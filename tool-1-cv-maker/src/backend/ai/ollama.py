@@ -279,7 +279,9 @@ Text:
 """
     payload = {
         "model": model, "prompt": prompt, "system": system, "stream": False,
-        "options": {"temperature": 0.2, "top_p": 0.9, "num_predict": 600},
+        # Extraction is fact-pulling, not creative writing: greedy (temp 0) so the
+        # output is deterministic/reproducible and the model cannot drift/invent.
+        "options": {"temperature": 0.0, "top_p": 1.0, "num_predict": 600},
     }
     result = _http_post(f"{OLLAMA_BASE}/api/generate", payload, timeout=120)
     notes = (result.get("response") or "").strip() if result else ""
@@ -319,7 +321,7 @@ Notizen:
 """
     payload = {
         "model": model, "prompt": prompt, "system": system, "stream": False,
-        "format": "json", "options": {"temperature": 0.1, "top_p": 0.9, "num_predict": 700},
+        "format": "json", "options": {"temperature": 0.0, "top_p": 1.0, "num_predict": 700},
     }
     result = _http_post(f"{OLLAMA_BASE}/api/generate", payload, timeout=120)
     if not result:
