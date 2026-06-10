@@ -35,8 +35,19 @@ from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
 
-# Where models live — relative to the data dir
-_MODEL_DIR = Path(__file__).resolve().parents[3] / "data" / "models"
+# Where models live. Order of resolution:
+#   1. AMS_MODEL_DIR env (explicit override),
+#   2. FROZEN .exe: <exe-dir>/data/models  — the installer ships the GGUF here.
+#      (Do NOT use __file__: in a PyInstaller build it points into the temp
+#      extraction dir, which is wiped on exit, so a shipped model is never found.)
+#   3. dev/source: tool-1-cv-maker/data/models
+import sys as _sys
+if os.environ.get("AMS_MODEL_DIR"):
+    _MODEL_DIR = Path(os.environ["AMS_MODEL_DIR"])
+elif getattr(_sys, "frozen", False):
+    _MODEL_DIR = Path(_sys.executable).resolve().parent / "data" / "models"
+else:
+    _MODEL_DIR = Path(__file__).resolve().parents[3] / "data" / "models"
 
 # ── Tiered model registry ─────────────────────────────────────────────────────
 # Each tier has: filename, HuggingFace URL, expected SHA-256, context window,

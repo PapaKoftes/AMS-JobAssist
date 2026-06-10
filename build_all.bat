@@ -89,6 +89,21 @@ copy /Y "packaging\uninstall_template.bat" "dist\uninstall_template.bat" >nul
 copy /Y "packaging\icon.ico" "dist\icon.ico" >nul 2>&1
 echo [OK] Installer files copied to dist\.
 
+REM ---- Pre-seed the AI model so the app is FULLY OFFLINE (no runtime download) -
+REM The frozen exe looks for the GGUF in <exe-dir>\data\models (see local_llm.py
+REM _MODEL_DIR frozen branch). Ship it there so the AI works with no internet.
+echo.
+echo [4b/4] Pre-seeding AI model into dist\data\models\ ...
+if exist "tool-1-cv-maker\data\models\*.gguf" (
+    if not exist "dist\data\models" mkdir "dist\data\models"
+    copy /Y "tool-1-cv-maker\data\models\*.gguf" "dist\data\models\" >nul
+    echo [OK] Model pre-seeded — the build is fully offline.
+) else (
+    echo [!!] No GGUF found in tool-1-cv-maker\data\models\ — the build will have
+    echo      NO bundled model and would try to download at first run. Download a
+    echo      model first, or accept rules-only mode.
+)
+
 REM ---- Optionally build Inno Setup installer ---------------------------------
 where iscc >nul 2>&1
 if not errorlevel 1 (
