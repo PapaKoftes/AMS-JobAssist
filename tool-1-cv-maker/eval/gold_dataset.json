@@ -1,0 +1,110 @@
+{
+  "_about": "Gold dataset for extraction evaluation. Each case is a realistic, ANONYMISED free-text self-description (any language) with hand-labelled expected CV fields. Used by run_extraction_eval.py to compute field-level precision/recall/F1 so any model/prompt/pipeline change can be measured objectively. Add more cases over time (target ~100). Scalar fields are matched normalised+fuzzy; list fields use set P/R/F1 with relaxed matching.",
+  "_schema": {
+    "id": "string", "language": "input language code", "text": "the free-form input",
+    "expected": {
+      "name": "", "city": "", "phone": "", "email": "", "target_job": "",
+      "experiences": ["substrings/keywords that MUST appear in an experience entry"],
+      "education": ["keywords that must appear in an education entry"],
+      "skills": ["expected skills"], "languages": ["expected language names"]
+    }
+  },
+  "cases": [
+    {
+      "id": "de-retail-01", "language": "de",
+      "text": "Ich heisse Maria Huber. Ich wohne in 1100 Wien. Telefon 0664 1234567. E-Mail maria.huber@gmx.at. Ich suche Arbeit als Verkäuferin. Ich habe 5 Jahre als Kassiererin bei Spar gearbeitet, von 2018 bis 2023. Davor 2 Jahre als Reinigungskraft im Hotel Sacher. Lehrabschluss als Einzelhandelskauffrau. Ich spreche Deutsch und Kroatisch, Englisch Grundkenntnisse.",
+      "expected": {
+        "name": "Maria Huber", "city": "Wien", "phone": "0664 1234567", "email": "maria.huber@gmx.at",
+        "target_job": "Verkäuferin",
+        "experiences": ["Spar", "Kassier", "Hotel Sacher", "Reinigung"],
+        "education": ["Einzelhandel"],
+        "skills": ["Kassa"],
+        "languages": ["Deutsch", "Kroatisch", "Englisch"]
+      }
+    },
+    {
+      "id": "de-care-02", "language": "de",
+      "text": "Mein Name ist Fatima Yıldız, fatima.y@outlook.com, 0699 8887766, wohnhaft in Graz. Ich möchte als Pflegehilfe arbeiten. Ich habe drei Jahre in einem Altenheim in der Betreuung gearbeitet und einen Pflegehilfe-Kurs abgeschlossen. Ich kann Deutsch B2 und Türkisch Muttersprache.",
+      "expected": {
+        "name": "Fatima Yıldız", "city": "Graz", "phone": "0699 8887766", "email": "fatima.y@outlook.com",
+        "target_job": "Pflegehilfe",
+        "experiences": ["Altenheim", "Betreuung"],
+        "education": ["Pflegehilfe"],
+        "skills": [],
+        "languages": ["Deutsch", "Türkisch"]
+      }
+    },
+    {
+      "id": "de-trade-03", "language": "de",
+      "text": "ich bin stefan wagner, stefan.wagner@gmx.at, 0664 1234567, wohne in linz. ich suche arbeit als lagerleiter. 8 jahre als lagerarbeiter bei hofer gearbeitet. ich kann stapler fahren, lagerverwaltung und sap. pflichtschulabschluss und staplerschein.",
+      "expected": {
+        "name": "Stefan Wagner", "city": "Linz", "phone": "0664 1234567", "email": "stefan.wagner@gmx.at",
+        "target_job": "Lagerleiter",
+        "experiences": ["Hofer", "Lager"],
+        "education": ["Pflichtschul", "Stapler"],
+        "skills": ["Stapler", "SAP", "Lagerverwaltung"],
+        "languages": []
+      }
+    },
+    {
+      "id": "de-gastro-04", "language": "de",
+      "text": "Anna Kovač, anna.kovac@gmail.com. Ich wohne in Salzburg, Tel 0676 5554433. Gesucht: Stelle als Kellnerin oder im Service. Ich habe 4 Jahre in einem Restaurant als Kellnerin gearbeitet und 1 Jahr an der Bar. Ich spreche Deutsch, Bosnisch und ein bisschen Italienisch.",
+      "expected": {
+        "name": "Anna Kovač", "city": "Salzburg", "phone": "0676 5554433", "email": "anna.kovac@gmail.com",
+        "target_job": "Kellnerin",
+        "experiences": ["Restaurant", "Kellner", "Bar"],
+        "education": [],
+        "skills": [],
+        "languages": ["Deutsch", "Bosnisch", "Italienisch"]
+      }
+    },
+    {
+      "id": "tr-construction-05", "language": "tr",
+      "text": "Adım Mehmet Demir. Viyana'da yaşıyorum. E-posta mehmet.demir@gmx.at, telefon 0660 1112233. İnşaatçı olarak iş arıyorum. 6 yıl inşaat işçisi olarak çalıştım. Almanca biraz biliyorum, Türkçe ana dilim.",
+      "expected": {
+        "name": "Mehmet Demir", "city": "Wien", "phone": "0660 1112233", "email": "mehmet.demir@gmx.at",
+        "target_job": "Bau",
+        "experiences": ["Bau", "Inşaat"],
+        "education": [],
+        "skills": [],
+        "languages": ["Deutsch", "Türkisch"]
+      }
+    },
+    {
+      "id": "en-office-06", "language": "en",
+      "text": "My name is John Smith, john.smith@mail.com, phone 0650 9998877, living in Innsbruck. I am looking for an office job as an administrative assistant. I worked 3 years as an office clerk at a logistics company. I know MS Office, Excel and bookkeeping. I speak English natively and German B1.",
+      "expected": {
+        "name": "John Smith", "city": "Innsbruck", "phone": "0650 9998877", "email": "john.smith@mail.com",
+        "target_job": "administrative assistant",
+        "experiences": ["office clerk", "logistics"],
+        "education": [],
+        "skills": ["Excel", "MS Office", "bookkeeping"],
+        "languages": ["English", "German"]
+      }
+    },
+    {
+      "id": "de-cleaning-07", "language": "de",
+      "text": "Ich bin Elena Popescu aus Wien. elena.popescu@gmx.at. Ich suche eine Stelle als Reinigungskraft. Ich habe in einer Reinigungsfirma und in einem Büro geputzt, insgesamt 7 Jahre. Deutsch A2, Rumänisch Muttersprache.",
+      "expected": {
+        "name": "Elena Popescu", "city": "Wien", "phone": "", "email": "elena.popescu@gmx.at",
+        "target_job": "Reinigungskraft",
+        "experiences": ["Reinigung", "Büro"],
+        "education": [],
+        "skills": [],
+        "languages": ["Deutsch", "Rumänisch"]
+      }
+    },
+    {
+      "id": "de-driver-08", "language": "de",
+      "text": "Name: Goran Jovanović. Wohnort Wiener Neustadt. goran.j@gmx.at, 0664 3332211. Ich suche Arbeit als LKW-Fahrer. Ich habe 10 Jahre als Berufskraftfahrer gearbeitet, Führerschein C und E. Deutsch gut, Serbisch Muttersprache.",
+      "expected": {
+        "name": "Goran Jovanović", "city": "Wiener Neustadt", "phone": "0664 3332211", "email": "goran.j@gmx.at",
+        "target_job": "LKW-Fahrer",
+        "experiences": ["Berufskraftfahrer", "Fahrer"],
+        "education": ["Führerschein"],
+        "skills": ["Führerschein"],
+        "languages": ["Deutsch", "Serbisch"]
+      }
+    }
+  ]
+}
