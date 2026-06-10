@@ -130,6 +130,42 @@ def _extract_languages_from_skills(skills: List[str]):
     return list(languages.values()), remaining
 
 
+def _parse_experience_line(text: str):
+    """
+    Best-effort split of a CLEAN experience line into (title, employer, period).
+
+    Upgrades dump-mode experiences (prose, no structured fields) so the export
+    can render "Title / Employer (Period)". Conservative: only returns a value
+    when a clear "<role> bei/im/in <Employer> (<dates>)" pattern is present,
+    otherwise leaves fields empty so the prose line is shown unchanged.
+
+    Examples it handles:
+      "Kassa und Verkauf bei Spar (2018-2023)"      -> ("Kassa und Verkauf", "Spar", {2018..2023})
+      "Lagerarbeiter bei Hofer, 8 Jahre"            -> ("Lagerarbeiter", "Hofer", None)
+      "Reinigungskraft im Hotel Sacher (2 Jahre)"   -> ("Reinigungskraft", "Hotel Sacher", None)
+    """
+    if not text:
+        return "", "", None
+    t = re.sub(r"\s{2,}", " ", text.strip())
+    period = _parse_experience_period(t)
+    # connector between role and employer
+    conn = r"(?:\bbei\b|\bim\b|\bin der\b|\bin einem\b|\bin einer\b|\bin\b|\bat\b)"
+    m = re.search(
+        rf"^\s*(?:als\s+|tätig als\s+|gearbeitet als\s+)?"
+        rf"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ/&.\- ]{{1,45}}?)\s+{conn}\s+"
+        rf"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ&.\- ]{{1,45}}?)"
+        rf"\s*(?:[(,]|\bvon\b|\bseit\b|\bab\b|\d|$)",
+        t, flags=re.IGNORECASE)
+    if not m:
+        return "", "", period
+    title = m.group(1).strip(" ,.;-")
+    employer = m.group(2).strip(" ,.;-")
+    # Guard against absurd captures
+    if len(title) < 2 or len(employer) < 2:
+        return "", "", period
+    return title, employer, period
+
+
 def _parse_experience_period(text: str) -> Optional[Dict[str, Optional[str]]]:
     """
     Parse a free-text German/English date answer into {"start", "end"}.
@@ -478,6 +514,19 @@ class CVBuilder:
                         parsed = _parse_experience_period(dates)
                         if parsed:
                             cv_section.period = parsed
+
+                    # Dump-path fallback: if no structured fields came from
+                    # follow-up questions (dump mode has none), try to split the
+                    # clean experience line into title/employer/period so the CV
+                    # renders a proper structured entry instead of one prose blob.
+                    if (cv_section.category == QuestionCategory.EXPERIENCE
+                            and not cv_section.title and not cv_section.employer):
+                        pt, pe, pp = _parse_experience_line(cv_section.german or "")
+                        if pt and pe:
+                            cv_section.title = pt
+                            cv_section.employer = pe
+                            if pp and not cv_section.period:
+                                cv_section.period = pp
 
                     cv_sections.append(cv_section)
                 except Exception as section_err:
