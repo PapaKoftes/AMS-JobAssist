@@ -6,6 +6,20 @@ trainers) point of view, plus a concrete, Datenschutz-first design for an option
 
 ---
 
+## ✅ Implementation status (built vs gated)
+
+| Layer | Status | Notes |
+|---|---|---|
+| **Tier 0 — deep-link to jobs.ams.at** | **SHIPPED** | `jobs/ams_search.py` + `GET /api/jobs/ams-search` + completion-screen button "🔎 Passende Jobs beim AMS finden" with a Datenschutz transparency notice. App transmits nothing; the participant's browser opens the pre-filled search. 14 backend tests; live-smoke verified. *One build-time TODO:* confirm the exact `jobs.ams.at` query parameter against a live search (the link degrades gracefully if it differs — `AMS_JOBS_BASE`/`AMS_JOBS_QUERY_PARAM` are the single source of truth). |
+| **Paste-back match loop** | **SHIPPED (wired)** | The deep-link reveals the existing "Stellenanzeige einfügen" analyzer, so the user copies a real AMS job back and sees their match — this gives the previously source-less ATS feature a real job source. |
+| **Layer A — occupation/skill normalization (ESCO / AMS-Berufssystematik)** | **GATED** | Needs the AMS-Berufssystematik / ESCO open-data subset bundled. Keystone for good matching + analytics; biggest quality lever. Deliberately *not* applied to the search query (the user's own term searches better). See `docs/ROADMAP_ESCO_MEINAMS.md`. |
+| **Layer C — offline labour-market insight** | **GATED (data not confirmed)** | Would bundle a `data.gv.at` snapshot ("N open positions for your job in your Bundesland"). The `data.gv.at` catalog URLs could not be confirmed remotely, so this is **not built** — shipping fabricated numbers would be dishonest. Loader follows the `knowledge.py`/`berufe.json` bundling pattern when the real dataset is in hand. |
+| **Layer D — consented live in-app match** | **GATED (API + ToS unconfirmed)** | `jobs.ams.at` has a public JSON API (the SPA uses it) but it is undocumented/unofficial; programmatic use raises stability + ToS questions. Would use `temporarily_allow_network()` scoped to `*.ams.at`, explicit DSGVO consent, audit logging, default-off. Build only if AMS blesses it. |
+
+**Honesty note (from the usefulness audit):** the **ATS keyword score is a self-check hint, not a placement signal** — most AMS-target roles are filled by humans via email/eJob-Room, not ATS screening. It is presented as "how well does your CV match *this* posting," never as a gate or a promise. The job-search deep-link is the feature that actually bridges CV→jobs.
+
+---
+
 ## Part 1 — Is this useful to AMS? (honest verdict)
 
 **Yes, but it's a starting point, not a finished value chain.**
