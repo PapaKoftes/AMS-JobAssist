@@ -12,6 +12,8 @@ model/prompt/pipeline change and update this table — **measure, don't eyeball.
 | | qwen2.5:3b | two-pass | 8 | 0.825 | 0.840 | 0.821 | edu **0.92** but skills **0.14** (net wash) |
 | **honest baseline A** | **qwen2.5:3b** | **single, temp 0.1** | **20** | **0.730** | 0.724 | 0.754 | skills 0.27, exp 0.54, lang 0.51 |
 | honest baseline B (re-run) | qwen2.5:3b | single, temp 0.1 | 20 | 0.731 | 0.722 | 0.767 | skills 0.34, lang 0.47 — **±0.07 swing** |
+| **baseline of record** | **qwen2.5:3b** | **single, temp 0 (greedy)** | **20** | **0.738** | 0.727 | 0.775 | skills 0.31, exp 0.55, lang 0.53 |
+| temp-0 re-run (verify) | qwen2.5:3b | single, temp 0 (greedy) | 20 | 0.730 | 0.720 | 0.764 | skills/lang **identical**; exp/edu still wobble |
 
 > **The 8-case 0.837 was not representative.** On the full 20-case set (CP-B added
 > 12 harder, sparser, more multilingual AMS personas — Arabic/Russian names,
@@ -29,11 +31,16 @@ model/prompt/pipeline change and update this table — **measure, don't eyeball.
    names, missing education/skills). This is the point of a bigger eval: it stops us
    shipping a flattering subset number. **Don't quote 0.837 — quote 0.73.**
 
-2. **Extraction must be deterministic.** Run-to-run skills/languages variance of ±0.07
-   at temperature 0.1 meant the eval couldn't certify a code change as good or bad.
-   Extraction is fact-pulling, not creative writing, so temperature is now **0.0
-   (greedy, top_p 1.0)** in both `_ollama_to_json` and `_ollama_freeform`. Re-running
-   the same input now yields the same output — the eval is a real instrument again.
+2. **Extraction temperature → 0 cut the worst variance, but does NOT give bit-perfect
+   determinism.** At temp 0.1 the skills/languages fields swung ±0.07 between identical
+   runs — enough to drown any real signal. At temp 0 (greedy, top_p 1.0, in both
+   `_ollama_to_json` and `_ollama_freeform`) two back-to-back 20-case runs produced
+   **identical skills/languages/name/city/phone/email/target_job** scores — the swingers
+   are locked. The aggregate tightened to ±0.008 (0.738 vs 0.730). BUT experiences and
+   education still wobbled (~0.025 and 0.10): llama.cpp greedy decode is still subject to
+   floating-point nondeterminism in threaded matmul, so it is not bit-reproducible. Net:
+   the eval is now a usable instrument for skills/languages/atoms (the fields we tune),
+   but treat ±0.01 on the aggregate and ±0.1 on small-n exp/edu as noise, not signal.
 
 3. **Skills is the weakest field (~0.27–0.34) and CP-C's regex backstop did NOT
    demonstrably lift the aggregate.** No same-set before/after exists, and the swing
