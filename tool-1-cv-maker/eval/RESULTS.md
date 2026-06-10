@@ -14,6 +14,7 @@ model/prompt/pipeline change and update this table — **measure, don't eyeball.
 | honest baseline B (re-run) | qwen2.5:3b | single, temp 0.1 | 20 | 0.731 | 0.722 | 0.767 | skills 0.34, lang 0.47 — **±0.07 swing** |
 | **baseline of record** | **qwen2.5:3b** | **single, temp 0 (greedy)** | **20** | **0.738** | 0.727 | 0.775 | skills 0.31, exp 0.55, lang 0.53 |
 | temp-0 re-run (verify) | qwen2.5:3b | single, temp 0 (greedy) | 20 | 0.730 | 0.720 | 0.764 | skills/lang **identical**; exp/edu still wobble |
+| **size lever** | **qwen2.5:7b** | **single, temp 0 (greedy)** | **20** | **0.806** | 0.790 | 0.855 | skills **0.60**, exp **0.83** — fixes the 2 weak fields |
 
 > **The 8-case 0.837 was not representative.** On the full 20-case set (CP-B added
 > 12 harder, sparser, more multilingual AMS personas — Arabic/Russian names,
@@ -26,10 +27,22 @@ model/prompt/pipeline change and update this table — **measure, don't eyeball.
 
 ## Conclusions (evidence-based)
 
-1. **Honest baseline is ~0.73, not 0.84.** The headline number dropped when the gold
+1. **Honest baseline is ~0.73 (3B), not 0.84.** The headline number dropped when the gold
    set grew 8→20 because the new cases are harder (sparse one-liners, Arabic/Russian
    names, missing education/skills). This is the point of a bigger eval: it stops us
-   shipping a flattering subset number. **Don't quote 0.837 — quote 0.73.**
+   shipping a flattering subset number. **Don't quote 0.837 — quote 0.738 for 3B.**
+
+1b. **Model size IS the lever — measured (+0.068), and it fixes exactly the weak fields.**
+   qwen2.5:7b scores **0.806** on the same 20 hard cases vs 3B's 0.738. The gain is
+   concentrated where 3B is worst: **skills 0.31→0.60** (recall 0.43→0.86 — the 7B
+   actually finds embedded skills) and **experiences 0.55→0.83**. Atoms and the
+   already-good fields are unchanged. The audit's "size is the real lever" claim is
+   now evidence, not assertion. **BUT latency:** 7B ran 825s/20 cases ≈ **40s per
+   answer on CPU** — too slow for the live interview UX. So the recommendation is
+   tiered, not "always 7B": ship the bundled 1.5B as the fast offline default; use 3B
+   when Ollama is present and responsiveness matters; reserve **7B for batch/quality
+   mode or a machine with a GPU**. 7B-on-hard-cases (0.806) ≈ 3B-on-easy-cases (0.837),
+   which is the fair apples-to-apples read.
 
 2. **Extraction temperature → 0 cut the worst variance, but does NOT give bit-perfect
    determinism.** At temp 0.1 the skills/languages fields swung ±0.07 between identical
