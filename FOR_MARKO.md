@@ -10,17 +10,24 @@ A participant in an AMS retraining course sits down, answers questions in their 
 
 ---
 
-## Install (5 minutes, needs Python 3.10+)
+## Install (one double-click, no internet, no admin)
 
-**Option A — just double-click:**
+**Just run the installer:**
 
 ```
-START.bat
+AMS-JobAssist-Setup.exe      (or: install.bat, if you got the folder version)
 ```
 
-It detects Python, installs dependencies, tries to download the AI model (~1.1 GB, optional), and opens the browser. If the AI model download fails or you skip it, everything still works — the rule-based engine handles CV polishing without it.
+That's it. It installs both tools, the **bundled local AI model (3B, ~1.9 GB, already included)**, and a desktop + Start-menu shortcut — to a per-user folder, **no admin rights needed**. Nothing is downloaded; the whole thing runs **fully offline**. After install, launch **"AMS JobAssist"** from the desktop and your browser opens automatically.
 
-**Option B — manual (if you prefer to see what's happening):**
+- **http://localhost:8000** — participant CV maker (Tool 1)
+- **http://localhost:8001** — trainer dashboard (Tool 2)
+
+(If those ports are busy, the launcher picks the next free ones and prints them in its window.)
+
+> **The AI is real and built in.** It runs the Qwen 3B model *locally, in-process* — no Ollama, no setup, no account, nothing leaves the machine. The launcher pre-loads it so your first answer isn't slow.
+
+**Developer option (run from source, needs Python 3.10+):**
 
 ```bash
 git clone https://github.com/PapaKoftes/AMS-JobAssist
@@ -28,22 +35,6 @@ cd AMS-JobAssist
 pip install -e shared/ -e tool-1-cv-maker -e tool-2-trainer-dashboard
 python launcher.py
 ```
-
-Then open:
-- **http://localhost:8000** — participant CV maker (Tool 1)
-- **http://localhost:8001** — trainer dashboard (Tool 2)
-
-(If ports 8000/8001 are busy, the launcher automatically picks the next free ports and prints them in its window — just use those.)
-
-### Verify everything works first (optional, ~3 min)
-
-Before trying it by hand, you can run the full automated check:
-
-```bash
-python run_full_test.py
-```
-
-It starts both tools on free ports, exercises the entire product **including the AI** (dump extraction, chat coach, interview prep, all exports, the trainer handoff), and opens a single **`TEST_REPORT.html`** with a green/red result for every feature. Green = ready to use.
 
 ---
 
@@ -62,16 +53,16 @@ Open **http://localhost:8000**.
 6. On the completion screen: quality score, PDF/DOCX/Europass download, ATS job-match, cover letter, and the **AI chat coach** (ask it "Ist mein Lebenslauf gut genug?").
 7. Download the PDF and open it.
 
-> The AI's first response takes ~20–30 seconds the very first time (it loads the 1 GB model into memory); after that it's quick.
+> The launcher pre-loads the AI model at startup, so the first answer comes back in a few seconds (~10–15 s on a normal office PC), not the half-minute it used to take cold.
 
 ### 2 · The trainer flow (~5 min)
 
 Open **http://localhost:8001** in a second tab.
 
-1. Your participant from step 1 should appear in the list.
+1. Your participant from step 1 should appear in the list — by their **real name** (not an ID).
 2. Click the row — side-by-side compare shows raw answers vs. polished CV.
 3. Click any section on the right side to edit it inline. Save. The green "✓ Saved" badge should appear.
-4. Click "Genehmigen" (Approve) in the header.
+4. Type a note in the trainer-notes field and click "Genehmigen" (Approve). Reopen the participant — **your note is still there** (it now persists).
 5. Back on the list — try "Alle als PDF exportieren" (bulk export). A ZIP downloads.
 
 ### 3 · Quick extras worth seeing
@@ -99,11 +90,11 @@ Honest reactions are more useful than polished ones. Feel free to just note thin
 
 ## Known gaps (so you don't have to discover them as bugs)
 
-- **Cohort creation UI** is missing — you can filter by cohort but can't create one through the UI yet (backend is ready).
-- **Trainer notes UI** is missing — the column exists in the database but there's no text field in the UI yet.
-- **AI model is optional** — if you skipped the 1.1 GB download, AI-powered features (chat coach, interview prep generator) show "Regelbasiert" (rule-based) in the UI. This is intended — the core CV polishing always works.
+- **Cohort creation UI** is missing — you can filter by cohort and set one at import, but can't pre-create/rename cohorts through the UI yet (backend is ready).
+- **Skills extraction is the weakest field** — the local AI reliably gets name, contact, target job, and work experience, but sometimes misses a skill buried in a sentence. Everything is editable in both tools, so it's a polish gap, not a blocker. (Measured: see `tool-1-cv-maker/eval/RESULTS.md`.)
+- **Data-retention auto-cleanup** in the trainer dashboard isn't wired yet — old participants stay until manually removed (fine for a trial).
 - **Screenshots in README are placeholders** — the actual app screenshots haven't been captured yet.
-- **No code signing** — Windows SmartScreen will warn on the `.exe` files if you run those. Safe to click through.
+- **No code signing** — Windows SmartScreen may warn on the installer/`.exe`. Safe to click through ("More info" → "Run anyway").
 
 ---
 
