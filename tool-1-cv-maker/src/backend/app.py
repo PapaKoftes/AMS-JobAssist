@@ -1361,6 +1361,22 @@ def ai_interview_prep(body: InterviewPrepRequest, request: Request):
     return {"status": "success", "data": {"questions": questions, "target_job": target_job, "source": "rules"}}
 
 
+@app.get("/api/jobs/ams-search", tags=["Jobs"])
+def jobs_ams_search(target_job: str = "", location: str = ""):
+    """Build a pre-filled AMS job-board (jobs.ams.at) search link from the user's
+    target job + location.
+
+    OFFLINE & PRIVACY-SAFE: this endpoint makes NO network call and transmits
+    NOTHING — it only assembles a URL string. The participant's own browser opens
+    that link and performs the search, exactly as if they typed it on ams.at. No
+    name, contact, or CV leaves the machine; only the (user-chosen) search term is
+    in the URL the user themselves opens. A transparency notice is shown in the UI.
+    """
+    from jobs.ams_search import build_ams_search_url
+    result = build_ams_search_url(target_job, location)
+    return {"status": "success", "data": result}
+
+
 @app.post("/api/ai/job-match", tags=["AI"])
 def ai_job_match(body: JobMatchRequest, request: Request):
     """Match CV against a job description and give actionable feedback.

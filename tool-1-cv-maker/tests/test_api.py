@@ -118,5 +118,33 @@ class TestDOCXExport:
         assert response.status_code == 422  # Validation error
 
 
+class TestAmsJobSearch:
+    """The AMS job-search deep-link endpoint (offline, no transmission)."""
+
+    def test_builds_prefilled_link(self, client):
+        r = client.get("/api/jobs/ams-search",
+                       params={"target_job": "ich suche als Verkäuferin", "location": "1150 Wien"})
+        assert r.status_code == 200
+        data = r.json()["data"]
+        assert data["url"].startswith("https://jobs.ams.at/")
+        assert data["occupation"] == "Verkäuferin"  # filler stripped
+        assert data["location"] == "Wien"            # PLZ stripped
+        # the URL must be encoded (no raw spaces)
+        assert " " not in data["url"]
+
+    def test_empty_target_returns_bare_portal(self, client):
+        r = client.get("/api/jobs/ams-search")
+        assert r.status_code == 200
+        data = r.json()["data"]
+        assert data["url"].startswith("https://jobs.ams.at/")
+        assert data["occupation"] == ""
+
+    def test_no_network_is_made(self, client):
+        # The endpoint must never need network — it works under the offline block.
+        # (If it tried to fetch, the call would error; a 200 proves it's link-only.)
+        r = client.get("/api/jobs/ams-search", params={"target_job": "Koch"})
+        assert r.status_code == 200
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
