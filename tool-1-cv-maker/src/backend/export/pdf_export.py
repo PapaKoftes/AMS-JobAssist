@@ -219,7 +219,13 @@ class PDFExporter(CVExporter):
                         elems.append(Paragraph(text, styles["normal"]))
                         elems.append(Spacer(1, 0.15 * cm))
 
-        # 8. Footer
+        # 8. Austrian signature block (Ort, Datum + Unterschrift) — customary on AT CVs
+        sig = self._build_signature_block(cv_data, language, styles)
+        if sig:
+            elems.append(Spacer(1, 0.7 * cm))
+            elems.extend(sig)
+
+        # 9. Footer
         elems.append(Spacer(1, 0.5 * cm))
         elems.append(self._build_footer(cv_data, language, styles))
 
@@ -587,6 +593,26 @@ class PDFExporter(CVExporter):
     # ------------------------------------------------------------------ #
     # Footer                                                               #
     # ------------------------------------------------------------------ #
+
+    def _build_signature_block(self, cv_data: CVData, language: str, styles: Dict):
+        """
+        Austrian convention: a tabellarischer Lebenslauf ends with place + date
+        and a signature (handwritten space above the typed name). Returns a list
+        of flowables, or None if there's no name to sign with.
+        """
+        ident = getattr(cv_data, "identity", None)
+        name = (getattr(ident, "full_name", "") or "").strip() if ident else ""
+        if not name:
+            return None
+        city = (getattr(ident, "location", "") or "").strip() if ident else ""
+        date_str = datetime.now().strftime("%d.%m.%Y")
+        ort_datum = f"{city}, {date_str}" if city else date_str
+        return [
+            Paragraph(f"<font size='9'>{ort_datum}</font>", styles["normal"]),
+            Spacer(1, 1.0 * cm),  # blank space for the handwritten signature
+            Paragraph("<font size='9'>______________________________</font>", styles["normal"]),
+            Paragraph(f"<font size='9'>{name}</font>", styles["normal"]),
+        ]
 
     def _build_footer(self, cv_data: CVData, language: str, styles: Dict):
         date_str = datetime.now().strftime("%d.%m.%Y")

@@ -178,7 +178,10 @@ class DOCXExporter(CVExporter):
                         p = doc.add_paragraph(text)
                         p.paragraph_format.space_after = Pt(4)
 
-        # 8. Footer
+        # 8. Austrian signature block (Ort, Datum + Unterschrift)
+        self._add_signature_block(doc, cv_data, language)
+
+        # 9. Footer
         self._add_footer(doc, cv_data, language)
 
     # ====================================================================
@@ -491,6 +494,24 @@ class DOCXExporter(CVExporter):
     # ====================================================================
     # Footer
     # ====================================================================
+
+    def _add_signature_block(self, doc: Document, cv_data: CVData, language: str):
+        """Austrian CV convention: place + date, blank signature space, typed name."""
+        ident = getattr(cv_data, "identity", None)
+        name = (getattr(ident, "full_name", "") or "").strip() if ident else ""
+        if not name:
+            return
+        city = (getattr(ident, "location", "") or "").strip() if ident else ""
+        date_str = datetime.now().strftime("%d.%m.%Y")
+        ort_datum = f"{city}, {date_str}" if city else date_str
+        doc.add_paragraph()  # spacing
+        p1 = doc.add_paragraph(ort_datum)
+        p1.runs[0].font.size = Pt(9)
+        doc.add_paragraph()  # blank space for the handwritten signature
+        p2 = doc.add_paragraph("______________________________")
+        p2.runs[0].font.size = Pt(9)
+        p3 = doc.add_paragraph(name)
+        p3.runs[0].font.size = Pt(9)
 
     def _add_footer(self, doc: Document, cv_data: CVData, language: str):
         self._add_horizontal_rule(doc, thickness="6", color="CCCCCC")

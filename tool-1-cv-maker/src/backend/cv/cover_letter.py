@@ -291,8 +291,12 @@ def generate(req: CoverLetterRequest) -> CoverLetter:
     parts.append(_INTERVIEW_REQUEST_DE if lang == "de" else _INTERVIEW_REQUEST_EN)
     parts.append("")
 
-    # ── Abschluss ─────────────────────────────────────────────────────────────
-    parts.append(f"{_CLOSING[lang][tone]},")
+    # ── Abschluss + Unterschrift ──────────────────────────────────────────────
+    # ÖNORM A 1080 / Austrian convention: closing formula, then blank space for a
+    # handwritten signature, then the typed name.
+    parts.append(f"{_CLOSING[lang][tone]}")
+    parts.append("")
+    parts.append("")          # space for the handwritten signature
     parts.append("")
     parts.append(req.full_name)
     parts.append("")
