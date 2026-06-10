@@ -114,6 +114,21 @@ if exist "!EXE_DIR!..\packaging\icon.ico" (
 echo     [OK] Programmdateien kopiert.
 echo.
 
+:: -- Copy the bundled AI model BESIDE the exe ---------------------------------
+:: The frozen app looks for the GGUF at <exe-dir>\data\models (local_llm.py
+:: _MODEL_DIR frozen branch). It must live next to the .exe in INSTALL_DIR, not
+:: in the user data dir. Without this copy the app silently drops to rules-only.
+echo     Installiere KI-Modell...
+if exist "!EXE_DIR!data\models\*.gguf" (
+    mkdir "!INSTALL_DIR!\data\models" >nul 2>&1
+    copy /Y "!EXE_DIR!data\models\*.gguf" "!INSTALL_DIR!\data\models\" >nul
+    echo     [OK] KI-Modell installiert ^(lokale KI sofort verfuegbar^).
+) else (
+    echo     [INFO] Kein KI-Modell im Paket gefunden - die App nutzt den
+    echo            regelbasierten Modus ^(funktioniert, ohne KI-Formulierung^).
+)
+echo.
+
 :: -- Create Start Menu shortcuts (via PowerShell) -----------------------------
 echo     Erstelle Startmenue-Verknuepfungen...
 
@@ -198,15 +213,13 @@ echo     [OK] In "Programme und Features" registriert.
 echo.
 
 :: -- AI model note ------------------------------------------------------------
-:: The 1.1 GB Qwen model is NOT bundled in the .exe and cannot be resolved by
-:: the frozen application (PyInstaller changes __file__ paths).  The .exe falls
-:: back to rule-based polishing automatically — everything works, just without
-:: the conversational AI coach.
-::
-:: To get the full AI experience, use the Python path instead:
-::   START.bat  or  ams_jobassist.bat  (both auto-download the model)
-echo     [INFO] KI-Modell: Die .exe-Version nutzt den regelbasierten Modus.
-echo            Fuer den vollen KI-Coach nutzen Sie START.bat mit Python.
+:: The 3B Qwen model is bundled and installed beside the .exe (see the model
+:: copy step above), and the frozen app loads it in-process. Fully offline.
+if exist "!INSTALL_DIR!\data\models\*.gguf" (
+    echo     [OK] KI: Lokales 3B-Modell aktiv - gute Qualitaet, vollstaendig offline.
+) else (
+    echo     [INFO] KI: Regelbasierter Modus ^(kein Modell installiert^).
+)
 echo.
 
 :: -- Done ---------------------------------------------------------------------

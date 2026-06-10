@@ -83,6 +83,11 @@ Source: "..\dist\AMS-JobAssist-Tool1.exe";    DestDir: "{app}"; Flags: ignorever
 Source: "..\dist\AMS-JobAssist-Tool2.exe";    DestDir: "{app}"; Flags: ignoreversion
 ; Icon
 Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
+; Bundled AI model — must sit beside the .exe at {app}\data\models, where the
+; frozen app looks for it (local_llm.py _MODEL_DIR frozen branch). Without this
+; the app silently drops to rules-only. 'external'+'skipifsourcedoesntexist' so
+; the build still produces an installer if the model wasn't pre-seeded.
+Source: "..\dist\data\models\*.gguf"; DestDir: "{app}\data\models"; Flags: ignoreversion skipifsourcedoesntexist
 
 [Dirs]
 ; Create a data directory with user-writable permissions

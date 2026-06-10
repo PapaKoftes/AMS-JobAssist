@@ -32,6 +32,10 @@ a = Analysis(
         (BACKEND_DIR, os.path.join("src", "backend")),
         # Bundle shared schema package
         (SHARED_DIR, "shared"),
+        # Bundle the Austrian job knowledge base (berufe.json). knowledge.py looks
+        # for it at <bundle-root>/data/knowledge, which is where this lands — so the
+        # frozen .exe finds it (without this, AI prompts lose job context).
+        (os.path.join(TOOL1_ROOT, "data", "knowledge"), os.path.join("data", "knowledge")),
     ],
     hiddenimports=[
         # FastAPI / Starlette / Pydantic core

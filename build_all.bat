@@ -91,17 +91,20 @@ echo [OK] Installer files copied to dist\.
 
 REM ---- Pre-seed the AI model so the app is FULLY OFFLINE (no runtime download) -
 REM The frozen exe looks for the GGUF in <exe-dir>\data\models (see local_llm.py
-REM _MODEL_DIR frozen branch). Ship it there so the AI works with no internet.
+REM _MODEL_DIR frozen branch). Ship ONLY the 3B (the shipped default, "full" tier);
+REM the 1.5B is redundant once 3B is present (3B auto-wins, similar speed) and would
+REM just add ~1.1 GB of dead weight.
+set "MODEL_3B=qwen2.5-3b-instruct-q4_k_m.gguf"
 echo.
-echo [4b/4] Pre-seeding AI model into dist\data\models\ ...
-if exist "tool-1-cv-maker\data\models\*.gguf" (
+echo [4b/4] Pre-seeding 3B AI model into dist\data\models\ ...
+if exist "tool-1-cv-maker\data\models\%MODEL_3B%" (
     if not exist "dist\data\models" mkdir "dist\data\models"
-    copy /Y "tool-1-cv-maker\data\models\*.gguf" "dist\data\models\" >nul
-    echo [OK] Model pre-seeded — the build is fully offline.
+    copy /Y "tool-1-cv-maker\data\models\%MODEL_3B%" "dist\data\models\" >nul
+    echo [OK] 3B model pre-seeded — the build is fully offline with good-quality AI.
 ) else (
-    echo [!!] No GGUF found in tool-1-cv-maker\data\models\ — the build will have
-    echo      NO bundled model and would try to download at first run. Download a
-    echo      model first, or accept rules-only mode.
+    echo [!!] %MODEL_3B% not found in tool-1-cv-maker\data\models\ — the build will
+    echo      have NO bundled model and would try to download at first run. Run
+    echo      download_3b_model.bat first, or accept rules-only mode.
 )
 
 REM ---- Optionally build Inno Setup installer ---------------------------------

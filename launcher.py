@@ -158,6 +158,18 @@ class AMS_Launcher:
         print(f"  [!!] {label} failed to start (timeout)")
         return False
 
+    def _warm_model(self, port: int) -> None:
+        """Best-effort: load the local AI model into memory before the user starts,
+        so the first answer isn't slowed by the ~2.5 s cold model load. Never
+        blocks the launch — any failure is silently ignored (rules mode still works).
+        """
+        try:
+            url = f"http://localhost:{port}/api/ai/model-status"
+            with urllib.request.urlopen(url, timeout=60) as resp:
+                resp.read()
+        except Exception:
+            pass
+
     def open_browser(self):
         """Wait for Tool 1 to be healthy, then open the default browser.
         Tool 2 failure is a warning only — participants can still use Tool 1.
@@ -167,6 +179,8 @@ class AMS_Launcher:
             print("  [!!] Bitte neu starten (Option 1 im Menü) oder neu installieren.")
             sys.exit(1)
         print(f"  [OK] Tool 1 bereit: http://localhost:{TOOL1_PORT}")
+        print("  [>>] Lade KI-Modell vor (einmalig, ~3 s)...")
+        self._warm_model(TOOL1_PORT)
 
         # Tool 2 (Trainer Dashboard) is optional — failure does not block participants
         if not self._wait_for_ready(TOOL2_PORT, "Tool 2"):
