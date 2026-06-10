@@ -130,8 +130,16 @@ class CVDocument(BaseModel):
     languages: list[LanguageProficiency] = Field(default_factory=list)
     custom_sections: list[CustomSection] = Field(default_factory=list)
 
-    # Aggregated skill list for quick lookup
+    # Aggregated skill list for quick lookup (raw, as the participant phrased them)
     all_skills: list[str] = Field(default_factory=list)
+
+    # Canonical AMS-aligned skill labels, mapped from all_skills via the offline
+    # skills taxonomy (data/knowledge/skills_taxonomy.json). Lets the trainer
+    # dashboard aggregate cohorts by skill even when participants phrase the same
+    # skill differently or in different languages ("Stapler"/"forklift"/"forklift
+    # driving" → "Staplerschein/Gabelstapler"). Optional + additive: empty when
+    # no normalization ran, so older CVs and the cross-tool contract stay valid.
+    normalized_skills: list[str] = Field(default_factory=list)
 
     # Quality
     overall_quality: float = 0.0

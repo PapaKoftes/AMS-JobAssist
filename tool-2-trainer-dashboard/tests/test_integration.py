@@ -750,6 +750,42 @@ class TestCrossToolE2E:
         assert len(r.content) > 1000  # a real zip with a real PDF inside
 
 
+class TestCohortSkillsAnalytics:
+    """Trainer cohort analytics over canonical (AMS-normalized) skills."""
+
+    def _import(self, client, user_id, normalized):
+        cv = _canonical_cv(user_id)
+        cv["normalized_skills"] = normalized
+        r = client.post("/api/import-cvs?cohort_id=SkillsCohort",
+                        files={"file": ("cv.json", json.dumps(cv))})
+        assert r.status_code == 200, r.text
+
+    def test_skill_histogram_counts_participants_once(self, client):
+        # 3 participants: 3 have Kassenführung, 2 have Staplerschein, 1 has Reinigung
+        self._import(client, "s1", ["Kassenführung", "Staplerschein/Gabelstapler"])
+        self._import(client, "s2", ["Kassenführung", "Staplerschein/Gabelstapler", "Reinigung"])
+        self._import(client, "s3", ["Kassenführung", "Kassenführung"])  # dup → counted once
+
+        r = client.get("/api/cohorts/SkillsCohort/skills")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["total_participants"] == 3
+        assert body["participants_with_skills"] == 3
+        counts = {row["skill"]: row["count"] for row in body["skills"]}
+        assert counts["Kassenführung"] == 3
+        assert counts["Staplerschein/Gabelstapler"] == 2
+        assert counts["Reinigung"] == 1
+        # histogram is sorted by descending count
+        assert body["skills"][0]["skill"] == "Kassenführung"
+        assert body["skills"][0]["share"] == "100%"
+
+    def test_empty_cohort_is_safe(self, client):
+        r = client.get("/api/cohorts/NoSuchCohort/skills")
+        assert r.status_code == 200
+        assert r.json()["total_participants"] == 0
+        assert r.json()["skills"] == []
+
+
 # ========================================
 # Run
 # ========================================

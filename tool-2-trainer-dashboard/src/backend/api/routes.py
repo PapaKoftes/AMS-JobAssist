@@ -1019,6 +1019,52 @@ async def get_cohort_metrics(
     }
 
 
+@router.get("/cohorts/{cohort_id}/skills")
+async def get_cohort_skills(
+    cohort_id: str,
+    db: Session = Depends(get_db)
+):
+    """Aggregate the canonical (AMS-normalized) skills across a cohort.
+
+    Counts how many participants have each normalized skill (from their latest CV),
+    so a trainer can see "12 of 20 → Kassenführung" for targeted course planning.
+    Uses the canonical labels Tool 1 wrote into the CV (normalized_skills); older
+    CVs imported before normalization simply contribute nothing.
+    """
+    participants = db.query(Participant).filter(Participant.cohort_id == cohort_id).all()
+    total = len(participants)
+
+    counts: dict[str, int] = {}
+    covered = 0
+    for p in participants:
+        latest = (
+            db.query(CVSubmission)
+            .filter(CVSubmission.participant_id == p.id)
+            .order_by(CVSubmission.version.desc())
+            .first()
+        )
+        cv = (latest.cv_data_json or {}) if latest else {}
+        norm = cv.get("normalized_skills") or []
+        if not isinstance(norm, list):
+            norm = []
+        if norm:
+            covered += 1
+        for skill in {str(s) for s in norm}:   # set() → count each participant once
+            counts[skill] = counts.get(skill, 0) + 1
+
+    histogram = [
+        {"skill": s, "count": c, "share": (f"{c/total*100:.0f}%" if total else "0%")}
+        for s, c in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    ]
+    return {
+        "cohort_id": cohort_id,
+        "total_participants": total,
+        "participants_with_skills": covered,
+        "distinct_skills": len(histogram),
+        "skills": histogram,
+    }
+
+
 @router.post("/bulk-export")
 async def bulk_export(
     request: BulkExportRequest,

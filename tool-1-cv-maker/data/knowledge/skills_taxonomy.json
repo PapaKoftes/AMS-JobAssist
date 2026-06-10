@@ -1,0 +1,73 @@
+{
+  "_meta": {
+    "purpose": "Curated AMS-relevant skill taxonomy for offline normalization. Maps free-text/multilingual skill phrases to a canonical German label so the trainer dashboard can aggregate cohorts by skill. AMS-Berufssystematik-aligned categories. Expand from ESCO (see docs/ROADMAP_ESCO_MEINAMS.md) over time.",
+    "match": "A raw skill is matched case-insensitively against 'syn' (substring/word) then fuzzy; the canonical 'label' is returned.",
+    "version": "1.0"
+  },
+  "skills": [
+    {"label": "Kassenführung", "category": "Handel/Verkauf", "syn": ["kassa", "kasse", "kassier", "kassieren", "kassensystem", "cash register", "cashier", "checkout", "kassa führen", "registrierkasse", "kasa", "касса", "كاشير"]},
+    {"label": "Kundenberatung", "category": "Handel/Verkauf", "syn": ["kundenberatung", "kundenbetreuung", "kundenservice", "customer service", "customer advice", "customer support", "beratung von kunden", "müşteri", "musteri hizmetleri", "klijenti", "обслуживание клиентов"]},
+    {"label": "Verkauf", "category": "Handel/Verkauf", "syn": ["verkauf", "verkaufen", "sales", "selling", "verkäufer", "verkäuferin", "satış", "prodaja", "продажи"]},
+    {"label": "Warenpräsentation", "category": "Handel/Verkauf", "syn": ["warenpräsentation", "regalbetreuung", "regale einräumen", "merchandising", "shelf stocking", "ware schlichten", "regalpflege"]},
+    {"label": "Inventur", "category": "Handel/Verkauf", "syn": ["inventur", "bestandsaufnahme", "stocktaking", "inventory count"]},
+
+    {"label": "Staplerschein/Gabelstapler", "category": "Lager/Logistik", "syn": ["stapler", "staplerschein", "gabelstapler", "forklift", "forklift licence", "forklift license", "forklift driving", "hubstapler", "viličar", "forklift certificate", "stapler fahren", "istif"]},
+    {"label": "Kommissionierung", "category": "Lager/Logistik", "syn": ["kommissionierung", "kommissionieren", "order picking", "picking", "ware kommissionieren", "komissionieren"]},
+    {"label": "Lagerverwaltung", "category": "Lager/Logistik", "syn": ["lager", "lagerverwaltung", "lagerarbeit", "warehouse", "warehouse management", "lagerlogistik", "lagerhaltung", "skladiste", "depo", "склад"]},
+    {"label": "Wareneingang/Warenausgang", "category": "Lager/Logistik", "syn": ["wareneingang", "warenausgang", "goods receipt", "goods in", "goods out", "ware annehmen", "verladung", "verladen"]},
+
+    {"label": "Reinigung", "category": "Reinigung", "syn": ["reinigung", "reinigen", "putzen", "cleaning", "saubermachen", "unterhaltsreinigung", "temizlik", "ciscenje", "уборка", "تنظيف"]},
+    {"label": "Grundreinigung", "category": "Reinigung", "syn": ["grundreinigung", "deep cleaning", "intensivreinigung"]},
+    {"label": "Hygiene", "category": "Reinigung", "syn": ["hygiene", "hygienevorschriften", "hygiene standards", "sauberkeit", "higijena"]},
+
+    {"label": "Pflegeassistenz", "category": "Pflege/Soziales", "syn": ["pflege", "pflegeassistenz", "pflegehilfe", "altenpflege", "care", "nursing assistant", "elderly care", "betreuung", "pflegehelfer", "bakım", "njega", "уход"]},
+    {"label": "Grundpflege", "category": "Pflege/Soziales", "syn": ["grundpflege", "körperpflege", "basic care", "personal care", "waschen anziehen"]},
+    {"label": "Kinderbetreuung", "category": "Pflege/Soziales", "syn": ["kinderbetreuung", "kinderbetreuerin", "childcare", "babysitting", "betreuung von kindern", "cocuk bakimi", "cuvanje djece"]},
+    {"label": "Erste Hilfe", "category": "Pflege/Soziales", "syn": ["erste hilfe", "first aid", "erstehilfekurs", "ilk yardim", "prva pomoc"]},
+
+    {"label": "Speisenzubereitung", "category": "Gastronomie/Küche", "syn": ["kochen", "speisenzubereitung", "küche", "cooking", "food preparation", "koch", "köchin", "küchenhilfe", "zubereitung", "yemek", "kuhanje", "приготовление"]},
+    {"label": "Service/Kellnern", "category": "Gastronomie/Küche", "syn": ["service", "kellner", "kellnerin", "servieren", "waiter", "waitress", "serving", "gastronomie service", "servis", "konobar", "официант"]},
+    {"label": "Barista", "category": "Gastronomie/Küche", "syn": ["barista", "kaffee zubereiten", "coffee making"]},
+    {"label": "Spülküche", "category": "Gastronomie/Küche", "syn": ["spülküche", "abwasch", "dishwashing", "geschirr spülen", "stewarding"]},
+    {"label": "HACCP/Lebensmittelhygiene", "category": "Gastronomie/Küche", "syn": ["haccp", "lebensmittelhygiene", "food safety", "food hygiene", "lebensmittelsicherheit"]},
+
+    {"label": "Maurerarbeiten", "category": "Bau/Handwerk", "syn": ["maurer", "mauern", "bricklaying", "masonry", "maurerarbeiten", "ziegel", "zidar"]},
+    {"label": "Malerarbeiten", "category": "Bau/Handwerk", "syn": ["maler", "malen", "ausmalen", "painting", "painter", "anstreicher", "boyacı", "moler"]},
+    {"label": "Trockenbau", "category": "Bau/Handwerk", "syn": ["trockenbau", "drywall", "rigips", "gipskarton"]},
+    {"label": "Schweißen", "category": "Bau/Handwerk", "syn": ["schweißen", "schweissen", "welding", "welder", "schweisser", "kaynak", "varenje", "сварка"]},
+    {"label": "Elektroinstallation", "category": "Bau/Handwerk", "syn": ["elektro", "elektroinstallation", "elektriker", "electrician", "electrical installation", "elektrik", "elektroinstallateur"]},
+    {"label": "Installateur/Sanitär", "category": "Bau/Handwerk", "syn": ["installateur", "sanitär", "plumbing", "plumber", "klempner", "rohrleitung", "tesisat"]},
+    {"label": "Tischlerei/Holzbearbeitung", "category": "Bau/Handwerk", "syn": ["tischler", "schreiner", "holzbearbeitung", "carpentry", "woodworking", "stolar", "marangoz"]},
+
+    {"label": "MS Office", "category": "Büro/IT", "syn": ["ms office", "microsoft office", "office paket", "word", "outlook", "powerpoint"]},
+    {"label": "Excel", "category": "Büro/IT", "syn": ["excel", "ms excel", "tabellenkalkulation", "spreadsheets"]},
+    {"label": "Buchhaltung", "category": "Büro/IT", "syn": ["buchhaltung", "rechnungswesen", "accounting", "bookkeeping", "fakturierung", "muhasebe", "knjigovodstvo"]},
+    {"label": "Datenerfassung", "category": "Büro/IT", "syn": ["datenerfassung", "data entry", "dateneingabe", "erfassung von daten"]},
+    {"label": "Telefonbetreuung", "category": "Büro/IT", "syn": ["telefon", "telefonbetreuung", "telefonzentrale", "phone support", "call center", "callcenter"]},
+    {"label": "Schriftverkehr", "category": "Büro/IT", "syn": ["schriftverkehr", "korrespondenz", "correspondence", "office correspondence", "schreibarbeiten"]},
+
+    {"label": "Führerschein B", "category": "Transport", "syn": ["führerschein", "führerschein b", "driving licence", "driving license", "pkw führerschein", "klasse b", "ehliyet", "vozacka dozvola", "права"]},
+    {"label": "Führerschein C/LKW", "category": "Transport", "syn": ["lkw", "lkw führerschein", "führerschein c", "truck licence", "truck driving", "klasse c", "lkw fahren", "kamyon"]},
+    {"label": "Auslieferung/Zustellung", "category": "Transport", "syn": ["auslieferung", "zustellung", "delivery", "lieferung", "paketzustellung", "fahrer", "driver", "fahrtätigkeit"]},
+
+    {"label": "Deutschkenntnisse", "category": "Sprachen", "syn": ["deutsch", "deutschkenntnisse", "german", "german language", "almanca", "njemacki"]},
+    {"label": "Englischkenntnisse", "category": "Sprachen", "syn": ["englisch", "englischkenntnisse", "english", "english language", "ingilizce", "engleski"]},
+
+    {"label": "Teamfähigkeit", "category": "Soft Skills", "syn": ["teamfähigkeit", "teamarbeit", "teamwork", "team player", "im team arbeiten", "takim calismasi", "timski rad", "работа в команде"]},
+    {"label": "Zuverlässigkeit", "category": "Soft Skills", "syn": ["zuverlässigkeit", "zuverlässig", "reliable", "reliability", "pünktlich", "pünktlichkeit", "punctual", "tačnost", "güvenilir"]},
+    {"label": "Belastbarkeit", "category": "Soft Skills", "syn": ["belastbarkeit", "belastbar", "stressresistent", "resilience", "stress resistant", "körperlich belastbar"]},
+    {"label": "Kommunikationsfähigkeit", "category": "Soft Skills", "syn": ["kommunikation", "kommunikationsfähigkeit", "communication", "communication skills", "iletisim", "komunikacija"]},
+    {"label": "Flexibilität", "category": "Soft Skills", "syn": ["flexibilität", "flexibel", "flexible", "flexibility", "schichtbereitschaft", "schichtarbeit", "shift work"]},
+
+    {"label": "Maschinenbedienung", "category": "Produktion", "syn": ["maschinenbedienung", "machine operation", "maschinen bedienen", "produktionsmaschine", "cnc", "maschinenführer"]},
+    {"label": "Qualitätskontrolle", "category": "Produktion", "syn": ["qualitätskontrolle", "quality control", "qualitätssicherung", "qa", "kontrolle der qualität"]},
+    {"label": "Montage", "category": "Produktion", "syn": ["montage", "assembly", "montieren", "zusammenbau", "fließband", "akkordarbeit"]},
+
+    {"label": "Friseurtätigkeit", "category": "Körperpflege/Beauty", "syn": ["friseur", "friseurin", "haare schneiden", "hairdressing", "hairdresser", "kuaför", "frizer"]},
+    {"label": "Kosmetik/Nageldesign", "category": "Körperpflege/Beauty", "syn": ["kosmetik", "nageldesign", "nails", "manicure", "maniküre", "beautician", "kozmetika"]},
+
+    {"label": "Gartenarbeit/Grünpflege", "category": "Garten/Landschaft", "syn": ["gartenarbeit", "grünpflege", "gardening", "landschaftspflege", "gärtner", "rasenpflege", "bahce", "vrtlarstvo"]},
+
+    {"label": "Sicherheitsdienst", "category": "Sicherheit", "syn": ["sicherheitsdienst", "security", "wachdienst", "objektschutz", "security guard", "güvenlik", "obezbjedjenje"]}
+  ]
+}

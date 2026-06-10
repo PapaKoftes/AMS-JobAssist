@@ -462,6 +462,15 @@ class CVData:
         if self.all_skills:
             skills_group = [SkillGroup(label="Fähigkeiten", skills=sorted(self.all_skills))]
 
+        # Canonical AMS-aligned skill labels for cohort analytics (offline, best
+        # effort — never fails the export if the taxonomy is unavailable).
+        normalized_skills: List[str] = []
+        try:
+            from skills.normalize import normalize_skills as _norm_skills
+            normalized_skills = _norm_skills(list(self.all_skills))
+        except Exception:
+            normalized_skills = []
+
         # motivation + projects → custom sections
         custom = (
             [_section_to_custom(s, "Motivation") for s in self.motivation]
@@ -495,6 +504,7 @@ class CVData:
             languages=lang_profs,
             custom_sections=custom,
             all_skills=sorted(self.all_skills) if self.all_skills else [],
+            normalized_skills=normalized_skills,
             overall_quality=self.overall_quality,
             ready_for_export=self.ready_for_export,
             created_at=self.created_at or "",
