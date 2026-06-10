@@ -608,6 +608,44 @@ class TestCanonicalEdit:
         assert resp.status_code == 404
 
 
+class TestTrainerNotesAndName:
+    """Phase B fixes: trainer notes must reload; canonical imports must show the
+    participant's real name (basics.full_name), not the user_id placeholder."""
+
+    def _import(self, client, cv):
+        resp = client.post(
+            "/api/import-cvs?cohort_id=PhaseB",
+            files={"file": ("cv.json", json.dumps(cv))},
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["participant_id"]
+
+    def test_canonical_import_shows_real_name_and_email(self, client):
+        """G2: name/email come from canonical basics, not the user_id fallback."""
+        pid = self._import(client, _canonical_cv("u_realname"))
+        detail = client.get(f"/api/participants/{pid}")
+        assert detail.status_code == 200
+        body = detail.json()
+        assert body["name"] == "Canonical Tester", "must read basics.full_name, not user_id"
+        assert body["email"] == "c@example.com"
+
+    def test_trainer_notes_persist_and_reload(self, client):
+        """G1: notes saved via approval must come back on the detail view."""
+        pid = self._import(client, _canonical_cv("u_notes"))
+        # Save trainer notes via the approval feedback field
+        resp = client.post(
+            f"/api/participants/{pid}/approve",
+            json={"approval_status": "needs_changes",
+                  "feedback": "Bitte Foto hinzufügen und Datum prüfen.",
+                  "approved_by": "Marko"},
+        )
+        assert resp.status_code == 200, resp.text
+        # Reload detail — notes must be present (was previously write-only)
+        detail = client.get(f"/api/participants/{pid}")
+        assert detail.status_code == 200
+        assert detail.json()["trainer_notes"] == "Bitte Foto hinzufügen und Datum prüfen."
+
+
 # ========================================
 # Run
 # ========================================

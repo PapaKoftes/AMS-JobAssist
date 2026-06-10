@@ -146,6 +146,7 @@ class ParticipantResponse(BaseModel):
     first_imported_at: str
     last_updated_at: str
     completed_at: Optional[str] = None
+    trainer_notes: Optional[str] = None
     latest_submission: Optional[CVSubmissionResponse] = None
 
 
@@ -510,6 +511,7 @@ async def list_participants(
             first_imported_at=p.first_imported_at.isoformat() if p.first_imported_at else "",
             last_updated_at=p.last_updated_at.isoformat() if p.last_updated_at else "",
             completed_at=p.completed_at.isoformat() if p.completed_at else None,
+            trainer_notes=p.trainer_notes,
             latest_submission=submission_data
         ))
 
@@ -563,6 +565,7 @@ async def get_participant(
         first_imported_at=participant.first_imported_at.isoformat() if participant.first_imported_at else "",
         last_updated_at=participant.last_updated_at.isoformat() if participant.last_updated_at else "",
         completed_at=participant.completed_at.isoformat() if participant.completed_at else None,
+        trainer_notes=participant.trainer_notes,
         latest_submission=submission_data
     )
 
@@ -1409,6 +1412,14 @@ def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict,
     if len(user_id) > 255:
         raise ValueError("user_id exceeds 255 character limit")
 
+    # Display name / email may live at the top level (legacy flat exports) OR
+    # nested under canonical basics.full_name / basics.email. Read both so the
+    # trainer sees the participant's real name, not the user_id, on canonical
+    # imports (the default Tool 1 export shape).
+    _basics = cv_dict.get("basics") if isinstance(cv_dict.get("basics"), dict) else {}
+    disp_name = (cv_dict.get("name") or _basics.get("full_name") or "").strip() or user_id
+    disp_email = (cv_dict.get("email") or _basics.get("email") or "").strip() or None
+
     # Check if participant exists
     participant = db.query(Participant).filter(Participant.user_id == user_id).first()
 
@@ -1417,13 +1428,20 @@ def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict,
         participant = Participant(
             user_id=user_id,
             cohort_id=cohort_id,
-            name=cv_dict.get("name") or user_id,
-            email=cv_dict.get("email"),
+            name=disp_name,
+            email=disp_email,
             interview_path=cv_dict.get("interview_path", "unknown"),
             status="pending"
         )
         db.add(participant)
         db.flush()  # Get the ID
+    else:
+        # Existing participant: backfill a real name/email if we previously only
+        # had the user_id placeholder (e.g. imported before the canonical fix).
+        if (not participant.name or participant.name == participant.user_id) and disp_name != user_id:
+            participant.name = disp_name
+        if not participant.email and disp_email:
+            participant.email = disp_email
 
     # Re-import protection: never silently shadow protected trainer work.
     latest = (
