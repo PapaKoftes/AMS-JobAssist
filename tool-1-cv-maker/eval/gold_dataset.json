@@ -105,6 +105,150 @@
         "skills": ["Führerschein"],
         "languages": ["Deutsch", "Serbisch"]
       }
+    },
+    {
+      "id": "de-electric-09", "language": "de",
+      "text": "Ich heiße Andreas Berger, andreas.berger@aon.at, 0676 1122334, wohne in Klagenfurt. Ich suche Arbeit als Elektriker. Ich habe 12 Jahre als Elektroinstallateur bei der Firma Strobl gearbeitet. Ich kann Verkabelung, Schaltpläne lesen und Wartung. Lehrabschluss Elektrotechnik.",
+      "expected": {
+        "name": "Andreas Berger", "city": "Klagenfurt", "phone": "0676 1122334", "email": "andreas.berger@aon.at",
+        "target_job": "Elektriker",
+        "experiences": ["Elektroinstallateur", "Strobl"],
+        "education": ["Elektrotechnik"],
+        "skills": ["Verkabelung", "Schaltpläne", "Wartung"],
+        "languages": []
+      }
+    },
+    {
+      "id": "de-it-10", "language": "de",
+      "text": "Mein Name ist Tobias Lechner. Wohnort Wien. tobias.lechner@gmail.com, 0660 4455667. Ich suche eine Stelle als IT-Supporter. Ich habe 4 Jahre im IT-Support gearbeitet und kenne Windows, Active Directory, Netzwerke und Ticketsysteme. HTL-Matura Informatik. Deutsch Muttersprache, Englisch fließend.",
+      "expected": {
+        "name": "Tobias Lechner", "city": "Wien", "phone": "0660 4455667", "email": "tobias.lechner@gmail.com",
+        "target_job": "IT-Supporter",
+        "experiences": ["IT-Support"],
+        "education": ["HTL", "Informatik"],
+        "skills": ["Windows", "Active Directory", "Netzwerke"],
+        "languages": ["Deutsch", "Englisch"]
+      }
+    },
+    {
+      "id": "de-hair-11", "language": "de",
+      "text": "Ich bin Sandra Moser, sandra.moser@gmx.at, 0699 7788990, aus Graz. Ich suche eine Stelle als Friseurin. Ich habe 6 Jahre in einem Friseursalon gearbeitet, Haare schneiden, färben und Beratung. Lehrabschluss Friseurin.",
+      "expected": {
+        "name": "Sandra Moser", "city": "Graz", "phone": "0699 7788990", "email": "sandra.moser@gmx.at",
+        "target_job": "Friseurin",
+        "experiences": ["Friseursalon"],
+        "education": ["Friseur"],
+        "skills": ["schneiden", "färben", "Beratung"],
+        "languages": []
+      }
+    },
+    {
+      "id": "ar-nurse-12", "language": "ar",
+      "text": "اسمي ليلى حسن. أعيش في فيينا. بريدي الإلكتروني layla.hassan@gmx.at ورقم هاتفي 0681 2233445. أبحث عن عمل كممرضة. عملت 5 سنوات كمساعدة تمريض في مستشفى. أتحدث العربية بطلاقة والألمانية مستوى B1.",
+      "expected": {
+        "name": "Layla Hassan", "city": "Wien", "phone": "0681 2233445", "email": "layla.hassan@gmx.at",
+        "target_job": "Pflege",
+        "experiences": ["Tmriض", "Krankenhaus", "Pflege"],
+        "education": [],
+        "skills": [],
+        "languages": ["Arabisch", "Deutsch"]
+      }
+    },
+    {
+      "id": "de-garden-13", "language": "de",
+      "text": "Name Marko Novak, marko.novak@gmx.at, 0664 5566778, wohnhaft in Linz. Gesucht: Stelle als Gärtner. Ich habe 8 Jahre als Landschaftsgärtner gearbeitet, Pflanzenpflege, Rasenmähen und Heckenschnitt. Deutsch und Kroatisch.",
+      "expected": {
+        "name": "Marko Novak", "city": "Linz", "phone": "0664 5566778", "email": "marko.novak@gmx.at",
+        "target_job": "Gärtner",
+        "experiences": ["Landschaftsgärtner"],
+        "education": [],
+        "skills": ["Pflanzenpflege", "Rasenmähen", "Heckenschnitt"],
+        "languages": ["Deutsch", "Kroatisch"]
+      }
+    },
+    {
+      "id": "de-cook-14", "language": "de",
+      "text": "Ich heiße Amela Begić. amela.begic@gmx.at. Wien, 0660 9988776. Ich suche Arbeit als Köchin. Ich habe 7 Jahre in der Küche eines Restaurants gearbeitet, warme Küche und HACCP. Deutsch B2, Bosnisch Muttersprache.",
+      "expected": {
+        "name": "Amela Begić", "city": "Wien", "phone": "0660 9988776", "email": "amela.begic@gmx.at",
+        "target_job": "Köchin",
+        "experiences": ["Küche", "Restaurant"],
+        "education": [],
+        "skills": ["HACCP"],
+        "languages": ["Deutsch", "Bosnisch"]
+      }
+    },
+    {
+      "id": "pl-warehouse-15", "language": "pl",
+      "text": "Nazywam się Piotr Kowalski. Mieszkam w Wiedniu. Email piotr.kowalski@gmx.at, telefon 0676 3344556. Szukam pracy jako pracownik magazynu. Pracowałem 6 lat w magazynie, obsługa wózka widłowego i kompletacja zamówień. Mówię po polsku i trochę po niemiecku.",
+      "expected": {
+        "name": "Piotr Kowalski", "city": "Wien", "phone": "0676 3344556", "email": "piotr.kowalski@gmx.at",
+        "target_job": "Lager",
+        "experiences": ["Lager", "magazyn"],
+        "education": [],
+        "skills": ["Stapler", "wózk"],
+        "languages": ["Polnisch", "Deutsch"]
+      }
+    },
+    {
+      "id": "de-sales-16", "language": "de",
+      "text": "Julia Steiner, julia.steiner@gmx.at, 0699 1212343, Salzburg. Ich suche eine Stelle im Einzelhandel als Verkäuferin. Ich habe 3 Jahre bei H&M im Verkauf gearbeitet, Kundenberatung und Warenpräsentation. Matura.",
+      "expected": {
+        "name": "Julia Steiner", "city": "Salzburg", "phone": "0699 1212343", "email": "julia.steiner@gmx.at",
+        "target_job": "Verkäuferin",
+        "experiences": ["H&M", "Verkauf"],
+        "education": ["Matura"],
+        "skills": ["Kundenberatung", "Warenpräsentation"],
+        "languages": []
+      }
+    },
+    {
+      "id": "de-short-17", "language": "de",
+      "text": "Hans Gruber, hans.gruber@gmx.at. Maurer. 15 Jahre am Bau.",
+      "expected": {
+        "name": "Hans Gruber", "city": "", "phone": "", "email": "hans.gruber@gmx.at",
+        "target_job": "Maurer",
+        "experiences": ["Bau"],
+        "education": [],
+        "skills": [],
+        "languages": []
+      }
+    },
+    {
+      "id": "ru-office-18", "language": "ru",
+      "text": "Меня зовут Ольга Иванова. Живу в Граце. Email olga.ivanova@gmx.at, телефон 0660 5544332. Ищу работу в офисе ассистентом. Работала 5 лет секретарём, знаю Word, Excel и делопроизводство. Русский родной, немецкий B1.",
+      "expected": {
+        "name": "Olga Ivanova", "city": "Graz", "phone": "0660 5544332", "email": "olga.ivanova@gmx.at",
+        "target_job": "Büro",
+        "experiences": ["Sekret", "секрет"],
+        "education": [],
+        "skills": ["Word", "Excel"],
+        "languages": ["Russisch", "Deutsch"]
+      }
+    },
+    {
+      "id": "de-care2-19", "language": "de",
+      "text": "Ich bin Mirjana Petrović aus Wien, mirjana.p@gmx.at, 0664 8899001. Ich möchte als Heimhilfe arbeiten. Ich habe 4 Jahre in der mobilen Betreuung gearbeitet und einen Heimhilfe-Kurs gemacht. Führerschein B. Deutsch B2, Serbisch Muttersprache.",
+      "expected": {
+        "name": "Mirjana Petrović", "city": "Wien", "phone": "0664 8899001", "email": "mirjana.p@gmx.at",
+        "target_job": "Heimhilfe",
+        "experiences": ["Betreuung"],
+        "education": ["Heimhilfe", "Führerschein"],
+        "skills": ["Führerschein"],
+        "languages": ["Deutsch", "Serbisch"]
+      }
+    },
+    {
+      "id": "en-tech-20", "language": "en",
+      "text": "I'm David Brown, david.brown@gmail.com, 0650 1234321, based in Vienna. I'm looking for a job as a software developer. I worked 5 years as a backend developer using Python, Django and PostgreSQL. Bachelor in Computer Science. English native, German A2.",
+      "expected": {
+        "name": "David Brown", "city": "Vienna", "phone": "0650 1234321", "email": "david.brown@gmail.com",
+        "target_job": "software developer",
+        "experiences": ["backend developer", "developer"],
+        "education": ["Computer Science", "Bachelor"],
+        "skills": ["Python", "Django", "PostgreSQL"],
+        "languages": ["English", "German"]
+      }
     }
   ]
 }
