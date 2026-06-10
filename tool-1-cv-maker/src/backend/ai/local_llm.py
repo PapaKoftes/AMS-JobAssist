@@ -592,7 +592,26 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
                 "mehrere Einträge mit ' | '.\n"
                 "NAME:\nORT:\nZIELBERUF:\nERFAHRUNG:\nAUSBILDUNG:\nFAEHIGKEITEN:"
             )
-            out = chat(sys_prompt, text[:1600], max_tokens=420) or ""
+            # Two-pass: a freeform reasoning pass with NO format constraint, then
+            # the labelled-line reformat — recovers accuracy lost to the "format
+            # tax". MEASURED on this 1.5B (eval gold set): two-pass lifts the weak
+            # fields (experience precision 0.80→1.0, skills 0.43→0.50) but is 3.7×
+            # slower (23s→85s/5 cases). On a small CPU model that latency isn't
+            # worth ~+0.01 overall, so two-pass is OFF by default HERE and ON for
+            # the Ollama/7B path (see ollama.py). Set AMS_EXTRACT_TWOPASS=1 to force.
+            _src = text[:1600]
+            if os.environ.get("AMS_EXTRACT_TWOPASS", "0").lower() not in ("0", "false", "no"):
+                _ff_sys = (
+                    "Du bist ein sorgfältiger Lebenslauf-Assistent. Lies den Text "
+                    "(irgendeine Sprache) und schreibe in kurzen deutschen Stichworten, "
+                    "was du über die Person weißt: Name, Wohnort, Telefon, E-Mail, "
+                    "gewünschter Beruf, jede Arbeitsstelle (Tätigkeit, Arbeitgeber, "
+                    "Zeitraum), Ausbildung, Fähigkeiten, Sprachen. KEIN JSON, nur Stichworte."
+                )
+                _notes = chat(_ff_sys, text[:1600], max_tokens=400) or ""
+                if _notes.strip():
+                    _src = (_notes + "\n\n--- Originaltext ---\n" + text)[:1800]
+            out = chat(sys_prompt, _src, max_tokens=420) or ""
             for line in out.splitlines():
                 if ":" not in line:
                     continue
