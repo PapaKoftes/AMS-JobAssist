@@ -7,6 +7,7 @@ Uses only stdlib — no new dependencies.
 Priority order: llama3.2 → mistral → phi3 → gemma2 → any available
 """
 
+import os
 import json
 import logging
 import urllib.request
@@ -242,29 +243,62 @@ _EXTRACT_SCHEMA_KEYS = ("name", "city", "phone", "email", "target_job",
                         "experiences", "education", "skills", "languages", "motivation")
 
 
-def extract_cv_fields_ollama(text: str, language: str = "de") -> Optional[dict]:
+def _ollama_freeform(text: str, language: str, model: str) -> Optional[str]:
     """
-    LLM-FIRST structured extraction via Ollama (format=json).
+    PASS 1 of two-pass extraction: free reasoning with NO format constraint.
 
-    Reads free-form text in ANY language and returns a structured CV dict with
-    professional GERMAN content. This is the real "AI does the parsing" path —
-    no regex-first override. Returns None if Ollama is unavailable or the output
-    can't be parsed, so the caller can fall back to the rules/1.5B path.
+    Research ("the Format Tax", arXiv) shows that forcing a model to emit JSON
+    via the prompt degrades its reasoning by ~6-8pp, and most of that damage
+    comes from the format-requesting prompt, not the decoder. So we first let the
+    model just UNDERSTAND the text and write German bullet notes — no JSON — then
+    a cheap second pass reformats those notes. This recovers the lost accuracy.
     """
-    available, model = detect_ollama()
-    if not available or not model:
-        return None
-
     lang_name = _LANG_NAMES.get(language, language.upper())
     system = (
-        "Du bist ein präziser Lebenslauf-Datenextraktor für AMS Österreich. "
-        "Du liest die freie Erzählung einer arbeitssuchenden Person (in irgendeiner "
-        "Sprache) und gibst NUR ein JSON-Objekt zurück. Erfinde nichts; lass Felder "
-        "leer, wenn die Info fehlt. Schreibe alle Inhalte auf professionellem Deutsch."
+        "Du bist ein sorgfältiger Lebenslauf-Assistent für AMS Österreich. Du liest "
+        "die freie Erzählung einer arbeitssuchenden Person (in irgendeiner Sprache) "
+        "und fasst die Fakten auf Deutsch in Stichworten zusammen. Erfinde nichts."
     )
     prompt = f"""Sprache der Eingabe: {lang_name}.
+Lies den Text und schreibe in kurzen deutschen Stichworten auf, was du über die
+Person weißt. Gehe diese Punkte durch (lass weg, was fehlt):
+- Name
+- Wohnort
+- Telefon
+- E-Mail
+- Gewünschter Beruf
+- Berufserfahrung: für JEDE Stelle eine Zeile mit Tätigkeit, Arbeitgeber und Zeitraum
+- Ausbildung / Abschlüsse
+- Fähigkeiten / Kenntnisse (keine Sprachen)
+- Sprachen mit Niveau
 
-Extrahiere die Lebenslauf-Daten aus folgendem Text und gib NUR dieses JSON zurück
+Schreibe NUR die Stichworte, KEIN JSON, keine Einleitung.
+
+Text:
+{text}
+"""
+    payload = {
+        "model": model, "prompt": prompt, "system": system, "stream": False,
+        "options": {"temperature": 0.2, "top_p": 0.9, "num_predict": 600},
+    }
+    result = _http_post(f"{OLLAMA_BASE}/api/generate", payload, timeout=120)
+    notes = (result.get("response") or "").strip() if result else ""
+    return notes or None
+
+
+def _ollama_to_json(source: str, language: str, model: str) -> Optional[dict]:
+    """
+    PASS 2: reformat already-understood notes (or raw text) into strict JSON.
+    Reformatting is mechanical → far less reasoning-sensitive, so format=json is
+    safe here. Returns the structured CV dict or None.
+    """
+    lang_name = _LANG_NAMES.get(language, language.upper())
+    system = (
+        "Du bist ein präziser Datenformatierer. Du wandelst die gegebenen Notizen in "
+        "GENAU das geforderte JSON um. Erfinde nichts; lass Felder leer, wenn die "
+        "Info fehlt. Alle Inhalte auf professionellem Deutsch."
+    )
+    prompt = f"""Sprache: {lang_name}. Wandle die folgenden Notizen in NUR dieses JSON um
 (keine Erklärung, keine Markdown-Zeichen):
 
 {{
@@ -280,18 +314,14 @@ Extrahiere die Lebenslauf-Daten aus folgendem Text und gib NUR dieses JSON zurü
   "motivation": "ein Satz zur Motivation, falls erkennbar"
 }}
 
-Text:
-{text}
+Notizen:
+{source}
 """
     payload = {
-        "model": model,
-        "prompt": prompt,
-        "system": system,
-        "stream": False,
-        "format": "json",           # force valid JSON output
-        "options": {"temperature": 0.1, "top_p": 0.9, "num_predict": 700},
+        "model": model, "prompt": prompt, "system": system, "stream": False,
+        "format": "json", "options": {"temperature": 0.1, "top_p": 0.9, "num_predict": 700},
     }
-    result = _http_post(f"{OLLAMA_BASE}/api/generate", payload, timeout=90)
+    result = _http_post(f"{OLLAMA_BASE}/api/generate", payload, timeout=120)
     if not result:
         return None
     raw = (result.get("response") or "").strip()
@@ -300,7 +330,6 @@ Text:
     try:
         data = json.loads(raw)
     except Exception:
-        # Salvage the first {...} block if the model wrapped it in prose.
         import re as _re
         m = _re.search(r"\{.*\}", raw, _re.DOTALL)
         if not m:
@@ -334,13 +363,33 @@ Text:
         "skills": _as_list(data.get("skills"))[:16],
         "motivation": " ".join(_as_list(data.get("motivation"))) or _as_str(data.get("motivation")),
     }
-    # Languages are first-class downstream (builder pulls them into a Sprachen
-    # section); merge them into skills so the existing pipeline picks them up.
     langs = _as_list(data.get("languages"))
     for lg in langs:
         if lg and lg not in out["skills"]:
             out["skills"].append(lg)
     return out
+
+
+def extract_cv_fields_ollama(text: str, language: str = "de") -> Optional[dict]:
+    """
+    LLM-FIRST structured extraction via Ollama. Default is TWO-PASS (freeform
+    reasoning → constrained reformat), the SOTA recipe that beats single-pass
+    JSON on small/mid models. Set AMS_EXTRACT_TWOPASS=0 for single-pass (used by
+    the eval harness for A/B comparison). Returns the CV dict or None (→ caller
+    falls back to the local 1.5B / rules path).
+    """
+    available, model = detect_ollama()
+    if not available or not model:
+        return None
+    two_pass = os.environ.get("AMS_EXTRACT_TWOPASS", "1").lower() not in ("0", "false", "no")
+    source = text
+    if two_pass:
+        notes = _ollama_freeform(text, language, model)
+        if notes:
+            # Give pass 2 the notes AND the original, so nothing the notes missed
+            # is permanently lost.
+            source = f"{notes}\n\n--- Originaltext ---\n{text}"
+    return _ollama_to_json(source, language, model)
 
 
 def get_status() -> dict:
