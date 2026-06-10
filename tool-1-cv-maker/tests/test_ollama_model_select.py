@@ -1,0 +1,57 @@
+"""
+Unit tests for Ollama model selection (mocked /api/tags — no network).
+
+Covers AMS_OLLAMA_MODEL pinning (used by the eval and ops to force an exact
+tag, e.g. qwen2.5:7b) and the auto-detect fallback via PREFERRED_MODELS.
+"""
+import sys
+from pathlib import Path
+
+BACKEND = Path(__file__).resolve().parent.parent / "src" / "backend"
+sys.path.insert(0, str(BACKEND))
+from ai import ollama as O  # noqa: E402
+
+
+def _reset_cache():
+    O._ollama_available = None
+    O._ollama_model = None
+
+
+def _fake_tags(*names):
+    return lambda url, timeout=2: {"models": [{"name": n} for n in names]}
+
+
+def test_pin_selects_exact_installed_tag(monkeypatch):
+    _reset_cache()
+    monkeypatch.setattr(O, "_http_get", _fake_tags("qwen2.5:3b", "qwen2.5:7b"))
+    monkeypatch.setenv("AMS_OLLAMA_MODEL", "qwen2.5:7b")
+    ok, model = O.detect_ollama()
+    assert ok is True
+    assert model == "qwen2.5:7b", "pin must win even though 3b is also installed"
+
+
+def test_pin_ignored_when_not_installed(monkeypatch):
+    _reset_cache()
+    monkeypatch.setattr(O, "_http_get", _fake_tags("qwen2.5:3b"))
+    monkeypatch.setenv("AMS_OLLAMA_MODEL", "qwen2.5:7b")  # not installed
+    ok, model = O.detect_ollama()
+    assert ok is True
+    assert model == "qwen2.5:3b", "missing pin must fall back to auto-detect, not fail"
+
+
+def test_autodetect_prefers_qwen(monkeypatch):
+    _reset_cache()
+    monkeypatch.delenv("AMS_OLLAMA_MODEL", raising=False)
+    # mistral listed first, but qwen2.5 is higher in PREFERRED_MODELS
+    monkeypatch.setattr(O, "_http_get", _fake_tags("mistral:latest", "qwen2.5:3b"))
+    ok, model = O.detect_ollama()
+    assert ok is True
+    assert model.startswith("qwen2.5"), "PREFERRED_MODELS must rank qwen2.5 above mistral"
+
+
+def test_no_models_means_unavailable(monkeypatch):
+    _reset_cache()
+    monkeypatch.delenv("AMS_OLLAMA_MODEL", raising=False)
+    monkeypatch.setattr(O, "_http_get", lambda url, timeout=2: {"models": []})
+    ok, model = O.detect_ollama()
+    assert ok is False and model is None

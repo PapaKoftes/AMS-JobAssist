@@ -56,6 +56,18 @@ def detect_ollama() -> Tuple[bool, Optional[str]]:
         _ollama_model = None
         return False, None
 
+    # Explicit override (ops / eval): pin an exact model tag, e.g.
+    # AMS_OLLAMA_MODEL=qwen2.5:7b. Only honoured if that tag is actually installed.
+    pinned = os.environ.get("AMS_OLLAMA_MODEL", "").strip()
+    if pinned:
+        installed = [m.get("name", "") for m in result.get("models", [])]
+        if pinned in installed:
+            logger.info(f"Ollama model pinned via AMS_OLLAMA_MODEL: {pinned}")
+            _ollama_available = True
+            _ollama_model = pinned
+            return True, pinned
+        logger.warning(f"AMS_OLLAMA_MODEL={pinned} not installed; falling back to auto-detect")
+
     models = [m.get("name", "").split(":")[0] for m in result.get("models", [])]
     if not models:
         logger.info("Ollama running but no models installed")
