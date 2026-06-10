@@ -114,7 +114,9 @@ def _extract_languages_from_skills(skills: List[str]):
         low = skill.lower()
         matched = None
         for name, (canon, code) in _LANGUAGE_MAP.items():
-            if re.search(r"\b" + re.escape(name) + r"\b", low):
+            # Prefix match (no trailing \b) so the polish engine's compound forms
+            # also map: "Deutschkenntnisse" / "Deutsch (Muttersprache)" → German.
+            if re.search(r"\b" + re.escape(name), low):
                 matched = (canon, code)
                 break
         if not matched:

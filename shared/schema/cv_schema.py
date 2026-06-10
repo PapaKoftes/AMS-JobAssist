@@ -117,6 +117,9 @@ class CVDocument(BaseModel):
     language_output_secondary: str = "en"
     language_output_native: Optional[str] = None
 
+    # The job/role the participant is applying for (drives cover letter + ATS).
+    target_job: str = ""
+
     # Personal info
     basics: Optional[Basics] = None
 

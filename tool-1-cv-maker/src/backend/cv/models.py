@@ -487,6 +487,7 @@ class CVData:
             language_output_primary=self.language_output_primary,
             language_output_secondary=self.language_output_secondary,
             language_output_native=self.language_output_native,
+            target_job=self.target_job or "",
             basics=basics,
             experience=experience,
             education=education,

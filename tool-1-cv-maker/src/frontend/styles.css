@@ -2907,19 +2907,28 @@ html, body { height: 100%; }
     width: 100%; max-width: 1040px; margin: 0 auto;
 }
 .interview-container {
-    flex: 1 1 auto; min-height: 0;
-    height: auto !important;     /* override every calc(100vh - …) rule */
+    /* Give the split a DEFINITE height so the two panes can divide real space.
+       (height:auto here previously collapsed both panes to their min-heights,
+       which squeezed the conversation down to nothing — you'd only see the
+       input box.) dvh handles mobile browser chrome; min-height is the floor. */
+    display: flex; flex-direction: column;
+    height: calc(100dvh - 150px) !important;
+    min-height: 460px;
     max-height: none !important;
 }
-.cv-top-pane { flex: 1 1 0; min-height: 90px; }
+.cv-top-pane { flex: 1 1 0; min-height: 120px; overflow-y: auto; }
 .conv-bottom-pane {
-    flex: 1.05 1 0; min-height: 180px; max-height: none !important;
+    flex: 1.1 1 0; min-height: 220px; max-height: none !important;
     display: flex; flex-direction: column;
 }
+/* The conversation MUST always be visible and scrollable. The min-height is a
+   hard safety net so it can never be squeezed to zero by the composer/buttons. */
 .conv-messages {
-    flex: 1 1 auto; min-height: 0;
-    max-height: none !important;  /* was capped at ~80px — too cramped */
+    flex: 1 1 auto;
+    min-height: 150px !important;
+    max-height: none !important;
     height: auto;
+    overflow-y: auto;
 }
 /* the composer stays compact at the bottom (always visible); the textarea has
    rows="5" in markup which would render ~110px and eat the message area, so pin
@@ -2941,3 +2950,16 @@ html, body { height: 100%; }
 .interview-container .action-buttons #dumpFinishBtn:hover {
     background: #f5f0fa; box-shadow: none;
 }
+
+/* Field-based completeness — chips showing which required CV fields remain */
+.cv-missing-fields { margin: 6px 0 2px; font-size: 12px; line-height: 1.9; }
+.cv-missing-lead { color: var(--text-muted, #666); margin-right: 4px; }
+.cv-missing-chip {
+    display: inline-block; padding: 1px 9px; margin: 0 2px;
+    background: #fff3e0; color: #9a5b00; border: 1px solid #ffd9a0;
+    border-radius: 999px; font-weight: 600; white-space: nowrap;
+}
+.cv-missing-done { color: #1a7f37; font-weight: 600; }
+
+/* AXED: the floating AI coach/chat bubbles were never useful — hide both. */
+#aiCoachWidget, #aiChatBubble, #aiChatPanel { display: none !important; }

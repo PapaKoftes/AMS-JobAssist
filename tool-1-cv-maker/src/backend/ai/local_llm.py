@@ -676,7 +676,15 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
         leftover = _re.sub(r"\s*[.,;]\s*", lambda mm: ", " if mm.group(0).strip() == "," else " ", leftover)
         leftover = _re.sub(r"(?:^|\s)[,;.]+", " ", leftover)
         leftover = _re.sub(r"\s{2,}", " ", leftover).strip(" ,;.:-")
-        result["experiences"] = [leftover[:600]] if len(leftover) > 4 else [text.strip()[:600]]
+        # Only treat the leftover as work experience if it actually mentions work.
+        # Otherwise an identity-only dump ("Ich heiße…, Telefon…, E-Mail…") would
+        # leave junk like "Meine Telefonnummer ist … Ich" as a fake job.
+        _WORK = (r"(gearbeitet|arbeit|t[äa]tig|besch[äa]ftigt|jahre?|\bbei\b|\bals\b|"
+                 r"firma|betrieb|praktik|lehre|\bjob\b|angestellt|mitarbeiter|kassa|"
+                 r"verk[äa]uf|erfahrung|worked|company|years?)")
+        if len(leftover) > 8 and _re.search(_WORK, leftover, flags=_re.IGNORECASE):
+            result["experiences"] = [leftover[:600]]
+        # else: no work experience in this dump — leave empty (a gap question asks later)
     return result
 
 

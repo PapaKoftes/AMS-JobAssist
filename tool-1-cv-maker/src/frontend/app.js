@@ -353,7 +353,10 @@ const TRANSLATIONS = {
         startHintName:        'Bitte geben Sie Ihren Vornamen ein.',
         startHintConsent:     '☑ Bitte bestätigen Sie das Kästchen oben (Datenschutz).',
         progressLabel:        (cur, tot) => `Frage ${cur} von ${tot}`,
-        cvProgressLabel:      'Ihr Lebenslauf entsteht',
+        cvProgressLabel:      'Ihr Lebenslauf',
+        fieldName: 'Name', fieldAddress: 'Adresse', fieldPhone: 'Telefon', fieldEmail: 'E-Mail',
+        fieldExperience: 'Berufserfahrung', fieldEducation: 'Ausbildung', fieldSkills: 'Kenntnisse', fieldTarget: 'Zielberuf',
+        stillMissing: 'Noch offen', allFieldsDone: 'Alle Felder ausgefüllt',
         detectedLang:         (lang) => `Erkannte Sprache: ${lang}`,
         resumeWelcomeStrong:  'Willkommen zurück!',
         resumeBtn:            'Weiter wo ich aufgehört habe',
@@ -542,7 +545,10 @@ const TRANSLATIONS = {
         dumpAckExperience: 'Work experience', dumpAckEducation: 'Education', dumpAckSkills: 'Skills',
         dumpAckNoted: '✓ Noted.',
         appSubtitle:          'Your professional CV — in any language',
-        cvProgressLabel:      'Your CV is taking shape',
+        cvProgressLabel:      'Your CV',
+        fieldName: 'Name', fieldAddress: 'Address', fieldPhone: 'Phone', fieldEmail: 'Email',
+        fieldExperience: 'Work experience', fieldEducation: 'Education', fieldSkills: 'Skills', fieldTarget: 'Target job',
+        stillMissing: 'Still needed', allFieldsDone: 'All fields complete',
         trustHeadline:        'We automatically turn your answers into a professional CV.',
         trustDetail1:         '⏱ About 10–15 minutes',
         trustDetail2:         '💾 Progress saved after every answer',
@@ -2560,23 +2566,49 @@ class UIManager {
         if (this.progressFill)    this.progressFill.style.width    = `${pct}%`;
     }
 
-    // Dump mode has no numbered questions — show how complete the CV is instead
-    // of a meaningless "Frage 0 von 1". `cap` is the captured snapshot.
+    // Dump mode has no numbered questions — completeness is tracked by the set of
+    // REQUIRED CV fields that have been filled (cumulative across the whole
+    // conversation), not "Frage 0 von 1". `cap` is the cumulative captured object.
     updateDumpProgress(cap) {
         cap = cap || {};
-        const have = [
-            !!cap.name,
-            !!(cap.city || cap.phone || cap.email),
-            (cap.experiences || []).length > 0,
-            (cap.skills || []).length > 0,
-            !!cap.target_job,
-            (cap.education || []).length > 0,
+        const fields = [
+            ['name',       !!cap.name,                      t('fieldName')    || 'Name'],
+            ['address',    !!cap.city,                      t('fieldAddress') || 'Adresse'],
+            ['phone',      !!cap.phone,                     t('fieldPhone')   || 'Telefon'],
+            ['email',      !!cap.email,                     t('fieldEmail')   || 'E-Mail'],
+            ['experience', (cap.experiences || []).length > 0, t('fieldExperience') || 'Berufserfahrung'],
+            ['education',  (cap.education || []).length > 0, t('fieldEducation') || 'Ausbildung'],
+            ['skills',     (cap.skills || []).length > 0,    t('fieldSkills')  || 'Kenntnisse'],
+            ['target',     !!cap.target_job,                t('fieldTarget')  || 'Zielberuf'],
         ];
-        const filled = have.filter(Boolean).length;
-        const pct = Math.round((filled / have.length) * 100);
-        if (this.progressLabel)   this.progressLabel.textContent   = t('cvProgressLabel') || 'Ihr Lebenslauf entsteht';
+        const filled  = fields.filter(f => f[1]).length;
+        const total   = fields.length;
+        const missing = fields.filter(f => !f[1]).map(f => f[2]);
+        const pct     = Math.round((filled / total) * 100);
+
+        const base = t('cvProgressLabel') || 'Ihr Lebenslauf';
+        if (this.progressLabel)   this.progressLabel.textContent   = `${base}: ${filled}/${total}`;
         if (this.progressPercent) this.progressPercent.textContent = `${pct}%`;
         if (this.progressFill)    this.progressFill.style.width    = `${pct}%`;
+
+        // Show what's still missing as small chips under the progress bar.
+        let box = document.getElementById('cvMissingFields');
+        if (!box && this.progressLabel) {
+            box = document.createElement('div');
+            box.id = 'cvMissingFields';
+            box.className = 'cv-missing-fields';
+            (this.progressLabel.closest('.progress-section') || this.progressLabel.parentElement)?.appendChild(box);
+        }
+        if (box) {
+            if (missing.length) {
+                const lead = t('stillMissing') || 'Noch offen';
+                box.innerHTML = `<span class="cv-missing-lead">${lead}:</span> ` +
+                    missing.map(m => `<span class="cv-missing-chip">${m}</span>`).join(' ');
+                box.style.display = '';
+            } else {
+                box.innerHTML = `<span class="cv-missing-done">✓ ${t('allFieldsDone') || 'Alle Felder ausgefüllt'}</span>`;
+            }
+        }
     }
 
     showReaskMessage(message, suggestion) {
@@ -2964,6 +2996,8 @@ class InterviewManager {
             const _cm = document.getElementById('convMessages');
             [...(_cm?.querySelectorAll('.conv-row:not(#cvActivePrompt)') || [])].forEach(n => n.remove());
             this._paintCaptured(cap);
+            state.cvCaptured = cap || {};
+            ui.updateDumpProgress(state.cvCaptured);
 
             // Welcome the participant back and pick up at the first open gap.
             const welcome = t('resumeWelcome') || 'Willkommen zurück! Ihr Lebenslauf ist gespeichert. Machen wir weiter.';
@@ -3069,6 +3103,7 @@ class InterviewManager {
             state.currentGap           = null;   // first message is the big dump
             state.lastJob              = '';
             state.dumpHasContent       = false;
+            state.cvCaptured           = {};
             state.askedGaps            = new Set();
             state.lastGapKey           = null;
             const _cm = document.getElementById('convMessages');
@@ -3193,6 +3228,20 @@ class InterviewManager {
             cvDocAddAnswer({ category: 'skills', flags: ['soft_skills'] }, cap.skills.join(', '), cap.skills.join(', '));
     }
 
+    // Accumulate captured fields across turns (each turn only returns what it
+    // parsed). This cumulative object drives the field-based completeness meter.
+    _mergeCaptured(cap) {
+        const c = state.cvCaptured = state.cvCaptured || {};
+        for (const k of ['name', 'city', 'phone', 'email', 'target_job']) {
+            if (cap[k]) c[k] = cap[k];                       // latest non-empty wins
+        }
+        for (const k of ['experiences', 'education', 'skills']) {
+            const cur = new Set(c[k] || []);
+            (cap[k] || []).forEach(v => cur.add(v));
+            c[k] = [...cur];                                 // union
+        }
+    }
+
     // Extra questions that make the CV comprehensive (drawn from the documented
     // CV sections) — asked after the core gaps, each once. Returns the next
     // un-asked enrichment question, or null when done.
@@ -3221,7 +3270,8 @@ class InterviewManager {
 
             convThinking(false);
             this._paintCaptured(cap);
-            ui.updateDumpProgress(cap);
+            this._mergeCaptured(cap);
+            ui.updateDumpProgress(state.cvCaptured);
             state.dumpHasContent = true;
 
             // Acknowledge what just landed, then ask the next gap.
