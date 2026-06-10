@@ -646,6 +646,110 @@ class TestTrainerNotesAndName:
         assert detail.json()["trainer_notes"] == "Bitte Foto hinzufügen und Datum prüfen."
 
 
+def _build_tool1_canonical_export():
+    """Produce a REAL canonical CVDocument the way Tool 1 does: build a CVData
+    with Tool 1's own dataclasses, then call to_canonical().model_dump(). This is
+    the actual artifact that crosses the tool boundary — no hand-faked JSON."""
+    import sys as _sys
+    from pathlib import Path as _Path
+    t1_backend = _Path(__file__).resolve().parents[3] / "tool-1-cv-maker" / "src" / "backend"
+    if str(t1_backend) not in _sys.path:
+        _sys.path.insert(0, str(t1_backend))
+    from cv.models import CVData, CVSection, CVIdentity, QuestionCategory  # type: ignore
+
+    cv = CVData(
+        session_id="sess-e2e",
+        user_id="fatima_y",
+        interview_path="career-switch",
+        language_input="de",
+        target_job="Bürokauffrau",
+        identity=CVIdentity(
+            full_name="Fatima Yilmaz", location="Wien",
+            contact_email="fatima@example.at", contact_phone="+43 660 1234567",
+            nationality="Österreich",
+        ),
+        experience=[CVSection(
+            german="Verkauf und Kassa bei BILLA", english="Sales and checkout at BILLA",
+            native="", title="Verkäuferin", employer="BILLA",
+            period={"start": "2019-03", "end": "2024-01"},
+            category=QuestionCategory.EXPERIENCE, question_id="exp_1",
+            quality_score=0.8, confidence_level="high",
+        )],
+        background=[CVSection(
+            german="Lehre Einzelhandel abgeschlossen", english="Completed retail apprenticeship",
+            native="", category=QuestionCategory.OTHER, question_id="edu_1",
+            quality_score=0.7,
+        )],
+        skills=[CVSection(
+            german="Kassenführung, Kundenberatung", english="Cash handling, customer advice",
+            native="", category=QuestionCategory.SKILLS, question_id="skills_1",
+            detected_skills=["Kassenführung", "Kundenberatung"], quality_score=0.7,
+        )],
+        all_skills=["Kassenführung", "Kundenberatung"],
+        languages=[{"language": "Deutsch", "code": "de", "level": "C1"},
+                   {"language": "Türkisch", "code": "tr", "level": "native"}],
+        overall_quality=0.75,
+        ready_for_export=True,
+    )
+    return cv.to_canonical().model_dump()
+
+
+class TestCrossToolE2E:
+    """The whole point: a CV built by Tool 1 must flow into Tool 2 and be fully
+    usable. This drives Tool 1's REAL to_canonical() export → Tool 2 import →
+    trainer review (real name, edit, notes, approve) → bulk PDF export."""
+
+    def test_tool1_export_flows_through_tool2(self, client, db_session):
+        canonical = _build_tool1_canonical_export()
+
+        # 0. The export must satisfy the cross-tool contract (canonical schema).
+        import sys as _sys
+        from pathlib import Path as _Path
+        repo = _Path(__file__).resolve().parents[3]
+        if str(repo) not in _sys.path:
+            _sys.path.insert(0, str(repo))
+        from shared.schema.cv_schema import CVDocument  # type: ignore
+        CVDocument.model_validate(canonical)  # raises if Tool 1 broke the contract
+        assert canonical["basics"]["full_name"] == "Fatima Yilmaz"
+
+        # 1. Trainer imports the participant's CV.
+        r = client.post("/api/import-cvs?cohort_id=E2E-Real",
+                        files={"file": ("fatima.json", json.dumps(canonical))})
+        assert r.status_code == 200, r.text
+        pid = r.json()["participant_id"]
+
+        # 2. The dashboard shows the REAL name (not the user_id) — Phase B fix.
+        detail = client.get(f"/api/participants/{pid}").json()
+        assert detail["name"] == "Fatima Yilmaz"
+        cv_json = detail["latest_submission"]["cv_data"]
+        assert cv_json["experience"][0]["title"] == "Verkäuferin"
+        assert cv_json["experience"][0]["employer"] == "BILLA"
+
+        # 3. Trainer edits a section (canonical experience.0) — must persist.
+        r = client.patch(f"/api/participants/{pid}/cv-section",
+                         json={"question_id": "experience.0",
+                               "edited_text": "Verkauf, Kassa und Lagerverwaltung bei BILLA",
+                               "language": "de"})
+        assert r.status_code == 200, r.text
+
+        # 4. Trainer adds notes + approves — notes must reload (Phase B fix).
+        r = client.post(f"/api/participants/{pid}/approve",
+                        json={"approval_status": "approved",
+                              "feedback": "Sehr gut. Foto noch ergänzen.",
+                              "approved_by": "Marko"})
+        assert r.status_code == 200, r.text
+        detail2 = client.get(f"/api/participants/{pid}").json()
+        assert detail2["status"] == "approved"
+        assert detail2["trainer_notes"] == "Sehr gut. Foto noch ergänzen."
+        assert "Lagerverwaltung" in detail2["latest_submission"]["cv_data"]["experience"][0]["german"]
+
+        # 5. Trainer bulk-exports the approved CV as PDF — must produce a non-trivial file.
+        r = client.post("/api/bulk-export",
+                        json={"participant_ids": [pid], "format": "pdf", "language": "de"})
+        assert r.status_code == 200, r.text
+        assert len(r.content) > 1000  # a real zip with a real PDF inside
+
+
 # ========================================
 # Run
 # ========================================
