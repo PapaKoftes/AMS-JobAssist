@@ -126,9 +126,10 @@ AMS-JobAssist/
 | Date helper | ✅ | "approximate" allowed — no shame on forgotten dates |
 | Photo upload | ✅ | Optional — Austrian-style CV with photo |
 | Resume after close | ✅ | Browser session restores from where you left off |
-| PDF / DOCX / Europass / JSON export | ✅ | All four formats, deterministic output |
-| Cover letter generator | ✅ | AI-assisted, downloadable as TXT |
-| ATS / job match | ✅ | Paste a job listing, see matched + missing keywords |
+| PDF / DOCX / JSON export | ✅ | Austrian tabellarischer Lebenslauf; deterministic output |
+| Europass-style XML export | ⚠️ | Approximate Europass V3 shape — **not XSD-validated**; treat as an interop experiment, not a guaranteed-importable file |
+| Cover letter generator | ✅ | ÖNORM A 1080-style Bewerbungsschreiben with signature block; downloadable as TXT |
+| ATS / job match (optional) | ⚠️ | Rough keyword heuristic. NOTE: most AMS-target roles (trades/care/retail/gastro) are filled by SMEs via email/eJob-Room and read by humans — ATS optimisation is low-value for this clientele; keep as an optional check, not a headline |
 | AI chat coach | ✅ (optional) | Knows your CV; falls back to rule-based if no model |
 | Interview prep generator | ✅ (optional) | Practise questions for the actual job interview |
 | DSGVO data download | ✅ | Article 20 — download everything stored about you |

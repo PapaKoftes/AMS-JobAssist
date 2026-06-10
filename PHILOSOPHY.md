@@ -103,7 +103,7 @@ Beyond polishing CV text, the AI acts as a chat coach that knows Maria's CV:
 
 ### Future: AMS Job Service Integration
 
-The job matching feature is designed with a clear future step in mind: instead of pasting a job ad manually, the system should connect directly to the AMS eAMS-Konto job listings via the AMS Open Data or eAMS API. The coach would then be able to pull live job postings that match the participant's target job, run the same analysis automatically, and show Maria real opportunities she's already close to qualifying for.
+The job matching feature is designed with a clear future step in mind: instead of pasting a job ad manually, the system should connect to the AMS job listings — note the **eAMS-Konto was replaced by *MeinAMS* (2025/26)**, so the integration target is MeinAMS / the eJob-Room (via AMS Open Data where available). The coach would then be able to pull live job postings that match the participant's target job, run the same analysis automatically, and show Maria real opportunities she's already close to qualifying for. (This is a documented *future* step — today job-match is manual paste only.)
 
 This turns the tool from "here's your CV" into "here's your CV and here are three jobs you should apply for today."
 
