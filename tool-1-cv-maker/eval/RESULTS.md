@@ -15,6 +15,17 @@ model/prompt/pipeline change and update this table — **measure, don't eyeball.
 | **baseline of record** | **qwen2.5:3b** | **single, temp 0 (greedy)** | **20** | **0.738** | 0.727 | 0.775 | skills 0.31, exp 0.55, lang 0.53 |
 | temp-0 re-run (verify) | qwen2.5:3b | single, temp 0 (greedy) | 20 | 0.730 | 0.720 | 0.764 | skills/lang **identical**; exp/edu still wobble |
 | **size lever** | **qwen2.5:7b** | **single, temp 0 (greedy)** | **20** | **0.806** | 0.790 | 0.855 | skills **0.60**, exp **0.83** — fixes the 2 weak fields |
+| **★ SHIPPED default** | **qwen2.5-3b GGUF, in-process (llama-cpp)** | **labelled-line, temp 0** | **20** | **0.742** | 0.745 | 0.744 | exp **0.78**, target 0.80; skills 0.20 weakest. ~12 s/case warm. |
+
+> **★ This is what Marko actually gets.** The shipped product runs the 3B GGUF
+> in-process via llama-cpp-python (no Ollama, no service, one double-click, fully
+> offline). It scores **0.742** — slightly *above* the Ollama-3B path (0.738) and
+> well above the 1.5B, because its labelled-line extractor structures work
+> experience far better (exp 0.78 vs 0.55). It trades some skills/languages recall
+> (skills 0.20 — still the weakest field, the known open problem). Engine is
+> single-track: Ollama is opt-in only (`AMS_USE_OLLAMA=1`), used by this eval's
+> Ollama rows and power users; the 7B GGUF can be dropped in as an optional
+> quality upgrade.
 
 > **The 8-case 0.837 was not representative.** On the full 20-case set (CP-B added
 > 12 harder, sparser, more multilingual AMS personas — Arabic/Russian names,

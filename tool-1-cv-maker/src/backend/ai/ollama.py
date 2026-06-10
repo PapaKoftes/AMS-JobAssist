@@ -43,11 +43,23 @@ def _http_post(url: str, payload: dict, timeout: int = 30) -> Optional[dict]:
 
 
 def detect_ollama() -> Tuple[bool, Optional[str]]:
-    """Check if Ollama is running and pick the best available model."""
+    """Check if Ollama is running and pick the best available model.
+
+    SINGLE-TRACK POLICY: the shipped product uses the in-process GGUF engine
+    (local_llm) as its one default brain. Ollama is an OPT-IN upgrade, off unless
+    AMS_USE_OLLAMA=1 is set (used by the eval harness and power users with a GPU
+    box). This keeps one engine to test/certify and avoids a second, unbundled
+    runtime dependency. See COMPLETION_PLAN.md §1.
+    """
     global _ollama_available, _ollama_model
 
     if _ollama_available is not None:
         return _ollama_available, _ollama_model
+
+    if os.environ.get("AMS_USE_OLLAMA", "").strip().lower() not in ("1", "true", "yes", "on"):
+        _ollama_available = False
+        _ollama_model = None
+        return False, None
 
     result = _http_get(f"{OLLAMA_BASE}/api/tags", timeout=2)
     if not result:

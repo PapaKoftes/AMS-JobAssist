@@ -87,16 +87,19 @@ MODEL_TIERS: Dict[str, dict] = {
             "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF"
             "/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
         ),
-        "sha256": "",  # TODO: pin after first verified download
+        # Pinned: this is the SHIPPED default model (bundled in the installer).
+        "sha256": "5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6",
         "n_ctx": 4096,
         "size_mb": 2000,
-        "min_ram_gb": 16,
-        "description": "Beste Qualität — für leistungsstarke Rechner (16 GB RAM)",
+        "min_ram_gb": 8,
+        "description": "Beste Qualität — empfohlen, läuft auf normalen Büro-PCs (8 GB RAM)",
     },
 }
 
-# Default tier and active tier (can be overridden by env var AMS_MODEL_TIER)
-DEFAULT_TIER = "medium"
+# Default tier when NO model file is present yet. The shipped product bundles the
+# "full" (3B) model, and _get_active_tier() auto-selects it (full > medium > light)
+# whenever its file is on disk — so 3B is the de-facto default in the installer.
+DEFAULT_TIER = "full"
 
 
 def _get_active_tier() -> str:
@@ -272,16 +275,19 @@ def _run(prompt: str, max_tokens: int = 400, temperature: float = 0.3) -> Option
 
 # ── Chat-style wrapper (system + user turns) ────────────────────────────────
 
-def chat(system: str, user: str, max_tokens: int = 500) -> Optional[str]:
+def chat(system: str, user: str, max_tokens: int = 500,
+         temperature: float = 0.4) -> Optional[str]:
     """
-    Send a chat prompt. Prefers a real model via Ollama when available (much
-    better coach/prep/job-match output), otherwise uses the local 1.5B GGUF.
+    Send a chat prompt. Uses the in-process GGUF engine (the shipped default);
+    Ollama only if opted in (AMS_USE_OLLAMA=1). Pass temperature=0.0 for
+    extraction/structuring (deterministic, no drift); leave the 0.4 default for
+    coach/prep/polish where a little variety reads better.
     """
     try:
         from ai import ollama as _ollama
         _av, _ = _ollama.detect_ollama()
         if _av:
-            out = _ollama.generate_ollama(system, user, num_predict=max_tokens, temperature=0.4)
+            out = _ollama.generate_ollama(system, user, num_predict=max_tokens, temperature=temperature)
             if out:
                 return out
     except Exception:
@@ -291,7 +297,7 @@ def chat(system: str, user: str, max_tokens: int = 500) -> Optional[str]:
         f"<|im_start|>user\n{user}<|im_end|>\n"
         f"<|im_start|>assistant\n"
     )
-    return _run(prompt, max_tokens=max_tokens, temperature=0.4)
+    return _run(prompt, max_tokens=max_tokens, temperature=temperature)
 
 
 # ── Task-specific helpers ────────────────────────────────────────────────────
@@ -655,10 +661,10 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
                     "gewünschter Beruf, jede Arbeitsstelle (Tätigkeit, Arbeitgeber, "
                     "Zeitraum), Ausbildung, Fähigkeiten, Sprachen. KEIN JSON, nur Stichworte."
                 )
-                _notes = chat(_ff_sys, text[:1600], max_tokens=400) or ""
+                _notes = chat(_ff_sys, text[:1600], max_tokens=400, temperature=0.0) or ""
                 if _notes.strip():
                     _src = (_notes + "\n\n--- Originaltext ---\n" + text)[:1800]
-            out = chat(sys_prompt, _src, max_tokens=420) or ""
+            out = chat(sys_prompt, _src, max_tokens=420, temperature=0.0) or ""
             for line in out.splitlines():
                 if ":" not in line:
                     continue
