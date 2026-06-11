@@ -50,6 +50,30 @@ def wait_health(port, timeout=90, _get=http_json, _sleep=time.sleep):
     return False
 
 
+def ui_html(port, _get_text=None):
+    """Fetch the root page HTML (the actual UI), or '' on failure."""
+    if _get_text is None:
+        def _get_text(url):
+            try:
+                with urllib.request.urlopen(url, timeout=6) as r:
+                    return r.read().decode("utf-8", "replace")
+            except Exception:
+                return ""
+    return _get_text(f"http://127.0.0.1:{port}/")
+
+
+def ui_serves(html, markers):
+    """True if the root page returned real UI markup (not an error JSON).
+
+    Guards the exact bug a /health-only smoke missed: a frozen build can answer
+    /health while failing to serve the frontend (wrong bundled-asset path). We
+    require <html> plus at least one app-specific element id.
+    """
+    if not html or "<html" not in html.lower():
+        return False
+    return any(m in html for m in markers)
+
+
 def offline_ai_ready(status):
     """Given a /api/ai/model-status payload, is an OFFLINE AI engine available?
 
@@ -100,6 +124,15 @@ def main():
         results.append(("Tool 2 /health", t2))
         if t1:
             results.append(("Local AI model present (offline)", model_present(TOOL1_PORT)))
+            # The actual page must render — NOT just /health. This guards the
+            # frozen-asset-path bug a health-only check missed.
+            results.append(("Tool 1 UI page serves",
+                            ui_serves(ui_html(TOOL1_PORT),
+                                      ["interviewScreen", "completionScreen", "welcomeScreen"])))
+        if t2:
+            results.append(("Tool 2 UI page serves",
+                            ui_serves(ui_html(TOOL2_PORT),
+                                      ["app.js", "participant", "dashboard", "<div"])))
     finally:
         if proc is not None:
             try:

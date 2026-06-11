@@ -89,8 +89,16 @@ class DatabaseManager:
             conn.execute("PRAGMA synchronous=FULL")  # Crash-safe writes
             logger.info(f"Database opened: {self.database_path}")
 
-            # Step 2: Load and execute schema
+            # Step 2: Load and execute schema. Frozen-aware: in a PyInstaller build
+            # Path(__file__) is unreliable for bundled assets, so look in the bundle
+            # root (sys._MEIPASS) first, where the spec ships src/backend/schema.sql.
+            import sys as _sys
             schema_path = Path(__file__).parent / "schema.sql"
+            if getattr(_sys, "frozen", False):
+                _bundled = (Path(getattr(_sys, "_MEIPASS", Path(_sys.executable).resolve().parent))
+                            / "src" / "backend" / "schema.sql")
+                if _bundled.exists():
+                    schema_path = _bundled
             if not schema_path.exists():
                 logger.error(f"Schema file not found: {schema_path}")
                 return False

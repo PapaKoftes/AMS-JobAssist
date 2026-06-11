@@ -81,6 +81,28 @@ def test_offline_ready_handles_flat_payload():
     assert st.offline_ai_ready({"local": {"local_model_available": True}}) is True
 
 
+# ---- ui_serves (guards the frozen-asset-path bug) --------------------------
+
+def test_ui_serves_real_page():
+    html = "<!doctype html><html><body><div id='interviewScreen'></div></body></html>"
+    assert st.ui_serves(html, ["interviewScreen", "completionScreen"]) is True
+
+
+def test_ui_serves_rejects_error_json():
+    # a frozen build can answer /health but 500 on '/', returning JSON not HTML
+    err = '{"status":"error","error":{"detail":"index.html does not exist"}}'
+    assert st.ui_serves(err, ["interviewScreen"]) is False
+
+
+def test_ui_serves_rejects_html_without_app_markers():
+    # generic HTML that isn't our app must not pass
+    assert st.ui_serves("<html><body>nope</body></html>", ["interviewScreen"]) is False
+
+
+def test_ui_serves_rejects_empty():
+    assert st.ui_serves("", ["interviewScreen"]) is False
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))

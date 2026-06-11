@@ -15,8 +15,16 @@ from typing import Optional, List, Dict
 
 logger = logging.getLogger(__name__)
 
-# Path to knowledge base (data/knowledge/ is 3 dirs up from backend/)
-_KNOWLEDGE_DIR = Path(__file__).resolve().parents[3] / "data" / "knowledge"
+# Path to knowledge base (data/knowledge/). Frozen-aware: in a PyInstaller build
+# Path(__file__) is unreliable for bundled assets, so use the bundle root where the
+# spec ships data/knowledge/ (same pattern as skills/normalize.py).
+import sys as _sys
+if getattr(_sys, "frozen", False):
+    _KNOWLEDGE_DIR = Path(getattr(_sys, "_MEIPASS", Path(_sys.executable).resolve().parent)) / "data" / "knowledge"
+    if not (_KNOWLEDGE_DIR / "berufe.json").exists():
+        _KNOWLEDGE_DIR = Path(_sys.executable).resolve().parent / "data" / "knowledge"
+else:
+    _KNOWLEDGE_DIR = Path(__file__).resolve().parents[3] / "data" / "knowledge"
 _BERUFE_PATH = _KNOWLEDGE_DIR / "berufe.json"
 
 _berufe: List[dict] = []   # loaded job entries
