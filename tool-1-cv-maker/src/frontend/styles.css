@@ -1340,6 +1340,23 @@ body {
     margin-bottom: var(--spacing-md);
 }
 
+/* Test/dev capture mode box (completion screen) */
+.testmode-box {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px dashed #6c3483;
+    border-radius: 8px;
+    background: #faf6fc;
+}
+.testmode-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #6c3483;
+    margin-right: 8px;
+}
+.testmode-feedback { margin-left: 8px; font-size: 0.85rem; color: #2c7a3f; }
+
 /* AMS job-search bridge — transparency notice */
 .ams-jobs-notice {
     background: #f4f7fb;

@@ -407,6 +407,14 @@
                     <button class="btn-link" id="exportRetryBtn">Erneut versuchen</button>
                 </div>
 
+                <!-- Test mode (hidden; toggled with Ctrl+Shift+T). Lets the trainer
+                     save the current case (raw input + result) as a replayable JSON. -->
+                <div class="testmode-box" id="testModeBox" style="display:none;">
+                    <span class="testmode-badge">🧪 Testmodus aktiv</span>
+                    <button class="btn btn-secondary btn-sm" id="saveTestCaseBtn" type="button">💾 Diesen Fall als Testfall speichern (JSON)</button>
+                    <span id="saveTestCaseFeedback" class="testmode-feedback"></span>
+                </div>
+
                 <!-- ATS: Job Description Input -->
                 <div class="ats-input-section" id="atsInputSection" style="display:none;">
                     <h3 id="atsInputHeading">🎯 Stellenanzeige einfügen — so vergleichen wir Ihren Lebenslauf</h3>
@@ -645,6 +653,8 @@
 .btn-link:hover { opacity: 0.75; }
 </style>
 
-<script src="/static/app.js?v=nobubble"></script>
+<!-- Test mode indicator (hidden unless toggled with Ctrl+Shift+T) -->
+<div id="testModeIndicator" style="display:none; position:fixed; bottom:10px; right:10px; background:#6c3483; color:#fff; padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600; z-index:9999; box-shadow:0 2px 8px rgba(0,0,0,.25);">🧪 Testmodus aktiv — „Testfall speichern" am Ende</div>
+<script src="/static/app.js?v=testmode"></script>
 </body>
 </html>

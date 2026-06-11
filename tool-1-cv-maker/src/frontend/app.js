@@ -1990,6 +1990,12 @@ const state = {
     isWaitingForResponse: false,
     currentScreen: 'welcome',
     previewDebounceTimer: null,
+
+    // Test/dev capture mode (for the trainer collecting test cases). Hidden from
+    // participants; toggled with Ctrl+Shift+T. When on, the completion screen
+    // offers a one-click "save this case as a test file" (raw input + result).
+    testMode: false,
+    testInputs: [],   // {type, q?, text} raw inputs typed this session
 };
 
 // ============================================================================
@@ -3283,6 +3289,7 @@ class InterviewManager {
         if (state.isWaitingForResponse) return;     // guard against double-submit
         const text = ui.answerInput?.value.trim() ?? '';
         if (text.length < 2) return;
+        if (state.testMode) state.testInputs.push({ type: 'dump', text });
         const expect = state.currentGap || null;   // which gap this reply answers
         try {
             state.isWaitingForResponse = true;
@@ -3375,6 +3382,9 @@ class InterviewManager {
         } else {
             answerText = ui.answerInput?.value.trim() ?? '';
             if (answerText.length < effectiveMinChars(state.currentQuestion)) return;
+        }
+        if (state.testMode && !isPhotoQuestion) {
+            state.testInputs.push({ type: 'qa', q: state.currentQuestion?.id, text: answerText });
         }
 
         try {
@@ -3717,6 +3727,57 @@ class InterviewManager {
         if (notice) notice.style.display = 'none';
     }
 
+    // ── Test/dev capture mode (trainer test-case collection) ──────────────────
+    _applyTestMode() {
+        const show = state.testMode ? '' : 'none';
+        const box = document.getElementById('testModeBox');
+        if (box) box.style.display = state.testMode ? 'block' : 'none';
+        const ind = document.getElementById('testModeIndicator');
+        if (ind) ind.style.display = show;
+    }
+
+    toggleTestMode() {
+        state.testMode = !state.testMode;
+        try { localStorage.setItem('amsTestMode', state.testMode ? '1' : '0'); } catch (e) {}
+        this._applyTestMode();
+    }
+
+    // Save the current case (raw inputs + built CV) as a replayable JSON file.
+    async saveTestCase() {
+        const fb = document.getElementById('saveTestCaseFeedback');
+        if (fb) fb.textContent = '…';
+        let cv = null;
+        try {
+            const r = await fetch('/api/export/json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: state.sessionId, language: state.inputLanguage || 'de', force: true }),
+            });
+            if (r.ok) cv = await r.json();
+        } catch (e) { /* best-effort; still save the inputs */ }
+        const tc = {
+            savedAt: new Date().toISOString(),
+            name: (state.cvCaptured && state.cvCaptured.name) || '',
+            language: state.inputLanguage || 'de',
+            interview_path: state.interviewPath || '',
+            inputs: state.testInputs || [],
+            captured: state.cvCaptured || {},
+            cv: cv,
+        };
+        try {
+            const blob = new Blob([JSON.stringify(tc, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            const safe = (tc.name || 'fall').replace(/[^a-z0-9]+/gi, '_').slice(0, 30) || 'fall';
+            a.href = URL.createObjectURL(blob);
+            a.download = `testfall_${safe}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+            if (fb) fb.textContent = '✓ gespeichert';
+        } catch (e) {
+            if (fb) fb.textContent = '✗ Fehler';
+            console.warn('saveTestCase failed', e);
+        }
+    }
+
     async _runATSAnalysis() {
         if (!state.sessionId) return;
         const inputSection = document.getElementById('atsInputSection');
@@ -4015,6 +4076,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('eraseDataBtn')?.addEventListener('click', () => interview.handleEraseData());
     document.getElementById('startOverBtn')?.addEventListener('click',  () => interview.handleStartOver());
+
+    // Test/dev capture mode: restore from localStorage, Ctrl+Shift+T toggles it,
+    // and the save button writes the current case to a JSON file.
+    try { state.testMode = localStorage.getItem('amsTestMode') === '1'; } catch (e) {}
+    interview._applyTestMode();
+    document.getElementById('saveTestCaseBtn')?.addEventListener('click', () => interview.saveTestCase());
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'T' || e.key === 't')) {
+            e.preventDefault();
+            interview.toggleTestMode();
+        }
+    });
 
     // Save & finish later — autosave already ran on every answer; this button
     // gives explicit reassurance + an obvious exit. Returns to welcome screen,
