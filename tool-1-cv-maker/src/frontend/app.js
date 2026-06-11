@@ -4180,6 +4180,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // A language is pre-selected by default (German) / restored from a prior
+        // visit, but no click fired — so reveal the path step immediately, else the
+        // user stares at a highlighted language with no visible next step.
+        if (pathSel && document.querySelector('.lang-btn.selected')) {
+            pathSel.style.display = '';
+        }
+
         // Reveal user-input as soon as a path button is clicked
         document.querySelectorAll('.path-button').forEach(btn => {
             btn.addEventListener('click', () => {
