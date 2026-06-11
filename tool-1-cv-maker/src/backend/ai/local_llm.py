@@ -709,10 +709,20 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
             if x and x.lower() not in {y.lower() for y in out}:
                 out.append(x)
         return out
+    # Taxonomy-driven recall: surface skills mentioned ANYWHERE in the text that the
+    # model/regex missed (e.g. a skill buried in an experience sentence). Added last
+    # so explicit model/regex skills keep priority. Best-effort, never fatal.
+    _taxo_skills: list = []
+    try:
+        from skills.normalize import find_skill_mentions as _find_sk
+        _taxo_skills = _find_sk(text)
+    except Exception:
+        _taxo_skills = []
+
     # Skills are atomic: split any comma-joined entry (the model sometimes returns
     # "A, B, C" as one string while the regex returns them split) and dedupe, so
     # the CV never shows a redundant combined skill alongside its parts.
-    _merged_skills = _merge(_regex_skills, result.get("skills") or [])
+    _merged_skills = _merge(_merge(_regex_skills, result.get("skills") or []), _taxo_skills)
     _skills: list = []
     for _sk in _merged_skills:
         for _part in _re.split(r"\s*,\s*", _sk):

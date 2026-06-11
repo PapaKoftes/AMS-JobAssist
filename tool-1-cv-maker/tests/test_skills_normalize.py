@@ -56,6 +56,28 @@ def test_category_lookup():
     assert N.category_of("Schweißen") == "Bau/Handwerk"
 
 
+def test_find_skill_mentions_in_sentence():
+    text = "Ich habe an der Kassa gearbeitet und einen Stapler gefahren, auch Reinigung gemacht."
+    mentions = N.find_skill_mentions(text)
+    # the literal terms are surfaced (boost recall), one per canonical skill
+    assert "kassa" in mentions
+    assert "stapler" in mentions
+    assert "reinigung" in mentions
+
+
+def test_find_skill_mentions_dedups_per_canonical():
+    text = "Stapler und Gabelstapler und forklift"  # all one canonical
+    mentions = N.find_skill_mentions(text)
+    # only ONE term for the forklift skill, not three
+    fork = [m for m in mentions if m in ("stapler", "gabelstapler", "forklift")]
+    assert len(fork) == 1
+
+
+def test_find_skill_mentions_ignores_short_noise():
+    # nothing skill-like → empty
+    assert N.find_skill_mentions("ich bin ein guter mensch") == []
+
+
 def test_taxonomy_loaded_nontrivial():
     skills = N.all_canonical_skills()
     assert len(skills) >= 40

@@ -142,6 +142,35 @@ def normalize_skills(raw_skills: list[str]) -> list[str]:
     return out
 
 
+def find_skill_mentions(text: str, limit: int = 10) -> list[str]:
+    """Scan free text for skills mentioned ANYWHERE (even buried in a sentence) and
+    return the matched literal synonym terms — e.g. "...habe an der Kassa gearbeitet
+    und Stapler gefahren" -> ["kassa", "stapler"].
+
+    This boosts skills recall (the weakest extracted field): the model/regex often
+    miss a skill embedded in an experience description, but the taxonomy knows the
+    vocabulary. Returns at most one term per canonical skill, longest synonyms first
+    (so "kundenberatung" wins over a generic token), capped at `limit`. Whole-word,
+    len>=4 only, to avoid short-token false fires.
+    """
+    _load()
+    n = _norm(text)
+    if not n or not _syn_pairs:
+        return []
+    out: list[str] = []
+    seen_labels: set[str] = set()
+    # longest synonyms first → prefer the most specific match per skill
+    for syn, label in sorted(_syn_pairs, key=lambda p: -len(p[0])):
+        if len(syn) < 4 or label in seen_labels:
+            continue
+        if re.search(r"\b" + re.escape(syn) + r"\b", n):
+            out.append(syn)
+            seen_labels.add(label)
+            if len(out) >= limit:
+                break
+    return out
+
+
 def category_of(label: str) -> str:
     _load()
     return _label_of_category.get(label, "")
