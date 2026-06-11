@@ -6,10 +6,21 @@ All settings can be overridden via environment variables:
 """
 
 import os
+import sys
 from pathlib import Path
 
-# Paths
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Paths — frozen-aware. In a PyInstaller build, __file__ is RELATIVE, so
+# Path(__file__).resolve() resolves it against the current working directory
+# (e.g. %LOCALAPPDATA%) rather than the bundle — which made the app look for the
+# frontend at <cwd>/src/frontend and fail to serve any UI. Split the two needs:
+#   _ASSET_DIR — read-only bundled assets (frontend) → the PyInstaller bundle root
+#   BASE_DIR   — writable data (DB/logs) → next to the .exe (persists across runs)
+if getattr(sys, "frozen", False):
+    _ASSET_DIR = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
+    BASE_DIR = Path(sys.executable).resolve().parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    _ASSET_DIR = BASE_DIR
 # AMS_DATA_DIR can relocate the data dir (e.g. onto an OS-encrypted volume).
 # WARNING (DSGVO): the SQLite DB holds plaintext participant PII. Do NOT point
 # this at a network share or any location that leaves the local, encrypted disk —
@@ -18,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 _custom_data = os.environ.get("AMS_DATA_DIR", "")
 DB_DIR = Path(_custom_data) if _custom_data else BASE_DIR / "data"
 LOG_DIR = BASE_DIR / "logs"
-FRONTEND_DIR = BASE_DIR / "src" / "frontend"
+FRONTEND_DIR = _ASSET_DIR / "src" / "frontend"
 
 # Data retention — purge OLD sessions (incomplete AND completed) older than this.
 # DSGVO Art. 5(1)(e) storage limitation. Default: 365 days (covers the AMS course

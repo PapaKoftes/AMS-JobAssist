@@ -6,22 +6,32 @@ All settings can be overridden via environment variables:
 """
 
 import os
+import sys
 from pathlib import Path
 
-# Paths
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Paths — frozen-aware. In a PyInstaller build __file__ is relative, so resolve()
+# would resolve it against the CWD, not the bundle. Read-only assets (frontend)
+# come from the bundle root; writable data (DB/logs) sits next to the .exe.
+if getattr(sys, "frozen", False):
+    _ASSET_DIR = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
+    BASE_DIR = Path(sys.executable).resolve().parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    _ASSET_DIR = BASE_DIR
 # AMS_DATA_DIR lets IT teams point data/DB to a backed-up network location
 _custom_data = os.environ.get("AMS_DATA_DIR", "")
 DB_DIR = Path(_custom_data) if _custom_data else BASE_DIR / "data"
 LOG_DIR = BASE_DIR / "logs"
-FRONTEND_DIR = BASE_DIR / "frontend"
+# The Tool 2 spec bundles the frontend to <bundle>/frontend; dev layout is
+# src/frontend. Try the packaged location first, then the dev fallback.
+FRONTEND_DIR = _ASSET_DIR / "frontend"
 
 # Data retention — delete participant records older than this many days (0 = keep forever)
 DATA_RETENTION_DAYS = int(os.environ.get("AMS_DATA_RETENTION_DAYS", "90"))
 
 # If frontend is at src/frontend (development layout), check both paths
 if not FRONTEND_DIR.exists():
-    FRONTEND_DIR = BASE_DIR / "src" / "frontend"
+    FRONTEND_DIR = _ASSET_DIR / "src" / "frontend"
 
 # Database (separate from Tool 1)
 DATABASE_URL = os.environ.get(
