@@ -10,6 +10,7 @@ This spec is path-agnostic — it derives repo root from SPECPATH so the build
 works from any working directory.
 """
 import os
+from PyInstaller.utils.hooks import collect_dynamic_libs, collect_data_files
 
 # SPECPATH is provided by PyInstaller and points to the directory of this spec.
 PROJECT_ROOT = os.path.abspath(os.path.join(SPECPATH, os.pardir))
@@ -21,11 +22,22 @@ ICON_PATH    = os.path.join(PROJECT_ROOT, "packaging", "icon.ico")
 
 block_cipher = None
 
+# llama-cpp-python ships its inference engine as native libraries in
+# llama_cpp/lib/ (llama.dll, ggml*.dll, …). PyInstaller does NOT auto-collect
+# these, so the frozen .exe failed to load the model ("Modell lädt…" → rules).
+# Collect both the dynamic libs and the data files (the lib/ folder), preserving
+# the llama_cpp/ package layout the loader expects.
+_llama_bins = collect_dynamic_libs("llama_cpp")
+_llama_data = collect_data_files("llama_cpp")
+
 a = Analysis(
     [os.path.join(BACKEND_DIR, "app.py")],
     pathex=[BACKEND_DIR, PROJECT_ROOT],
-    binaries=[],
+    binaries=list(_llama_bins),
     datas=[
+        # llama-cpp native libs (llama_cpp/lib/*.dll) — without these the local
+        # 3B model cannot load and the app silently drops to rule-based mode.
+        *_llama_data,
         # Bundle the entire frontend so static files can be served
         (FRONTEND_DIR, os.path.join("src", "frontend")),
         # Bundle backend resources (schema.sql, JSON dictionaries, etc.)
