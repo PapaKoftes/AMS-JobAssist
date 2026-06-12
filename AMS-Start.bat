@@ -41,13 +41,22 @@ if errorlevel 1 (
     python -m pip install --disable-pip-version-check -q -r requirements.txt
     if errorlevel 1 (
         echo.
-        echo  [X] Die Installation ist fehlgeschlagen.
-        echo      Bitte Internetverbindung pruefen und Datei erneut starten.
+        echo  [!] Vollinstallation fehlgeschlagen - versuche Basis-Installation
+        echo      ohne KI-Komponente ^(App laeuft dann regelbasiert^)...
         echo.
-        pause
-        exit /b 1
+        python -m pip install --disable-pip-version-check -q -e shared/ -e "tool-1-cv-maker[dev]" -e "tool-2-trainer-dashboard[dev]"
+        if errorlevel 1 (
+            echo  [X] Auch die Basis-Installation ist fehlgeschlagen.
+            echo      Bitte Internetverbindung pruefen und Datei erneut starten.
+            echo.
+            pause
+            exit /b 1
+        )
+        echo  [OK] Basis installiert. Hinweis: KI-Komponente fehlt - die App
+        echo       funktioniert, formuliert aber regelbasiert statt mit KI.
+    ) else (
+        echo  [OK] Komponenten installiert.
     )
-    echo  [OK] Komponenten installiert.
 ) else (
     echo  [OK] Komponenten bereits installiert.
 )

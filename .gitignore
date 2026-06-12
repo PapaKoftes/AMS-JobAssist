@@ -73,3 +73,8 @@ desktop.ini
 
 # Local demo run data (test PII — never commit)
 demo-data/
+
+# build/run debris
+buildlog.txt
+LAST_ERROR.txt
+AMS-JobAssist-Tester.zip

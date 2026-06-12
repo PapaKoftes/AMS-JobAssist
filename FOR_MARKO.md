@@ -10,31 +10,26 @@ A participant in an AMS retraining course sits down, answers questions in their 
 
 ---
 
-## Install (one double-click, no internet, no admin)
+## Install & start (one double-click after a one-time Python install)
 
-**Just run the installer:**
+**One-time prerequisite:** install Python 3.10+ from https://www.python.org/downloads/ — tick **"Add Python to PATH"** in the setup. (~2 minutes, once.)
+
+**Then, every time — just double-click:**
 
 ```
-AMS-JobAssist-Setup.exe      (or: install.bat, if you got the folder version)
+AMS-Start.bat
 ```
 
-That's it. It installs both tools, the **bundled local AI model (3B, ~1.9 GB, already included)**, and a desktop + Start-menu shortcut — to a per-user folder, **no admin rights needed**. Nothing is downloaded; the whole thing runs **fully offline**. After install, launch **"AMS JobAssist"** from the desktop and your browser opens automatically.
+The first run installs the needed components automatically (a few minutes, needs internet **once**); every run after that is instant and **fully offline**. It checks everything, starts both tools, pre-loads the AI, and opens your browser:
 
 - **http://localhost:8000** — participant CV maker (Tool 1)
 - **http://localhost:8001** — trainer dashboard (Tool 2)
 
-(If those ports are busy, the launcher picks the next free ones and prints them in its window.)
+(If those ports are busy, the launcher picks the next free ones and prints them in its window. To quit, close the black window.)
 
-> **The AI is real and built in.** It runs the Qwen 3B model *locally, in-process* — no Ollama, no setup, no account, nothing leaves the machine. The launcher pre-loads it so your first answer isn't slow.
+> **The AI is real and built in.** The Qwen 3B model (~1.9 GB) ships **inside this package** and runs *locally, in-process* — no Ollama, no account, no runtime download, nothing leaves the machine. The launcher pre-loads it so your first answer isn't slow.
 
-**Developer option (run from source, needs Python 3.10+):**
-
-```bash
-git clone https://github.com/PapaKoftes/AMS-JobAssist
-cd AMS-JobAssist
-pip install -e shared/ -e tool-1-cv-maker -e tool-2-trainer-dashboard
-python launcher.py
-```
+> ⚠️ **Ignore the `dist\` folder and the old `.exe` files** — the standalone `.exe` build has a known crash and is being reworked. `AMS-Start.bat` is the supported way to run.
 
 ---
 

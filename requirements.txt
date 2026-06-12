@@ -10,6 +10,12 @@
 # Or everything at once:
 #   pip install -r requirements.txt
 
+# llama-cpp-python has NO binary wheel on PyPI for Windows — without this extra
+# index, pip tries to compile C++ from source (needs CMake + MSVC) and the WHOLE
+# install fails on a normal tester machine. The maintainer's CPU-wheel index has
+# a universal win_amd64 wheel. PyPI stays primary for everything else.
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+
 -e shared/
 -e tool-1-cv-maker[ai,dev]
 -e tool-2-trainer-dashboard[dev]

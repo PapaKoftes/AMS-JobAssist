@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "cvmaker-preview",
-      "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "cd /d tool-1-cv-maker\src\backend && set AMS_DATADIR_ENCRYPTED=1&& set AMS_DATA_DIR=C:\Work\Programming\AMS-JobAssist\demo-data\preview&& set AMS_TOOL1_PORT=8060&& python -m uvicorn app:app --host 127.0.0.1 --port 8060 --log-level warning"],
-      "port": 8060
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "app:app", "--app-dir", "C:\\Work\\Programming\\AMS-JobAssist\\tool-1-cv-maker\\src\\backend", "--host", "127.0.0.1", "--port", "8000"],
+      "port": 8000
     }
   ]
 }
