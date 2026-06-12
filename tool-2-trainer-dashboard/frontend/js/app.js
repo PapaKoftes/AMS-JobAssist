@@ -572,8 +572,9 @@ class TrainerApp {
         this._safeSetText('detail-imported', Components.formatDate(participant.first_imported_at));
 
         if (participant.latest_submission) {
+            // 0–1 score shown as percent, consistent with the list view and Tool 1.
             this._safeSetText('detail-quality',
-                (participant.latest_submission.overall_quality || 0).toFixed(1) + '/10');
+                Math.round((participant.latest_submission.overall_quality || 0) * 100) + ' %');
         }
 
         const approvalStatus = document.getElementById('approval-status');

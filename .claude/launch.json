@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "uvicorn", "app:app", "--app-dir", "C:\\Work\\Programming\\AMS-JobAssist\\tool-1-cv-maker\\src\\backend", "--host", "127.0.0.1", "--port", "8000"],
       "port": 8000
+    },
+    {
+      "name": "trainer-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "app:app", "--app-dir", "C:\\Work\\Programming\\AMS-JobAssist\\tool-2-trainer-dashboard\\src\\backend", "--host", "127.0.0.1", "--port", "8001"],
+      "port": 8001
     }
   ]
 }

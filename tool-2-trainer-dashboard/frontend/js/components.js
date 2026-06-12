@@ -12,7 +12,9 @@ class Components {
 
         const statusClass = `status-${participant.status}`;
         const lastUpdated = new Date(participant.last_updated_at).toLocaleDateString();
-        const quality = (participant.latest_submission?.overall_quality || 0).toFixed(1);
+        // overall_quality is a 0–1 score — show as percent ("72 %"), matching Tool 1.
+        // (Was rendered "0.7/10", which read like a catastrophic score to trainers.)
+        const quality = Math.round((participant.latest_submission?.overall_quality || 0) * 100);
 
         // B3: Completion badge
         const completionBadge = participant.completed_at
@@ -26,7 +28,7 @@ class Components {
             <td><strong>${participant.name || 'Unbekannt'}</strong></td>
             <td>${participant.email || '—'}</td>
             <td><span class="status-badge ${statusClass}">${Components._statusLabel(participant.status)}</span>${completionBadge}</td>
-            <td>${quality}/10</td>
+            <td>${quality} %</td>
             <td>${lastUpdated}</td>
             <td>
                 <button class="btn btn-small" data-action="view">Ansehen</button>
