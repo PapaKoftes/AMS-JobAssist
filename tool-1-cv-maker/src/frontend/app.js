@@ -730,6 +730,28 @@ const TRANSLATIONS = {
         completionMoreSummary: 'More options',
     },
     bs: {
+        dumpPromptUnemployed:   "Ispričajte mi sve o sebi — najbolje počnite od posljednjeg posla.",
+        dumpPromptCareerSwitch: "Ispričajte mi sve o sebi — šta ste do sada radili i šta želite raditi sada?",
+        dumpPromptStudent:      "Ispričajte mi sve o sebi — prvo školovanje, prakse i poslovi uz školu.",
+        dumpPromptPause:        "Ispričajte mi sve o sebi — i šta ste radili prije pauze. Pauza je sasvim u redu.",
+        modeSwitchToGuided:   "Radije korak po korak?",
+        modeSwitchToFree:     "Radije slobodno pričati?",
+        guidedSwitchMsg:      "Rado! Postavljaću vam jednostavna pitanja — jedno po jedno. Možete se vratiti kad god želite.",
+        freeSwitchMsg:        "Rado! Samo slobodno pričajte — ja ću sve srediti za vas.",
+        jobSearchBtn:         "🔎 Pronađite odgovarajuće poslove na AMS-u",
+        jobSearchNotice:      (occ) => `Otvorićemo AMS berzu poslova u vašem pregledniku${occ ? ` sa pretragom „${occ}“` : ""}. AMS-u se šalje SAMO vaš pojam pretrage — vaše ime, kontakti i CV se NE šalju.`,
+        jobSearchOpen:        "Traži na AMS-u ↗",
+        jobSearchCancel:      "Odustani",
+        jobSearchLoopHint:    "Savjet: kopirajte oglas koji vam se sviđa i zalijepite ga gore — vidjećete koliko vaš CV odgovara.",
+        appEmailBtn:          "📧 Kreiraj e-mail za prijavu",
+        appEmailHeading:      "📧 Vaš e-mail za prijavu",
+        appEmailToLabel:      "Prima (e-mail firme, opcionalno):",
+        appEmailSubjLabel:    "Predmet:",
+        appEmailHint:         (hasCL) => hasCL ? "Važno: priložite preuzeti CV (PDF). Možete priložiti i propratno pismo." : "Važno: priložite preuzeti CV (PDF) uz e-mail.",
+        appEmailOpen:         "Otvori u e-mail programu ↗",
+        appEmailCopy:         "Kopiraj tekst",
+        appEmailCopied:       "✓ Kopirano",
+        appEmailClose:        "Zatvori",
         answerLabel:          'Vaš odgovor — pišite na bilo kom jeziku:',
         answerPlaceholder:    'Samo počnite pisati — i grube bilješke su u redu. Mi ćemo to poboljšati automatski.',
         submitBtn:            'Dalje →',
@@ -849,6 +871,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Molimo napišite nešto više…',
     },
     hr: {
+        dumpPromptUnemployed:   "Ispričajte mi sve o sebi — najbolje počnite od posljednjeg posla.",
+        dumpPromptCareerSwitch: "Ispričajte mi sve o sebi — što ste dosad radili i što biste sada željeli raditi?",
+        dumpPromptStudent:      "Ispričajte mi sve o sebi — najprije školovanje, prakse i honorarni poslovi.",
+        dumpPromptPause:        "Ispričajte mi sve o sebi — i što ste radili prije stanke. Stanka je sasvim u redu.",
+        modeSwitchToGuided:   "Radije korak po korak?",
+        modeSwitchToFree:     "Radije slobodno pričati?",
+        guidedSwitchMsg:      "Rado! Postavljat ću vam jednostavna pitanja — jedno po jedno. Možete se vratiti bilo kada.",
+        freeSwitchMsg:        "Rado! Samo slobodno pričajte — ja ću sve posložiti za vas.",
+        jobSearchBtn:         "🔎 Pronađite odgovarajuće poslove na AMS-u",
+        jobSearchNotice:      (occ) => `Otvorit ćemo AMS burzu poslova u vašem pregledniku${occ ? ` s pretragom „${occ}“` : ""}. AMS-u se šalje SAMO vaš pojam pretrage — vaše ime, kontakti i životopis se NE šalju.`,
+        jobSearchOpen:        "Traži na AMS-u ↗",
+        jobSearchCancel:      "Odustani",
+        jobSearchLoopHint:    "Savjet: kopirajte oglas koji vam se sviđa i zalijepite ga gore — vidjet ćete koliko vaš životopis odgovara.",
+        appEmailBtn:          "📧 Izradi e-mail za prijavu",
+        appEmailHeading:      "📧 Vaš e-mail za prijavu",
+        appEmailToLabel:      "Prima (e-mail tvrtke, neobavezno):",
+        appEmailSubjLabel:    "Predmet:",
+        appEmailHint:         (hasCL) => hasCL ? "Važno: priložite preuzeti životopis (PDF). Možete priložiti i zamolbu." : "Važno: priložite preuzeti životopis (PDF) uz e-mail.",
+        appEmailOpen:         "Otvori u programu e-pošte ↗",
+        appEmailCopy:         "Kopiraj tekst",
+        appEmailCopied:       "✓ Kopirano",
+        appEmailClose:        "Zatvori",
         answerLabel:          'Vaš odgovor — pišite na bilo kojem jeziku:',
         answerPlaceholder:    'Samo počnite pisati — i grube bilješke su u redu. Poboljšat ćemo ih automatski.',
         submitBtn:            'Dalje →',
@@ -963,6 +1007,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Molimo napišite nešto više…',
     },
     sr: {
+        dumpPromptUnemployed:   "Ispričajte mi sve o sebi — najbolje počnite od poslednjeg posla.",
+        dumpPromptCareerSwitch: "Ispričajte mi sve o sebi — šta ste do sada radili i šta želite da radite sada?",
+        dumpPromptStudent:      "Ispričajte mi sve o sebi — prvo školovanje, prakse i poslove.",
+        dumpPromptPause:        "Ispričajte mi sve o sebi — i šta ste radili pre pauze. Pauza je sasvim u redu.",
+        modeSwitchToGuided:   "Radije korak po korak?",
+        modeSwitchToFree:     "Radije slobodno pričati?",
+        guidedSwitchMsg:      "Rado! Postavljaću vam jednostavna pitanja — jedno po jedno. Možete se vratiti kad god želite.",
+        freeSwitchMsg:        "Rado! Samo slobodno pričajte — ja ću sve srediti za vas.",
+        jobSearchBtn:         "🔎 Pronađite odgovarajuće poslove na AMS-u",
+        jobSearchNotice:      (occ) => `Otvorićemo AMS berzu poslova u vašem pregledaču${occ ? ` sa pretragom „${occ}“` : ""}. AMS-u se šalje SAMO pojam pretrage — vaše ime, kontakt i CV se NE šalju.`,
+        jobSearchOpen:        "Traži na AMS-u ↗",
+        jobSearchCancel:      "Odustani",
+        jobSearchLoopHint:    "Savet: kopirajte oglas koji vam se sviđa i nalepite ga gore — videćete koliko vaš CV odgovara.",
+        appEmailBtn:          "📧 Napravi e-mail za prijavu",
+        appEmailHeading:      "📧 Vaš e-mail za prijavu",
+        appEmailToLabel:      "Prima (e-mail firme, opciono):",
+        appEmailSubjLabel:    "Predmet:",
+        appEmailHint:         (hasCL) => hasCL ? "Važno: priložite preuzeti CV (PDF). Možete priložiti i propratno pismo." : "Važno: priložite preuzeti CV (PDF) uz e-mail.",
+        appEmailOpen:         "Otvori u e-mail programu ↗",
+        appEmailCopy:         "Kopiraj tekst",
+        appEmailCopied:       "✓ Kopirano",
+        appEmailClose:        "Zatvori",
         answerLabel:          'Vaš odgovor — pišite na bilo kom jeziku:',
         answerPlaceholder:    'Samo počnite pisati — i grube beleške su u redu. Mi ćemo to poboljšati automatski.',
         submitBtn:            'Dalje →',
@@ -1077,6 +1143,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Molimo napišite nešto više…',
     },
     tr: {
+        dumpPromptUnemployed:   "Bana kendinizden bahsedin — en iyisi son işinizden başlayın.",
+        dumpPromptCareerSwitch: "Bana kendinizden bahsedin — şimdiye kadar ne çalıştınız, şimdi ne yapmak istiyorsunuz?",
+        dumpPromptStudent:      "Bana kendinizden bahsedin — önce eğitiminiz, stajlarınız ve ek işleriniz.",
+        dumpPromptPause:        "Bana kendinizden bahsedin — aradan önce ne çalıştığınızı da. Ara vermek gayet normaldir.",
+        modeSwitchToGuided:   "Adım adım mı tercih edersiniz?",
+        modeSwitchToFree:     "Serbestçe anlatmak mı istersiniz?",
+        guidedSwitchMsg:      "Memnuniyetle! Size basit sorular soracağım — teker teker. İstediğiniz zaman geri dönebilirsiniz.",
+        freeSwitchMsg:        "Memnuniyetle! Serbestçe anlatın — her şeyi sizin için düzenlerim.",
+        jobSearchBtn:         "🔎 AMS'de uygun işler bulun",
+        jobSearchNotice:      (occ) => `AMS iş portalını tarayıcınızda açacağız${occ ? ` „${occ}“ aramasıyla` : ""}. AMS'ye SADECE arama teriminiz gönderilir — adınız, iletişim bilgileriniz ve CV'niz GÖNDERİLMEZ.`,
+        jobSearchOpen:        "AMS'de ara ↗",
+        jobSearchCancel:      "İptal",
+        jobSearchLoopHint:    "İpucu: beğendiğiniz bir ilanı kopyalayıp yukarıya yapıştırın — CV'nizin ne kadar uygun olduğunu görürsünüz.",
+        appEmailBtn:          "📧 Başvuru e-postası oluştur",
+        appEmailHeading:      "📧 Başvuru e-postanız",
+        appEmailToLabel:      "Alıcı (firmanın e-postası, isteğe bağlı):",
+        appEmailSubjLabel:    "Konu:",
+        appEmailHint:         (hasCL) => hasCL ? "Önemli: indirdiğiniz CV'yi (PDF) ekleyin. Ön yazınızı da ekleyebilirsiniz." : "Önemli: indirdiğiniz CV'yi (PDF) e-postaya ekleyin.",
+        appEmailOpen:         "E-posta programında aç ↗",
+        appEmailCopy:         "Metni kopyala",
+        appEmailCopied:       "✓ Kopyalandı",
+        appEmailClose:        "Kapat",
         answerLabel:          'Yanıtınız — istediğiniz dilde yazabilirsiniz:',
         answerPlaceholder:    'Sadece yazmaya başlayın — kaba notlar bile olur. Otomatik olarak geliştireceğiz.',
         submitBtn:            'İleri →',
@@ -1191,6 +1279,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Lütfen biraz daha yazın…',
     },
     pl: {
+        dumpPromptUnemployed:   "Opowiedz mi wszystko o sobie — najlepiej zacznij od ostatniej pracy.",
+        dumpPromptCareerSwitch: "Opowiedz mi wszystko o sobie — co robiłeś/aś do tej pory i co chcesz robić teraz?",
+        dumpPromptStudent:      "Opowiedz mi wszystko o sobie — najpierw wykształcenie, praktyki i prace dorywcze.",
+        dumpPromptPause:        "Opowiedz mi wszystko o sobie — także o pracy przed przerwą. Przerwa jest zupełnie w porządku.",
+        modeSwitchToGuided:   "Wolisz krok po kroku?",
+        modeSwitchToFree:     "Wolisz opowiadać swobodnie?",
+        guidedSwitchMsg:      "Chętnie! Będę zadawać proste pytania — jedno po drugim. Możesz wrócić w każdej chwili.",
+        freeSwitchMsg:        "Chętnie! Po prostu opowiadaj — wszystko uporządkuję.",
+        jobSearchBtn:         "🔎 Znajdź pasujące oferty w AMS",
+        jobSearchNotice:      (occ) => `Otworzymy giełdę pracy AMS w Twojej przeglądarce${occ ? ` z wyszukiwaniem „${occ}”` : ""}. Do AMS trafia TYLKO hasło wyszukiwania — Twoje imię, dane kontaktowe i CV NIE są wysyłane.`,
+        jobSearchOpen:        "Szukaj w AMS ↗",
+        jobSearchCancel:      "Anuluj",
+        jobSearchLoopHint:    "Wskazówka: skopiuj ogłoszenie, które Ci się podoba, i wklej je powyżej — zobaczysz, jak dobrze pasuje Twoje CV.",
+        appEmailBtn:          "📧 Utwórz e-mail aplikacyjny",
+        appEmailHeading:      "📧 Twój e-mail aplikacyjny",
+        appEmailToLabel:      "Do (e-mail firmy, opcjonalnie):",
+        appEmailSubjLabel:    "Temat:",
+        appEmailHint:         (hasCL) => hasCL ? "Ważne: załącz pobrane CV (PDF). Możesz też załączyć list motywacyjny." : "Ważne: załącz pobrane CV (PDF) do e-maila.",
+        appEmailOpen:         "Otwórz w programie pocztowym ↗",
+        appEmailCopy:         "Kopiuj tekst",
+        appEmailCopied:       "✓ Skopiowano",
+        appEmailClose:        "Zamknij",
         answerLabel:          'Twoja odpowiedź — pisz w dowolnym języku:',
         answerPlaceholder:    'Po prostu zacznij pisać — nawet szkice są w porządku. Automatycznie to poprawimy.',
         submitBtn:            'Dalej →',
@@ -1305,6 +1415,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Proszę napisać trochę więcej…',
     },
     ro: {
+        dumpPromptUnemployed:   "Povestiți-mi totul despre dvs. — cel mai bine începeți cu ultimul loc de muncă.",
+        dumpPromptCareerSwitch: "Povestiți-mi totul despre dvs. — ce ați lucrat până acum și ce doriți să faceți acum?",
+        dumpPromptStudent:      "Povestiți-mi totul despre dvs. — mai întâi studiile, practica și joburile ocazionale.",
+        dumpPromptPause:        "Povestiți-mi totul despre dvs. — și ce ați lucrat înainte de pauză. Pauza este absolut în regulă.",
+        modeSwitchToGuided:   "Preferați pas cu pas?",
+        modeSwitchToFree:     "Preferați să povestiți liber?",
+        guidedSwitchMsg:      "Cu plăcere! Vă pun întrebări simple — una câte una. Puteți reveni oricând.",
+        freeSwitchMsg:        "Cu plăcere! Povestiți liber — eu ordonez totul pentru dvs.",
+        jobSearchBtn:         "🔎 Găsiți joburi potrivite la AMS",
+        jobSearchNotice:      (occ) => `Vom deschide bursa de locuri de muncă AMS în browserul dvs.${occ ? ` cu căutarea „${occ}”` : ""}. Către AMS se trimite DOAR termenul de căutare — numele, contactele și CV-ul dvs. NU se trimit.`,
+        jobSearchOpen:        "Caută la AMS ↗",
+        jobSearchCancel:      "Anulează",
+        jobSearchLoopHint:    "Sfat: copiați un anunț care vă place și lipiți-l mai sus — veți vedea cât de bine se potrivește CV-ul.",
+        appEmailBtn:          "📧 Creați e-mailul de candidatură",
+        appEmailHeading:      "📧 E-mailul dvs. de candidatură",
+        appEmailToLabel:      "Către (e-mailul firmei, opțional):",
+        appEmailSubjLabel:    "Subiect:",
+        appEmailHint:         (hasCL) => hasCL ? "Important: atașați CV-ul descărcat (PDF). Puteți atașa și scrisoarea de intenție." : "Important: atașați CV-ul descărcat (PDF) la e-mail.",
+        appEmailOpen:         "Deschide în programul de e-mail ↗",
+        appEmailCopy:         "Copiază textul",
+        appEmailCopied:       "✓ Copiat",
+        appEmailClose:        "Închide",
         answerLabel:          'Răspunsul dvs. — scrieți în orice limbă doriți:',
         answerPlaceholder:    'Scrieți liber — și notele brute sunt în regulă. Vom îmbunătăți automat.',
         submitBtn:            'Înainte →',
@@ -1419,6 +1551,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Vă rugăm să scrieți puțin mai mult…',
     },
     uk: {
+        dumpPromptUnemployed:   "Розкажіть мені все про себе — найкраще почніть з останньої роботи.",
+        dumpPromptCareerSwitch: "Розкажіть мені все про себе — ким ви працювали досі та що хочете робити тепер?",
+        dumpPromptStudent:      "Розкажіть мені все про себе — спершу освіта, практика та підробітки.",
+        dumpPromptPause:        "Розкажіть мені все про себе — також про роботу до перерви. Перерва — це цілком нормально.",
+        modeSwitchToGuided:   "Краще крок за кроком?",
+        modeSwitchToFree:     "Краще розповідати вільно?",
+        guidedSwitchMsg:      "Залюбки! Я ставитиму прості запитання — одне за одним. Ви можете повернутися будь-коли.",
+        freeSwitchMsg:        "Залюбки! Просто розповідайте — я все впорядкую за вас.",
+        jobSearchBtn:         "🔎 Знайти відповідні вакансії в AMS",
+        jobSearchNotice:      (occ) => `Ми відкриємо біржу вакансій AMS у вашому браузері${occ ? ` з пошуком «${occ}»` : ""}. До AMS надсилається ЛИШЕ пошуковий запит — ваше ім'я, контакти та резюме НЕ надсилаються.`,
+        jobSearchOpen:        "Шукати в AMS ↗",
+        jobSearchCancel:      "Скасувати",
+        jobSearchLoopHint:    "Порада: скопіюйте вакансію, що сподобалась, і вставте її вище — побачите, наскільки підходить ваше резюме.",
+        appEmailBtn:          "📧 Створити лист для подачі заявки",
+        appEmailHeading:      "📧 Ваш лист-заявка",
+        appEmailToLabel:      "Кому (e-mail фірми, необов'язково):",
+        appEmailSubjLabel:    "Тема:",
+        appEmailHint:         (hasCL) => hasCL ? "Важливо: додайте завантажене резюме (PDF). Можете додати й супровідний лист." : "Важливо: додайте завантажене резюме (PDF) до листа.",
+        appEmailOpen:         "Відкрити в поштовій програмі ↗",
+        appEmailCopy:         "Копіювати текст",
+        appEmailCopied:       "✓ Скопійовано",
+        appEmailClose:        "Закрити",
         answerLabel:          'Ваша відповідь — пишіть будь-якою мовою:',
         answerPlaceholder:    'Просто починайте писати — навіть чернетки підійдуть. Ми автоматично покращимо.',
         submitBtn:            'Далі →',
@@ -1533,6 +1687,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Будь ласка, напишіть трохи більше…',
     },
     ru: {
+        dumpPromptUnemployed:   "Расскажите мне всё о себе — лучше всего начните с последней работы.",
+        dumpPromptCareerSwitch: "Расскажите мне всё о себе — кем вы работали раньше и чем хотите заниматься теперь?",
+        dumpPromptStudent:      "Расскажите мне всё о себе — сначала образование, практика и подработки.",
+        dumpPromptPause:        "Расскажите мне всё о себе — в том числе о работе до перерыва. Перерыв — это совершенно нормально.",
+        modeSwitchToGuided:   "Лучше шаг за шагом?",
+        modeSwitchToFree:     "Лучше рассказать свободно?",
+        guidedSwitchMsg:      "С удовольствием! Я буду задавать простые вопросы — по одному. Вернуться можно в любой момент.",
+        freeSwitchMsg:        "С удовольствием! Просто рассказывайте — я всё упорядочу.",
+        jobSearchBtn:         "🔎 Найти подходящие вакансии в AMS",
+        jobSearchNotice:      (occ) => `Мы откроем биржу вакансий AMS в вашем браузере${occ ? ` с поиском «${occ}»` : ""}. В AMS отправляется ТОЛЬКО поисковый запрос — ваше имя, контакты и резюме НЕ отправляются.`,
+        jobSearchOpen:        "Искать в AMS ↗",
+        jobSearchCancel:      "Отмена",
+        jobSearchLoopHint:    "Совет: скопируйте понравившуюся вакансию и вставьте её выше — увидите, насколько подходит ваше резюме.",
+        appEmailBtn:          "📧 Создать письмо для отклика",
+        appEmailHeading:      "📧 Ваше письмо-отклик",
+        appEmailToLabel:      "Кому (e-mail фирмы, необязательно):",
+        appEmailSubjLabel:    "Тема:",
+        appEmailHint:         (hasCL) => hasCL ? "Важно: приложите скачанное резюме (PDF). Можно приложить и сопроводительное письмо." : "Важно: приложите скачанное резюме (PDF) к письму.",
+        appEmailOpen:         "Открыть в почтовой программе ↗",
+        appEmailCopy:         "Копировать текст",
+        appEmailCopied:       "✓ Скопировано",
+        appEmailClose:        "Закрыть",
         answerLabel:          'Ваш ответ — пишите на любом языке:',
         answerPlaceholder:    'Просто начните писать — черновики тоже подойдут. Мы автоматически улучшим.',
         submitBtn:            'Далее →',
@@ -1647,6 +1823,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'Пожалуйста, напишите немного больше…',
     },
     ar: {
+        dumpPromptUnemployed:   "أخبرني كل شيء عن نفسك — من الأفضل أن تبدأ بآخر عمل لك.",
+        dumpPromptCareerSwitch: "أخبرني كل شيء عن نفسك — ماذا عملت حتى الآن وماذا تريد أن تعمل الآن؟",
+        dumpPromptStudent:      "أخبرني كل شيء عن نفسك — التعليم والتدريب والأعمال الجانبية أولاً.",
+        dumpPromptPause:        "أخبرني كل شيء عن نفسك — وأيضاً ماذا عملت قبل فترة التوقف. التوقف أمر طبيعي تماماً.",
+        modeSwitchToGuided:   "هل تفضّل خطوة بخطوة؟",
+        modeSwitchToFree:     "هل تفضّل أن تحكي بحرية؟",
+        guidedSwitchMsg:      "بكل سرور! سأطرح عليك أسئلة بسيطة — واحداً تلو الآخر. يمكنك العودة في أي وقت.",
+        freeSwitchMsg:        "بكل سرور! احكِ بحرية — وسأرتب كل شيء من أجلك.",
+        jobSearchBtn:         "🔎 ابحث عن وظائف مناسبة لدى AMS",
+        jobSearchNotice:      (occ) => `سنفتح بورصة وظائف AMS في متصفحك${occ ? ` مع البحث عن «${occ}»` : ""}. يُرسل إلى AMS مصطلح البحث فقط — اسمك وبياناتك وسيرتك الذاتية لا تُرسل.`,
+        jobSearchOpen:        "ابحث لدى AMS ↗",
+        jobSearchCancel:      "إلغاء",
+        jobSearchLoopHint:    "نصيحة: انسخ إعلان وظيفة يعجبك والصقه في الأعلى — سترى مدى تطابق سيرتك الذاتية.",
+        appEmailBtn:          "📧 إنشاء بريد التقديم",
+        appEmailHeading:      "📧 بريد التقديم الخاص بك",
+        appEmailToLabel:      "إلى (بريد الشركة، اختياري):",
+        appEmailSubjLabel:    "الموضوع:",
+        appEmailHint:         (hasCL) => hasCL ? "مهم: أرفق السيرة الذاتية (PDF) التي نزّلتها. يمكنك أيضاً إرفاق رسالة التقديم." : "مهم: أرفق السيرة الذاتية (PDF) التي نزّلتها بالبريد.",
+        appEmailOpen:         "افتح في برنامج البريد ↗",
+        appEmailCopy:         "نسخ النص",
+        appEmailCopied:       "✓ تم النسخ",
+        appEmailClose:        "إغلاق",
         answerLabel:          'إجابتك — اكتب بأي لغة تريد:',
         answerPlaceholder:    'فقط ابدأ الكتابة — حتى الملاحظات التقريبية مقبولة. سنحسنها تلقائيًا.',
         submitBtn:            'التالي →',
@@ -1761,6 +1959,28 @@ const TRANSLATIONS = {
         typeMoreHint:          'يرجى الكتابة أكثر قليلاً…',
     },
     sk: {
+        dumpPromptUnemployed:   "Porozprávajte mi všetko o sebe — najlepšie začnite poslednou prácou.",
+        dumpPromptCareerSwitch: "Porozprávajte mi všetko o sebe — čo ste doteraz robili a čo chcete robiť teraz?",
+        dumpPromptStudent:      "Porozprávajte mi všetko o sebe — najprv vzdelanie, prax a brigády.",
+        dumpPromptPause:        "Porozprávajte mi všetko o sebe — aj o práci pred prestávkou. Prestávka je úplne v poriadku.",
+        modeSwitchToGuided:   "Radšej krok za krokom?",
+        modeSwitchToFree:     "Radšej rozprávať voľne?",
+        guidedSwitchMsg:      "Rád! Budem vám klásť jednoduché otázky — jednu po druhej. Kedykoľvek sa môžete vrátiť.",
+        freeSwitchMsg:        "Rád! Jednoducho rozprávajte — všetko za vás usporiadam.",
+        jobSearchBtn:         "🔎 Nájdite vhodné pracovné miesta na AMS",
+        jobSearchNotice:      (occ) => `Otvoríme burzu práce AMS vo vašom prehliadači${occ ? ` s vyhľadávaním „${occ}“` : ""}. Do AMS sa odošle IBA hľadaný výraz — vaše meno, kontakty a životopis sa NEODOSIELAJÚ.`,
+        jobSearchOpen:        "Hľadať na AMS ↗",
+        jobSearchCancel:      "Zrušiť",
+        jobSearchLoopHint:    "Tip: skopírujte inzerát, ktorý sa vám páči, a vložte ho vyššie — uvidíte, ako dobre váš životopis sedí.",
+        appEmailBtn:          "📧 Vytvoriť e-mail so žiadosťou",
+        appEmailHeading:      "📧 Váš e-mail so žiadosťou",
+        appEmailToLabel:      "Komu (e-mail firmy, voliteľné):",
+        appEmailSubjLabel:    "Predmet:",
+        appEmailHint:         (hasCL) => hasCL ? "Dôležité: priložte stiahnutý životopis (PDF). Môžete priložiť aj motivačný list." : "Dôležité: priložte stiahnutý životopis (PDF) k e-mailu.",
+        appEmailOpen:         "Otvoriť v e-mailovom programe ↗",
+        appEmailCopy:         "Kopírovať text",
+        appEmailCopied:       "✓ Skopírované",
+        appEmailClose:        "Zavrieť",
         answerLabel:          'Vaša odpoveď — píšte v akomkoľvek jazyku:',
         answerPlaceholder:    'Len začnite písať — aj hrubé poznámky sú v poriadku. Automaticky to vylepšíme.',
         submitBtn:            'Ďalej →',
@@ -3516,6 +3736,10 @@ class InterviewManager {
             // actually DID stuff" moment) — header for identity, a section line
             // for content.
             cvDocAddAnswer(state.currentQuestion, answerText, data.polished_text);
+            // Keep the captured-fields model in sync in GUIDED mode too, so the
+            // progress chips, application e-mail prefill and AMS job search work
+            // identically regardless of which interview mode produced the answer.
+            this._captureFromGuidedAnswer(state.currentQuestion, answerText);
 
             // Show brief encouraging toast (message comes from backend quality score)
             if (data.message) ui.showEncouragement(data.message);
@@ -3833,6 +4057,7 @@ class InterviewManager {
             if (state.currentQuestion) ui.displayQuestion(state.currentQuestion);
             document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'none');
             document.getElementById('skipBtn')?.style.setProperty('display', 'inline-flex');
+            if (ui.answerInput) ui.answerInput.placeholder = t('answerPlaceholder');
         } else {
             // → free: back to the (path-flavoured) dump conversation.
             state.dumpMode = true;
@@ -3840,8 +4065,48 @@ class InterviewManager {
             cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} });
             document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
             document.getElementById('skipBtn')?.style.setProperty('display', 'none');
+            if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
         }
         this.updateModeSwitchBtn();
+    }
+
+    /** GUIDED-mode counterpart of the dump extractor's capture: map a direct
+     *  answer onto the captured-fields model (chips, e-mail prefill, job search).
+     *  Conservative — only fields where the question makes the meaning certain. */
+    _captureFromGuidedAnswer(question, answerText) {
+        const qid = question?.id ?? '';
+        const cat = question?.category ?? '';
+        const text = (answerText || '').trim();
+        if (!text || text === 'photo_skipped') return;
+        const cap = {};
+        if (qid === 'id_name') {
+            cap.name = text;
+        } else if (qid === 'id_target_job') {
+            cap.target_job = text;
+        } else if (qid === 'id_contact') {
+            const email = (text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/) || [])[0];
+            const phone = (text.match(/(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)/) || [])[0];
+            let rest = text;
+            for (const piece of [email, phone]) { if (piece) rest = rest.replace(piece, ''); }
+            rest = rest.replace(/[,;]+/g, ' ').replace(/\s+/g, ' ').trim();
+            if (email) cap.email = email;
+            if (phone) cap.phone = phone.trim();
+            if (rest)  cap.city = rest;
+        } else if (cat === 'experience' && !/_employer$|_title$|_dates$/.test(qid)) {
+            cap.experiences = [text];
+        } else if (cat === 'background' || cat === 'training') {
+            cap.education = [text];
+        } else if (cat === 'skills') {
+            cap.skills = text.split(/\s*(?:,|\bund\b|\band\b|\n)\s*/).map(s => s.trim()).filter(s => s.length > 1);
+        } else {
+            return;  // motivation/photo/etc. — nothing chip-relevant
+        }
+        this._mergeCaptured(cap);
+        ui.updateDumpProgress(state.cvCaptured);
+        // Guided answers ARE content: without this, a participant who answered
+        // only step-by-step could never finish via the free-mode button (its
+        // handler guards on dumpHasContent and silently re-prompted instead).
+        state.dumpHasContent = true;
     }
 
     // ── Application email: the ready-to-send Bewerbungs-E-Mail ────────────────
@@ -3850,13 +4115,16 @@ class InterviewManager {
     // next step is "press send", not "now write an e-mail".
     showAppEmail() {
         const cap  = state.cvCaptured || {};
-        const job  = cap.target_job || state.lastJob || t('appEmailFallbackJob');
         const name = cap.name || '';
         const contact = [cap.phone, cap.email].filter(Boolean).join(' · ');
+        // The e-mail CONTENT is always German — it goes to an Austrian employer
+        // (same rule as the CV itself). Only the surrounding UI labels translate.
+        const de   = TRANSLATIONS.de;
+        const job  = cap.target_job || state.lastJob || de.appEmailFallbackJob;
         const subj = document.getElementById('appEmailSubject');
         const body = document.getElementById('appEmailBody');
-        if (subj && !subj.value) subj.value = t('appEmailSubject', job, name);
-        if (body && !body.value) body.value = t('appEmailBody', job, name, contact);
+        if (subj && !subj.value) subj.value = de.appEmailSubject(job, name);
+        if (body && !body.value) body.value = de.appEmailBody(job, name, contact);
         const hasCL = ((document.getElementById('coverLetterBody') || {}).innerText || '').trim().length > 50;
         const hint = document.getElementById('appEmailHint');
         if (hint) hint.textContent = t('appEmailHint', hasCL);

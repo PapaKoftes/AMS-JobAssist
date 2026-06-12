@@ -138,7 +138,7 @@ class TrainerApp {
             }
         } catch (error) {
             console.error('Dashboard load error:', error);
-            this._showErrorInElement('participants-tbody', `Error loading dashboard: ${error.message}`);
+            this._showErrorInElement('participants-tbody', `Fehler beim Laden der Übersicht: ${error.message}`);
         } finally {
             appState.setLoading('participants', false);
         }
@@ -174,7 +174,7 @@ class TrainerApp {
             .slice(0, 5);
 
         if (recentParticipants.length === 0) {
-            Components.showEmpty(feed, 'No recent activity');
+            Components.showEmpty(feed, 'Keine aktuellen Aktivitäten');
             return;
         }
 
@@ -261,7 +261,7 @@ class TrainerApp {
             this.renderParticipantsList();
         } catch (error) {
             console.error('Participants load error:', error);
-            this._showErrorInElement('participants-tbody', `Error loading participants: ${error.message}`);
+            this._showErrorInElement('participants-tbody', `Fehler beim Laden der Teilnehmer: ${error.message}`);
         } finally {
             appState.setLoading('participants', false);
         }
@@ -274,7 +274,7 @@ class TrainerApp {
         const filtered = appState.getFilteredParticipants();
 
         if (filtered.length === 0) {
-            Components.showEmpty(tbody, 'No participants match filters');
+            Components.showEmpty(tbody, 'Keine Teilnehmer entsprechen den Filtern');
             this.updateBulkActionButtons();
             return;
         }
@@ -329,7 +329,7 @@ class TrainerApp {
 
         const trainerName = appState.currentUser.name;
         if (!trainerName || trainerName === 'Trainer') {
-            alert('Please set your trainer name in Settings first.');
+            alert('Bitte legen Sie zuerst Ihren Trainer-Namen in den Einstellungen fest.');
             return;
         }
 
@@ -364,7 +364,7 @@ class TrainerApp {
 
         const trainerName = appState.currentUser.name;
         if (!trainerName || trainerName === 'Trainer') {
-            alert('Please set your trainer name in Settings first.');
+            alert('Bitte legen Sie zuerst Ihren Trainer-Namen in den Einstellungen fest.');
             return;
         }
 
@@ -553,7 +553,7 @@ class TrainerApp {
             this.renderDetailView(participant);
         } catch (error) {
             console.error('Detail load error:', error);
-            alert(`Error loading participant details: ${error.message}`);
+            alert(`Fehler beim Laden der Teilnehmer-Details: ${error.message}`);
         } finally {
             appState.setLoading('detail', false);
         }
@@ -778,7 +778,7 @@ class TrainerApp {
     async saveApproval() {
         // Validate state before API call
         if (!appState.currentParticipant) {
-            alert('No participant selected');
+            alert('Kein Teilnehmer ausgewählt');
             return;
         }
 
@@ -795,11 +795,11 @@ class TrainerApp {
 
         // Validate
         if (!status) {
-            Components.showMessage(messageEl, 'Please select a status', 'error');
+            Components.showMessage(messageEl, 'Bitte wählen Sie einen Status', 'error');
             return;
         }
         if (!trainerName || trainerName === 'Trainer') {
-            Components.showMessage(messageEl, 'Please set your name in Settings first', 'error', 5000);
+            Components.showMessage(messageEl, 'Bitte legen Sie zuerst Ihren Namen in den Einstellungen fest', 'error', 5000);
             return;
         }
 
@@ -812,11 +812,11 @@ class TrainerApp {
                 approved_by: trainerName
             });
 
-            Components.showMessage(messageEl, 'Approval saved', 'success');
+            Components.showMessage(messageEl, 'Freigabe gespeichert', 'success');
             await this.loadParticipantDetail(participantId);
         } catch (error) {
             console.error('Approval save error:', error);
-            Components.showMessage(messageEl, `Error: ${error.message}`, 'error', 5000);
+            Components.showMessage(messageEl, `Fehler: ${error.message}`, 'error', 5000);
         } finally {
             appState.setLoading('approval', false);
         }
@@ -865,12 +865,12 @@ class TrainerApp {
             const cohort = cohortInput ? cohortInput.value.trim() : '';
 
             if (!file) {
-                alert('Please select a file');
+                alert('Bitte wählen Sie eine Datei');
                 return;
             }
 
             if (!cohort) {
-                alert('Please enter a cohort name');
+                alert('Bitte geben Sie einen Namen für die Kursgruppe ein');
                 return;
             }
 
@@ -883,7 +883,7 @@ class TrainerApp {
 
         const isValid = file.name.endsWith('.json') || file.name.endsWith('.zip');
         if (!isValid) {
-            alert('Please select a .json or .zip file');
+            alert('Bitte wählen Sie eine .json- oder .zip-Datei');
             return;
         }
 
@@ -975,9 +975,9 @@ class TrainerApp {
         const clearCacheBtn = document.getElementById('clear-cache-btn');
         if (clearCacheBtn) {
             clearCacheBtn.addEventListener('click', () => {
-                if (confirm('Clear all cached data?')) {
+                if (confirm('Alle zwischengespeicherten Daten löschen?')) {
                     localStorage.clear();
-                    alert('Cache cleared. Reload the page to refresh.');
+                    alert('Zwischenspeicher geleert. Bitte laden Sie die Seite neu.');
                 }
             });
         }
