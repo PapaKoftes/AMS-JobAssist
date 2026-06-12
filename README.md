@@ -129,6 +129,10 @@ AMS-JobAssist/
 | PDF / DOCX / JSON export | ✅ | Austrian tabellarischer Lebenslauf; deterministic output |
 | Europass-style XML export | ⚠️ | Approximate Europass V3 shape — **not XSD-validated**; treat as an interop experiment, not a guaranteed-importable file |
 | Cover letter generator | ✅ | ÖNORM A 1080-style Bewerbungsschreiben with signature block; downloadable as TXT |
+| Application email generator | ✅ | Ready-to-send German Bewerbungs-E-Mail (subject + body, data prefilled); mailto: open + copy. Closes the "now actually apply" step |
+| Guided step-by-step interview | ✅ | "📋 Lieber Schritt für Schritt?" switches the free conversation to one-question-at-a-time (and back); both modes feed the same CV + progress chips |
+| Path-aware openings | ✅ | The chosen situation (arbeitslos / Umstieg / Studium / Pause) changes the conversation's opening question |
+| AMS job-search bridge | ✅ | "🔎 Passende Jobs beim AMS finden" opens jobs.ams.at pre-filled with the target job (transparency notice; the app itself transmits nothing) |
 | ATS / job match (optional) | ⚠️ | Rough keyword heuristic. NOTE: most AMS-target roles (trades/care/retail/gastro) are filled by SMEs via email/eJob-Room and read by humans — ATS optimisation is low-value for this clientele; keep as an optional check, not a headline |
 | AI chat coach | ✅ (optional) | Knows your CV; falls back to rule-based if no model |
 | Interview prep generator | ✅ (optional) | Practise questions for the actual job interview |
