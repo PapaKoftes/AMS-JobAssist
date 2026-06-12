@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMS JobAssist - Lebenslauf-Ersteller</title>
-    <link rel="stylesheet" href="/static/styles.css?v=convfix">
+    <link rel="stylesheet" href="/static/styles.css?v=upgrade3">
 </head>
 <body>
 <!-- Skip navigation link for keyboard / screen reader users -->
@@ -328,6 +328,7 @@
                 <!-- Action buttons (dump mode shows: Lebenslauf erstellen + Senden) -->
                 <div class="action-buttons">
                     <button class="btn btn-secondary" id="skipBtn">Frage überspringen</button>
+                    <button class="btn btn-ghost btn-sm" id="modeSwitchBtn" type="button" style="display:none;">📋 <span id="modeSwitchLabel">Lieber Schritt für Schritt?</span></button>
                     <button class="btn btn-ghost" id="dumpFinishBtn" type="button" style="display:none;">✓ <span id="dumpFinishLabel">Lebenslauf erstellen</span></button>
                     <button class="btn btn-primary" id="submitBtn" disabled>Weiter →</button>
                 </div>
@@ -502,6 +503,29 @@
                 </div>
                 <button class="btn btn-secondary" id="coverLetterBtn" style="margin-bottom:8px;">✉️ Anschreiben erstellen</button>
 
+                <!-- Application email — assembles a ready-to-send Bewerbungs-E-Mail
+                     from the CV data (+ cover letter if generated). Closes the last
+                     mile: most AMS-segment applications go out by e-mail. -->
+                <div class="app-email-section" id="appEmailSection" style="display:none;">
+                    <h3 id="appEmailHeading">📧 Ihre Bewerbungs-E-Mail</h3>
+                    <div class="app-email-row">
+                        <label id="appEmailToLabel" for="appEmailTo">An (E-Mail der Firma, optional):</label>
+                        <input type="email" id="appEmailTo" placeholder="z.B. bewerbung@firma.at" />
+                    </div>
+                    <div class="app-email-row">
+                        <label id="appEmailSubjLabel" for="appEmailSubject">Betreff:</label>
+                        <input type="text" id="appEmailSubject" />
+                    </div>
+                    <textarea id="appEmailBody" rows="9"></textarea>
+                    <p class="app-email-hint" id="appEmailHint">Wichtig: Hängen Sie den heruntergeladenen Lebenslauf (PDF) an die E-Mail an.</p>
+                    <div class="app-email-actions">
+                        <button class="btn btn-primary" id="appEmailOpenBtn" type="button">In E-Mail-Programm öffnen ↗</button>
+                        <button class="btn btn-secondary" id="appEmailCopyBtn" type="button">Text kopieren</button>
+                        <button class="btn btn-ghost btn-sm" id="appEmailCancelBtn" type="button">Schließen</button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" id="appEmailBtn" style="margin-bottom:8px;">📧 Bewerbungs-E-Mail erstellen</button>
+
                 <div class="completion-secondary-actions">
                     <!-- #7 Trainer-Ansicht -->
                     <button class="btn btn-secondary" id="reviewBtn">📋 Vorher &amp; Nachher ansehen</button>
@@ -655,6 +679,6 @@
 
 <!-- Test mode indicator (hidden unless toggled with Ctrl+Shift+T) -->
 <div id="testModeIndicator" style="display:none; position:fixed; bottom:10px; right:10px; background:#6c3483; color:#fff; padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600; z-index:9999; box-shadow:0 2px 8px rgba(0,0,0,.25);">🧪 Testmodus aktiv — „Testfall speichern" am Ende</div>
-<script src="/static/app.js?v=pathfix"></script>
+<script src="/static/app.js?v=upgrade3"></script>
 </body>
 </html>

@@ -45,6 +45,7 @@ Open **http://localhost:8000**.
 4. **Just dump everything** in one go — any language, rough is fine. Try:
    > *"Ich bin Maria Horvat aus Wien, +43 660 1234567, maria@example.com. Fünf Jahre Bäckerei: Brot gebacken, Kasse geführt, Kunden beraten. Pflichtschulabschluss, Staplerschein. Pünktlich, spreche Deutsch und Bosnisch. Suche Bürokauffrau oder Verkauf."*
 5. Watch the **AI structure it onto the CV above** — name, contact, target job, experience, education, skills all sort themselves into the right sections. Then the assistant asks about whatever's missing. Add more, or click **"✓ Lebenslauf erstellen"**.
+   - Prefer small questions instead of free talking? Click **"📋 Lieber Schritt für Schritt?"** — the assistant switches to a guided one-question-at-a-time interview (and you can switch back anytime). The opening question also adapts to the situation you picked (job-seeking, career change, student, …).
 6. On the completion screen: quality score, PDF/DOCX/Europass download, ATS job-match, cover letter, and the **AI chat coach** (ask it "Ist mein Lebenslauf gut genug?").
 7. Download the PDF and open it.
 
@@ -64,6 +65,7 @@ Open **http://localhost:8001** in a second tab.
 
 - **ATS job match**: on the completion screen, paste a job listing from karriere.at and click Analyse.
 - **Cover letter**: enter a company name + position, click generate.
+- **Application email**: click **"📧 Bewerbungs-E-Mail erstellen"** — a ready-to-send German application email (subject + body, your data filled in). Open it in your email program or copy the text; just attach the downloaded PDF. This is the actual "apply" step, finished.
 - **DSGVO download**: click the 🔒 button on the completion screen — downloads a JSON of everything stored about that session.
 
 ---

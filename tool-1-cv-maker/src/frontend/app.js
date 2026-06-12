@@ -285,6 +285,36 @@ const TRANSLATIONS = {
         cvDocNamePlaceholder: 'Ihr Name',
         dumpPrompt:           'Erzählen Sie mir alles über sich.',
         dumpHint:             'Ihr Name, wo Sie wohnen, Ihre Arbeit, Ausbildung, Fähigkeiten — schreiben Sie so viel Sie möchten, in jeder Sprache. Ich ordne alles für Ihren Lebenslauf.',
+        // Path-aware openings — the chosen path changes what we ask for first.
+        dumpPromptUnemployed:   'Erzählen Sie mir alles über sich — beginnen Sie am besten mit Ihrer letzten Arbeit.',
+        dumpPromptCareerSwitch: 'Erzählen Sie mir alles über sich — was haben Sie bisher gearbeitet, und was möchten Sie jetzt machen?',
+        dumpPromptStudent:      'Erzählen Sie mir alles über sich — Ihre Ausbildung, Praktika und Nebenjobs zuerst.',
+        dumpPromptPause:        'Erzählen Sie mir alles über sich — auch, was Sie vor Ihrer Pause gearbeitet haben. Die Pause ist völlig in Ordnung.',
+        // Interview mode switch (free conversation ↔ guided step-by-step)
+        modeSwitchToGuided:   'Lieber Schritt für Schritt?',
+        modeSwitchToFree:     'Lieber frei erzählen?',
+        guidedSwitchMsg:      'Gern! Ich stelle Ihnen einfache Fragen — eine nach der anderen. Sie können jederzeit zurückwechseln.',
+        freeSwitchMsg:        'Gern! Erzählen Sie einfach frei — ich ordne alles für Sie.',
+        // Application email (the ready-to-send Bewerbungs-E-Mail)
+        appEmailBtn:          '📧 Bewerbungs-E-Mail erstellen',
+        appEmailHeading:      '📧 Ihre Bewerbungs-E-Mail',
+        appEmailToLabel:      'An (E-Mail der Firma, optional):',
+        appEmailSubjLabel:    'Betreff:',
+        appEmailHint:         (hasCL) => hasCL
+            ? 'Wichtig: Hängen Sie den heruntergeladenen Lebenslauf (PDF) an. Ihr Anschreiben können Sie zusätzlich anhängen.'
+            : 'Wichtig: Hängen Sie den heruntergeladenen Lebenslauf (PDF) an die E-Mail an.',
+        appEmailOpen:         'In E-Mail-Programm öffnen ↗',
+        appEmailCopy:         'Text kopieren',
+        appEmailCopied:       '✓ Kopiert',
+        appEmailClose:        'Schließen',
+        appEmailFallbackJob:  'die ausgeschriebene Stelle',
+        appEmailSubject:      (job, name) => `Bewerbung als ${job}` + (name ? ` – ${name}` : ''),
+        appEmailBody: (job, name, contact) =>
+            `Sehr geehrte Damen und Herren,\n\n` +
+            `mit großem Interesse bewerbe ich mich um die Stelle als ${job}. ` +
+            `Meine Qualifikationen und meine bisherige Erfahrung entnehmen Sie bitte dem beigefügten Lebenslauf.\n\n` +
+            `Über eine Einladung zu einem persönlichen Gespräch freue ich mich sehr.\n\n` +
+            `Mit freundlichen Grüßen\n${name || ''}` + (contact ? `\n${contact}` : ''),
         dumpPlaceholder:      'z.B. Ich heiße Maria, wohne in Wien, habe 5 Jahre in einer Bäckerei gearbeitet…',
         dumpThinking:         'Einen Moment — ich ordne das für Ihren Lebenslauf…',
         dumpKeepGoing:        'Oder erzählen Sie einfach weiter.',
@@ -520,6 +550,33 @@ const TRANSLATIONS = {
         // Free-form dump flow (English)
         dumpPrompt:           'Tell me everything about yourself.',
         dumpHint:             'Your name, where you live, your work, education, skills — write as much as you like, in any language. I will organise it all for your CV.',
+        dumpPromptUnemployed:   'Tell me everything about yourself — best to start with your most recent job.',
+        dumpPromptCareerSwitch: 'Tell me everything about yourself — what have you worked as so far, and what would you like to do now?',
+        dumpPromptStudent:      'Tell me everything about yourself — your education, internships and side jobs first.',
+        dumpPromptPause:        'Tell me everything about yourself — including what you worked before your break. The break is completely fine.',
+        modeSwitchToGuided:   'Prefer step by step?',
+        modeSwitchToFree:     'Prefer to tell it freely?',
+        guidedSwitchMsg:      'Sure! I will ask you simple questions — one at a time. You can switch back anytime.',
+        freeSwitchMsg:        'Sure! Just tell your story freely — I will organise everything for you.',
+        appEmailBtn:          '📧 Create application email',
+        appEmailHeading:      '📧 Your application email',
+        appEmailToLabel:      'To (company email, optional):',
+        appEmailSubjLabel:    'Subject:',
+        appEmailHint:         (hasCL) => hasCL
+            ? 'Important: attach the downloaded CV (PDF). You can also attach your cover letter.'
+            : 'Important: attach the downloaded CV (PDF) to the email.',
+        appEmailOpen:         'Open in email program ↗',
+        appEmailCopy:         'Copy text',
+        appEmailCopied:       '✓ Copied',
+        appEmailClose:        'Close',
+        appEmailFallbackJob:  'the advertised position',
+        appEmailSubject:      (job, name) => `Application for ${job}` + (name ? ` – ${name}` : ''),
+        appEmailBody: (job, name, contact) =>
+            `Dear Sir or Madam,\n\n` +
+            `I am writing to apply with great interest for the position of ${job}. ` +
+            `Please find my qualifications and experience in the attached CV.\n\n` +
+            `I would be delighted to be invited to a personal interview.\n\n` +
+            `Kind regards\n${name || ''}` + (contact ? `\n${contact}` : ''),
         dumpPlaceholder:      'e.g. My name is Maria, I live in Vienna, I worked 5 years in a bakery…',
         dumpThinking:         'One moment — I am organising this for your CV…',
         dumpKeepGoing:        'Or just keep telling me more.',
@@ -1827,6 +1884,23 @@ function t(key, ...args) {
     return typeof val === 'function' ? val(...args) : val;
 }
 
+/** The free-form opening, flavoured by the chosen interview path — so the path
+ *  selection actually changes the conversation, not just a stored label. */
+function dumpPromptForPath() {
+    const map = {
+        'unemployed':    'dumpPromptUnemployed',
+        'career-switch': 'dumpPromptCareerSwitch',
+        'student':       'dumpPromptStudent',
+        'pause':         'dumpPromptPause',
+    };
+    const key = map[state?.interviewPath];
+    if (key) {
+        const v = t(key);
+        if (v && v !== key) return v;  // t() returns the raw key when missing
+    }
+    return t('dumpPrompt');
+}
+
 /**
  * Push all translated strings into the DOM.
  * Called whenever the user switches language.
@@ -1912,6 +1986,13 @@ function applyTranslations() {
     setText('atsBtn',             'atsBtn');
     setText('amsJobsBtn',         'jobSearchBtn');
     setText('amsJobsCancelBtn',   'jobSearchCancel');
+    setText('appEmailBtn',        'appEmailBtn');
+    setText('appEmailHeading',    'appEmailHeading');
+    setText('appEmailToLabel',    'appEmailToLabel');
+    setText('appEmailSubjLabel',  'appEmailSubjLabel');
+    setText('appEmailOpenBtn',    'appEmailOpen');
+    setText('appEmailCopyBtn',    'appEmailCopy');
+    setText('appEmailCancelBtn',  'appEmailClose');
     setText('coverLetterHeading', 'coverLetterHeading');
     setText('coverLetterBtn',     'coverLetterBtn');
     setText('reviewBtn',          'reviewBtn');
@@ -3064,6 +3145,7 @@ class InterviewManager {
         ui.showScreen('interview');
         ui.updateDumpProgress({});
         document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
+        this.updateModeSwitchBtn();
         if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
         document.getElementById('skipBtn')?.style.setProperty('display', 'none');
         const sb = document.getElementById('submitBtn');
@@ -3152,10 +3234,12 @@ class InterviewManager {
 
             ui.showScreen('interview');
             // Free-form start: invite the participant to dump everything; the AI
-            // structures it onto the CV, then we converse about any gaps.
-            cvDocSetPrompt({ text: t('dumpPrompt'), hint: t('dumpHint'), examples: {} });
+            // structures it onto the CV, then we converse about any gaps. The
+            // opening is flavoured by the chosen path (unemployed/student/…).
+            cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} });
             ui.updateDumpProgress({});
             document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
+            this.updateModeSwitchBtn();
             if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
             // Dump mode: no "skip", and the send button just sends.
             document.getElementById('skipBtn')?.style.setProperty('display', 'none');
@@ -3727,6 +3811,92 @@ class InterviewManager {
         if (notice) notice.style.display = 'none';
     }
 
+    // ── Interview mode switch: free conversation ↔ guided step-by-step ────────
+    // The structured 65-question interview existed all along but was unreachable;
+    // this gives it a door. Some participants freeze on "tell me everything" and
+    // do better with one small question at a time.
+    updateModeSwitchBtn() {
+        const btn = document.getElementById('modeSwitchBtn');
+        const lbl = document.getElementById('modeSwitchLabel');
+        if (!btn) return;
+        if (!state.sessionId) { btn.style.display = 'none'; return; }
+        btn.style.display = 'inline-flex';
+        if (lbl) lbl.textContent = state.dumpMode ? t('modeSwitchToGuided') : t('modeSwitchToFree');
+    }
+
+    toggleInterviewMode() {
+        if (state.isWaitingForResponse) return;
+        if (state.dumpMode) {
+            // → guided: ask the stored current question, restore skip, hide finish.
+            state.dumpMode = false;
+            convAddAI(t('guidedSwitchMsg'));
+            if (state.currentQuestion) ui.displayQuestion(state.currentQuestion);
+            document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'none');
+            document.getElementById('skipBtn')?.style.setProperty('display', 'inline-flex');
+        } else {
+            // → free: back to the (path-flavoured) dump conversation.
+            state.dumpMode = true;
+            convAddAI(t('freeSwitchMsg'));
+            cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} });
+            document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
+            document.getElementById('skipBtn')?.style.setProperty('display', 'none');
+        }
+        this.updateModeSwitchBtn();
+    }
+
+    // ── Application email: the ready-to-send Bewerbungs-E-Mail ────────────────
+    // Most AMS-segment applications go out by e-mail. We already produce the CV
+    // and cover letter; this assembles the actual e-mail so the participant's
+    // next step is "press send", not "now write an e-mail".
+    showAppEmail() {
+        const cap  = state.cvCaptured || {};
+        const job  = cap.target_job || state.lastJob || t('appEmailFallbackJob');
+        const name = cap.name || '';
+        const contact = [cap.phone, cap.email].filter(Boolean).join(' · ');
+        const subj = document.getElementById('appEmailSubject');
+        const body = document.getElementById('appEmailBody');
+        if (subj && !subj.value) subj.value = t('appEmailSubject', job, name);
+        if (body && !body.value) body.value = t('appEmailBody', job, name, contact);
+        const hasCL = ((document.getElementById('coverLetterBody') || {}).innerText || '').trim().length > 50;
+        const hint = document.getElementById('appEmailHint');
+        if (hint) hint.textContent = t('appEmailHint', hasCL);
+        const sec = document.getElementById('appEmailSection');
+        if (sec) { sec.style.display = 'block'; sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    }
+
+    openAppEmail() {
+        const to   = (document.getElementById('appEmailTo')?.value || '').trim();
+        const subj = document.getElementById('appEmailSubject')?.value || '';
+        const body = document.getElementById('appEmailBody')?.value || '';
+        // mailto cannot attach files — the hint tells the user to attach the PDF.
+        window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    }
+
+    async copyAppEmail() {
+        const subj = document.getElementById('appEmailSubject')?.value || '';
+        const body = document.getElementById('appEmailBody')?.value || '';
+        const text = `${t('appEmailSubjLabel')} ${subj}\n\n${body}`;
+        const btn  = document.getElementById('appEmailCopyBtn');
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (e) {
+            // Clipboard API can be blocked — fall back to select + execCommand.
+            const ta = document.getElementById('appEmailBody');
+            ta?.select();
+            try { document.execCommand('copy'); } catch (e2) { /* give up quietly */ }
+        }
+        if (btn) {
+            const old = btn.textContent;
+            btn.textContent = t('appEmailCopied');
+            setTimeout(() => { btn.textContent = old; }, 2000);
+        }
+    }
+
+    _cancelAppEmail() {
+        const sec = document.getElementById('appEmailSection');
+        if (sec) sec.style.display = 'none';
+    }
+
     // ── Test/dev capture mode (trainer test-case collection) ──────────────────
     _applyTestMode() {
         const show = state.testMode ? '' : 'none';
@@ -4056,7 +4226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dump mode: build the CV from what's been gathered so far.
     document.getElementById('dumpFinishBtn')?.addEventListener('click', () => {
         if (state.dumpHasContent) interview.showCompletion();
-        else cvDocSetPrompt({ text: t('dumpPrompt'), hint: t('dumpHint'), examples: {} });
+        else cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} });
     });
 
     // Completion screen
@@ -4107,6 +4277,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('runAtsBtn')?.addEventListener('click', () => interview._runATSAnalysis());
     document.getElementById('amsJobsBtn')?.addEventListener('click',     () => interview.handleFindAmsJobs());
     document.getElementById('amsJobsCancelBtn')?.addEventListener('click', () => interview._cancelAmsJobs());
+    document.getElementById('modeSwitchBtn')?.addEventListener('click',  () => interview.toggleInterviewMode());
+    document.getElementById('appEmailBtn')?.addEventListener('click',       () => interview.showAppEmail());
+    document.getElementById('appEmailOpenBtn')?.addEventListener('click',   () => interview.openAppEmail());
+    document.getElementById('appEmailCopyBtn')?.addEventListener('click',   () => interview.copyAppEmail());
+    document.getElementById('appEmailCancelBtn')?.addEventListener('click', () => interview._cancelAppEmail());
     document.getElementById('cancelAtsBtn')?.addEventListener('click',() => interview._cancelATS());
 
     // §6 Cover letter — two-step flow
