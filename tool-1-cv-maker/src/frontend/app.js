@@ -468,6 +468,7 @@ const TRANSLATIONS = {
         statusSaved:          'Gespeichert ✓',
         statusReady:          'Bereit',
         statusError:          'Fehler',
+        myDataFailed:         'Download fehlgeschlagen — bitte versuchen Sie es erneut.',
         statusStarting:       'Wird gestartet…',
         statusResuming:       'Wird fortgesetzt…',
         statusSkipping:       'Wird übersprungen…',
@@ -690,6 +691,7 @@ const TRANSLATIONS = {
         statusSaved:          'Saved ✓',
         statusReady:          'Ready',
         statusError:          'Error',
+        myDataFailed:         'Download failed — please try again.',
         statusStarting:       'Starting…',
         statusResuming:       'Resuming…',
         statusSkipping:       'Skipping…',
@@ -3312,6 +3314,14 @@ class InterviewManager {
             state.askedGaps      = new Set();
             state.lastGapKey     = null;
             state.totalQuestions = 1;
+            // Keep the guided door alive after resume: the resume payload tells
+            // us the next structured question — store it so "Schritt für Schritt"
+            // works (without this, the mode switch silently no-ops post-resume).
+            const rq = resp?.data?.question;
+            if (rq) {
+                state.currentQuestion      = rq;
+                state.currentQuestionIndex = (resp.data.progress?.current ?? 1) - 1;
+            }
 
             // Pull back everything captured so far and repaint the CV sheet.
             let cap = {}, missing = [];

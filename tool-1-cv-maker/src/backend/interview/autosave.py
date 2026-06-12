@@ -158,24 +158,22 @@ class AutosaveManager:
             answers = self.db.get_session_answers(session_id)
             answers_count = len(answers)
 
-            # Verify answer count is reasonable — paths now have up to 13 questions
-            # (3 identity + up to 10 path-specific).  Use a generous ceiling so this
-            # check only fires on truly corrupt data (e.g. 999 answers).
-            _MAX_ANSWERS = 20
+            # Verify answer count is reasonable. The free-form "dump" mode (the
+            # DEFAULT flow) registers a synthetic answer row per extracted field
+            # per conversation turn (name/location/phone/email/target + several
+            # experience/education/skills entries), so legitimate sessions can far
+            # exceed the 13 guided questions. Ceiling only catches truly corrupt
+            # data (e.g. 999 rows from a write loop).
+            _MAX_ANSWERS = 60
             if answers_count > _MAX_ANSWERS:
                 issues.append(f"Unexpected answer count: {answers_count} (expected max {_MAX_ANSWERS})")
 
-            # Verify progress percentage is within a sane range [0, 100].
-            # We do NOT check exact formula because autosave and engine may use
-            # different denominators (autosave uses /5, engine uses /total).
-            # Mismatch is only flagged when the stored value is implausibly far
-            # from what autosave_answer would have written (±25 pp tolerance).
-            expected_progress = int((answers_count / 5) * 100)
-            if abs(session["progress_percent"] - expected_progress) > 25:
-                issues.append(
-                    f"Progress mismatch: stored={session['progress_percent']}, "
-                    f"expected~{expected_progress}"
-                )
+            # NOTE: an earlier "progress mismatch" heuristic compared the stored
+            # progress_percent against answers_count/5 — a formula from the old
+            # 5-question flow. Dump sessions (8+ answer rows, progress capped at
+            # 100) ALWAYS failed it, so resume was refused for every default-mode
+            # session ("Session state is inconsistent"). progress_percent is
+            # cosmetic; it can never make a session unsafe to resume. Removed.
 
             # Verify timestamps are reasonable
             if session["created_at"] and session["updated_at"]:

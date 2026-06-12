@@ -180,15 +180,15 @@ class TestSessionStateVerification:
         assert "Session not found" in state["issues"]
 
     def test_answer_count_exceeding_max_detected(self, db_manager, test_session, test_questions):
-        """✅ Answer count > 20 detected as issue (max = 20 accounting for all path variants)."""
+        """✅ Answer count > 60 detected as issue (ceiling allows dump-mode synthetics)."""
         autosave = AutosaveManager(db_manager)
 
         # Save 5 answers normally
         for i in range(5):
             autosave.autosave_answer(test_session["id"], f"cs_{i+1:02d}", f"Answer {i+1}")
 
-        # Manually insert 16 extra answers to exceed new max of 20 (simulating data corruption)
-        for extra_idx in range(1, 17):
+        # Manually insert 60 extra answers to exceed the max of 60 (simulating corruption)
+        for extra_idx in range(1, 61):
             db_manager.execute_update(
                 """
                 INSERT OR IGNORE INTO interview_questions
@@ -204,25 +204,43 @@ class TestSessionStateVerification:
         assert state["session_valid"] == False
         assert "Unexpected answer count" in str(state["issues"])
 
-    def test_progress_mismatch_detected(self, db_manager, test_session, test_questions):
-        """✅ Progress percentage mismatch detected when value is drastically wrong."""
+    def test_dump_mode_session_is_recoverable(self, db_manager, test_session, test_questions):
+        """✅ REGRESSION (resume bug): a dump-mode-shaped session — many synthetic
+        answer rows with progress capped at 100 — must be recoverable.
+
+        The old 'progress mismatch' heuristic compared progress_percent against
+        answers_count/5*100 (the ancient 5-question formula). Every default-mode
+        dump session (8+ rows, progress <= 100) failed it, so /api/interview/resume
+        refused with 'Session state is inconsistent' and the frontend silently
+        restarted instead of resuming. progress_percent is cosmetic and must never
+        block recovery."""
         autosave = AutosaveManager(db_manager)
 
-        # Save 3 answers (autosave formula: 3/5*100 = 60%)
-        for i in range(3):
-            autosave.autosave_answer(test_session["id"], f"u_{i+1:02d}", f"Answer {i+1}")
-
-        # Manually corrupt progress to a drastically wrong value
-        # 3 answers → expected ~60% (autosave formula), corrupting to 5% is ~55pp off
+        # Simulate a dump session: 8 captured-field rows, stored progress 50 %.
+        # (Old formula would 'expect' 160 % → >25pp off → refused recovery.)
+        # Register dump-style synthetic questions first (the dump endpoint does
+        # the same), since the fixture only seeds 5 path questions.
+        for i in range(8):
+            db_manager.execute_update(
+                """INSERT OR IGNORE INTO interview_questions
+                   (question_id, question_text, category, interview_path, question_order,
+                    hint, good_example, bad_example, min_length, created_at)
+                   VALUES (?, '(dump)', 'background', 'dump', 100, '', '', '', 0, datetime('now'))""",
+                (f"dump_f_{i+1:02d}",)
+            )
+            autosave.autosave_answer(test_session["id"], f"dump_f_{i+1:02d}", f"Feld {i+1}")
         db_manager.execute_update(
             "UPDATE sessions SET progress_percent = ? WHERE id = ?",
-            (5, test_session["id"])  # Should be ~60%, drastically wrong
+            (50, test_session["id"]),
         )
 
         state = autosave.verify_session_state(test_session["id"])
+        assert state["session_valid"] is True, state["issues"]
+        assert state["recovery_possible"] is True
 
-        assert state["session_valid"] == False
-        assert "Progress mismatch" in str(state["issues"])
+        recovery = autosave.recover_session(test_session["id"])
+        assert recovery["recovered"] is True
+        assert recovery["answers_recovered"] == 8
 
     def test_timestamp_consistency_checked(self, db_manager, test_session, test_questions):
         """✅ Timestamp ordering verified (created <= updated)."""
@@ -280,17 +298,21 @@ class TestCrashRecovery:
         assert result["current_question_index"] == 5  # Past last question
 
     def test_recover_corrupted_session_fails(self, db_manager, test_session, test_questions):
-        """✅ Cannot recover corrupted session state."""
+        """✅ Cannot recover corrupted session state.
+
+        Corruption = a violated invariant (timestamps out of order). NOTE: a
+        'wrong-looking' progress_percent is NOT corruption — it's cosmetic and
+        differs by flow (dump vs guided); see test_dump_mode_session_is_recoverable."""
         autosave = AutosaveManager(db_manager)
 
         # Save 3 answers
         for i in range(3):
             autosave.autosave_answer(test_session["id"], f"u_{i+1:02d}", f"Answer {i+1}")
 
-        # Corrupt progress (should be 60%, set to 30%)
+        # Corrupt timestamps: created AFTER updated is impossible in a healthy DB.
         db_manager.execute_update(
-            "UPDATE sessions SET progress_percent = ? WHERE id = ?",
-            (30, test_session["id"])
+            "UPDATE sessions SET created_at = datetime('now', '+1 day') WHERE id = ?",
+            (test_session["id"],)
         )
 
         result = autosave.recover_session(test_session["id"])

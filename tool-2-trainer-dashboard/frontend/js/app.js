@@ -352,7 +352,7 @@ class TrainerApp {
         appState.clearSelections();
         appState.setLoading('approval', false);
         this.loadParticipants();
-        alert(`Approved ${successCount} out of ${count} participants`);
+        alert(`${successCount} von ${count} Teilnehmern freigegeben`);
     }
 
     async bulkReject() {
@@ -387,7 +387,7 @@ class TrainerApp {
         appState.clearSelections();
         appState.setLoading('approval', false);
         this.loadParticipants();
-        alert(`Rejected ${successCount} out of ${count} participants`);
+        alert(`${successCount} von ${count} Teilnehmern abgelehnt`);
     }
 
     async bulkExport() {
@@ -922,8 +922,8 @@ class TrainerApp {
                 resultDiv.classList.add('success');
                 const msgEl = resultDiv.querySelector('.result-message');
                 const detailEl = resultDiv.querySelector('.result-details');
-                if (msgEl) msgEl.textContent = `Success: ${result.message}`;
-                if (detailEl) detailEl.textContent = `Imported: ${result.imported} CVs`;
+                if (msgEl) msgEl.textContent = `Erfolgreich: ${result.message}`;
+                if (detailEl) detailEl.textContent = `Importiert: ${result.imported} Lebenslauf/Lebensläufe`;
 
                 setTimeout(() => {
                     const cohortInput = document.getElementById('import-cohort');
