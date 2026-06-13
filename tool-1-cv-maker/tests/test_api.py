@@ -146,5 +146,54 @@ class TestAmsJobSearch:
         assert r.status_code == 200
 
 
+class TestBewerbungsCheck:
+    """Test the /api/cv/check hire-readiness endpoint + its CVData mapper."""
+
+    def test_check_nonexistent_returns_404(self, client):
+        r = client.post("/api/cv/check", json={"session_id": 999999})
+        assert r.status_code == 404
+
+    def test_check_requires_session_id(self, client):
+        r = client.post("/api/cv/check", json={"job_description": "x"})
+        assert r.status_code == 422  # pydantic validation
+
+    def test_mapper_flattens_cvdata(self):
+        from app import _cv_data_to_check_dict
+        from cv.models import CVData, CVSection, CVIdentity, QuestionCategory
+        cv = CVData(
+            session_id="1", user_id="u", interview_path="unemployed", language_input="de",
+            identity=CVIdentity(full_name="Leyla Demir", contact_phone="0660 1",
+                                contact_email="l@x.at", location="Wien", photo="data:image/png;base64,AAA"),
+            experience=[CVSection(german="Verkäuferin, 150 Kunden/Tag", english="", native="",
+                                  category=QuestionCategory.EXPERIENCE)],
+            background=[CVSection(german="Lehre Einzelhandel", english="", native="",
+                                  category=QuestionCategory.BACKGROUND)],
+            all_skills=["Kassa", "Excel", "Kundenberatung"],
+            languages=[{"language": "Deutsch", "code": "de", "level": "B2"}],
+            target_job="Bürokauffrau",
+        )
+        d = _cv_data_to_check_dict(cv)
+        assert d["name"] == "Leyla Demir"
+        assert d["phone"] and d["email"] and d["city"] == "Wien"
+        assert d["photo"] is True
+        assert d["target_job"] == "Bürokauffrau"
+        assert "Verkäuferin" in d["experiences"][0]
+        assert d["education"] == ["Lehre Einzelhandel"]
+        assert d["skills"] == ["Kassa", "Excel", "Kundenberatung"]
+        assert "Verkäuferin" in d["all_text"] and "Deutsch B2" in d["all_text"]
+        # and that mapped dict produces a high hire-readiness score
+        from polish.cv_check import analyze_cv
+        assert analyze_cv(d)["percent"] >= 70
+
+    def test_mapper_skills_fallback_to_section_text(self):
+        from app import _cv_data_to_check_dict
+        from cv.models import CVData, CVSection, QuestionCategory
+        cv = CVData(session_id="1", user_id="u", interview_path="unemployed", language_input="de",
+                    skills=[CVSection(german="Teamfähig", english="", native="",
+                                      category=QuestionCategory.SKILLS)])
+        d = _cv_data_to_check_dict(cv)
+        assert d["skills"] == ["Teamfähig"]  # used section text when all_skills empty
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

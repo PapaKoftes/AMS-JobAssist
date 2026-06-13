@@ -839,6 +839,78 @@ async def ats_score(body: ATSScoreRequest, request: Request):
 
 
 # ============================================================================
+# Bewerbungs-Check — hire-readiness analysis
+# ============================================================================
+
+class CVCheckRequest(BaseModel):
+    session_id: int
+    job_description: str = ""
+
+
+def _cv_data_to_check_dict(cv_data) -> dict:
+    """Flatten a CVData onto the plain dict that polish.cv_check expects."""
+    ident = getattr(cv_data, "identity", None)
+
+    def _texts(*section_lists):
+        out = []
+        for sl in section_lists:
+            for s in (sl or []):
+                t = (getattr(s, "german", "") or getattr(s, "english", "") or "").strip()
+                if t:
+                    out.append(t)
+        return out
+
+    experiences = _texts(cv_data.experience, cv_data.projects)
+    education = _texts(cv_data.background, cv_data.training)
+    skills = list(cv_data.all_skills or [])
+    if not skills:  # fall back to skill section texts if normalised list is empty
+        skills = _texts(cv_data.skills)
+
+    pieces = [
+        getattr(ident, "full_name", "") or "",
+        getattr(ident, "location", "") or "",
+        getattr(ident, "contact_phone", "") or "",
+        getattr(ident, "contact_email", "") or "",
+        cv_data.target_job or "",
+        " ".join(experiences), " ".join(education),
+        " ".join(skills), " ".join(_texts(cv_data.motivation)),
+        " ".join(f"{l.get('language','')} {l.get('level','')}" for l in (cv_data.languages or [])),
+    ]
+    return {
+        "name": getattr(ident, "full_name", "") or "",
+        "phone": getattr(ident, "contact_phone", "") or "",
+        "email": getattr(ident, "contact_email", "") or "",
+        "city": getattr(ident, "location", "") or "",
+        "target_job": cv_data.target_job or "",
+        "photo": bool(getattr(ident, "photo", "")),
+        "languages": cv_data.languages or [],
+        "experiences": experiences,
+        "education": education,
+        "skills": skills,
+        "all_text": " ".join(p for p in pieces if p),
+    }
+
+
+@app.post("/api/cv/check", tags=["ATS"])
+async def cv_check(body: CVCheckRequest, request: Request):
+    """
+    Bewerbungs-Check: weighted hire-readiness analysis of the finished CV.
+
+    Goes beyond the keyword ATS score — checks the things Austrian recruiters and
+    application systems actually filter on (German level, contact, licence, photo,
+    quantified experience, job keywords) and returns concrete, prioritised fixes.
+    """
+    cv_storage: CVStorage = request.app.state.cv_storage
+    cv_data = cv_storage.get_cv_data(body.session_id)
+    if cv_data is None:
+        raise HTTPException(status_code=404, detail="CV not found — complete the interview first")
+
+    from polish.cv_check import analyze_cv
+    report = analyze_cv(_cv_data_to_check_dict(cv_data), body.job_description or "")
+    return {"status": "success", "data": report}
+
+
+# ============================================================================
 # Europass Export
 # ============================================================================
 

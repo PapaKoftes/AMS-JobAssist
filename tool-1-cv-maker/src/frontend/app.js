@@ -511,6 +511,13 @@ const TRANSLATIONS = {
         finishLaterBtn:        'Später weitermachen',
         finishLaterHint:       'Ihr Fortschritt ist gespeichert. Sie können jederzeit zurückkehren.',
         completionMoreSummary: 'Weitere Optionen',
+        checkHeading:          '✅ Bewerbungs-Check',
+        checkSubtitleHigh:     'Stark! Ihr Lebenslauf erfüllt die wichtigsten Kriterien, auf die Personalverantwortliche in Österreich achten.',
+        checkSubtitleMid:      'Solide Basis. Mit den folgenden Punkten erhöhen Sie Ihre Chance auf eine Einladung deutlich.',
+        checkSubtitleLow:      'Mit ein paar Ergänzungen wird Ihr Lebenslauf für Arbeitgeber spürbar überzeugender:',
+        checkScoreSuffix:      'bereit',
+        checkTodoHeading:      'So machen Sie Ihren Lebenslauf noch besser:',
+        checkLoading:          'Bewerbungs-Check läuft…',
     },
     en: {
         answerLabel:          'Your answer — write in any language you like:',
@@ -730,6 +737,13 @@ const TRANSLATIONS = {
         finishLaterBtn:        'Continue later',
         finishLaterHint:       'Your progress is saved. You can return any time.',
         completionMoreSummary: 'More options',
+        checkHeading:          '✅ Application check',
+        checkSubtitleHigh:     'Strong! Your CV meets the key criteria Austrian recruiters look for.',
+        checkSubtitleMid:      'Solid base. The points below clearly improve your chance of an interview invitation.',
+        checkSubtitleLow:      'A few additions will make your CV noticeably more convincing to employers:',
+        checkScoreSuffix:      'ready',
+        checkTodoHeading:      'How to make your CV even better:',
+        checkLoading:          'Running application check…',
     },
     bs: {
         dumpPromptUnemployed:   "Ispričajte mi sve o sebi — najbolje počnite od posljednjeg posla.",
@@ -2431,6 +2445,14 @@ class APIClient {
         });
     }
 
+    // Bewerbungs-Check — weighted hire-readiness analysis (no job description needed)
+    getCvCheck(sessionId, jobDescription = '') {
+        return this._request('/api/cv/check', 'POST', {
+            session_id: sessionId,
+            job_description: jobDescription,
+        });
+    }
+
     // AMS job-search bridge (Tier 0 deep-link). Backend only builds a URL string —
     // no data is transmitted; the user's own browser opens the link.
     getAmsJobLink(targetJob = '', location = '') {
@@ -3068,6 +3090,53 @@ class UIManager {
         if (badge) badge.innerHTML = emoji;
         if (label) label.textContent = `${text} (${pct}%)`;
         if (tips) tips.innerHTML = tipList.map(t => `<li>${t}</li>`).join('');
+        card.style.display = 'block';
+    }
+
+    // -------------------------------------------------------------------------
+    // Bewerbungs-Check — hire-readiness checklist
+    // -------------------------------------------------------------------------
+
+    renderCheckCard(report) {
+        const card = document.getElementById('checkCard');
+        if (!card || !report) return;
+
+        const pct   = Number(report.percent) || 0;
+        const badge = document.getElementById('checkScoreBadge');
+        const subEl = document.getElementById('checkSubtitle');
+        const list  = document.getElementById('checkList');
+        const todoWrap = document.getElementById('checkTodoWrap');
+        const todo  = document.getElementById('checkTodo');
+
+        if (badge) badge.textContent = `${pct}% ${t('checkScoreSuffix')}`;
+        card.classList.remove('check-high', 'check-mid', 'check-low');
+        card.classList.add(pct >= 85 ? 'check-high' : pct >= 50 ? 'check-mid' : 'check-low');
+        if (subEl) {
+            subEl.textContent = pct >= 85 ? t('checkSubtitleHigh')
+                              : pct >= 50 ? t('checkSubtitleMid')
+                              : t('checkSubtitleLow');
+        }
+
+        if (list) {
+            list.innerHTML = (report.checks || []).map(c => {
+                const icon = c.ok ? '✓' : '✗';
+                const cls  = c.ok ? 'check-pass' : 'check-fail';
+                return `<li class="check-item ${cls}">
+                    <span class="check-icon" aria-hidden="true">${icon}</span>
+                    <span class="check-text">${this._escape(c.label)}</span>
+                </li>`;
+            }).join('');
+        }
+
+        const tips = report.todo || [];
+        if (todoWrap && todo) {
+            if (tips.length) {
+                todo.innerHTML = tips.map(tip => `<li>${this._escape(tip)}</li>`).join('');
+                todoWrap.style.display = 'block';
+            } else {
+                todoWrap.style.display = 'none';
+            }
+        }
         card.style.display = 'block';
     }
 
@@ -3882,6 +3951,11 @@ class InterviewManager {
                 .then(r => ui.showProfileSummary(r?.data?.summary ?? null, false))
                 .catch(() => ui.showProfileSummary(null, false));
 
+            // Bewerbungs-Check — hire-readiness checklist (non-blocking, no JD needed)
+            api.getCvCheck(state.sessionId)
+                .then(r => ui.renderCheckCard(r?.data))
+                .catch(e => console.warn('cv-check non-fatal:', e));
+
             // C5: Store completed session ID so returning users can re-download
             localStorage.setItem(COMPLETED_SESSION_KEY, String(state.sessionId));
             localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -4276,6 +4350,14 @@ class InterviewManager {
             // Hide input section, show results
             if (inputSection) inputSection.style.display = 'none';
             if (section) section.style.display = 'block';
+
+            // Re-run the hire-readiness check WITH the job description so the
+            // keyword-match criterion joins the checklist for this specific job.
+            if (jobDesc.trim()) {
+                api.getCvCheck(state.sessionId, jobDesc)
+                    .then(r => ui.renderCheckCard(r?.data))
+                    .catch(e => console.warn('cv-check (with JD) non-fatal:', e));
+            }
         } catch (err) {
             console.warn('ATS score error:', err);
         } finally {

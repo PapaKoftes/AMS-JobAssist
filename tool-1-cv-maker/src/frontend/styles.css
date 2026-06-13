@@ -1113,6 +1113,127 @@ body {
     font-weight: bold;
 }
 
+/* Bewerbungs-Check — hire-readiness checklist --------------------------------- */
+
+.check-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    text-align: left;
+}
+
+.check-card.check-high  { border-left-color: var(--success); }
+.check-card.check-mid   { border-left-color: var(--warning); }
+.check-card.check-low   { border-left-color: var(--danger); }
+
+.check-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xs, 4px);
+}
+
+.check-header-row h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 0;
+}
+
+.check-score-badge {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--secondary);
+    border-radius: 16px;
+    padding: 4px 12px;
+    white-space: nowrap;
+}
+
+.check-high .check-score-badge { background: var(--success); }
+.check-mid  .check-score-badge { background: var(--warning); }
+.check-low  .check-score-badge { background: var(--danger); }
+
+.check-subtitle {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #555;
+    margin: 0 0 var(--spacing-md);
+}
+
+.check-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--spacing-md);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+}
+
+.check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.check-icon {
+    flex: 0 0 auto;
+    font-weight: 700;
+    width: 18px;
+    text-align: center;
+}
+
+.check-item.check-pass .check-icon { color: var(--success); }
+.check-item.check-fail .check-icon { color: var(--danger); }
+.check-item.check-fail .check-text { color: var(--text); }
+.check-item.check-pass .check-text { color: #555; }
+
+.check-todo-wrap {
+    background: #fff8ec;
+    border: 1px solid #f6e2bd;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+}
+
+.check-todo-heading {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 0 0 var(--spacing-sm);
+}
+
+.check-todo {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.check-todo li {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #555;
+    padding: 4px 0 4px 20px;
+    position: relative;
+}
+
+.check-todo li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--secondary);
+    font-weight: bold;
+}
+
+@media (max-width: 560px) {
+    .check-list { grid-template-columns: 1fr; }
+}
+
 /* Completion secondary actions -------------------------------------------- */
 
 .completion-summary {

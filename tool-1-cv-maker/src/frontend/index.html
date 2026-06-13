@@ -386,6 +386,22 @@
                     <p id="profileSummaryText"></p>
                 </div>
 
+                <!-- Bewerbungs-Check — hire-readiness checklist, auto-run on
+                     completion. Goes beyond the keyword ATS: checks what Austrian
+                     recruiters actually filter on and lists concrete fixes. -->
+                <div class="check-card" id="checkCard" style="display:none;">
+                    <div class="check-header-row">
+                        <h3 id="checkHeading">✅ Bewerbungs-Check</h3>
+                        <span class="check-score-badge" id="checkScoreBadge">--</span>
+                    </div>
+                    <p class="check-subtitle" id="checkSubtitle"></p>
+                    <ul class="check-list" id="checkList"></ul>
+                    <div class="check-todo-wrap" id="checkTodoWrap" style="display:none;">
+                        <h4 class="check-todo-heading" id="checkTodoHeading">So machen Sie Ihren Lebenslauf noch besser:</h4>
+                        <ul class="check-todo" id="checkTodo"></ul>
+                    </div>
+                </div>
+
                 <!-- Export buttons — primary action prominent, everything else
                      collapsed under "More options" to reduce decision overload -->
                 <div class="completion-actions">
