@@ -4,10 +4,25 @@ Main entry point for Tool 1
 """
 
 import os
+import sys
 import uuid
 import logging
 import time
 from contextlib import asynccontextmanager
+
+# FROZEN-BUILD FIX (must run before llama_cpp is ever imported): llama-cpp-python
+# resolves its native lib directory from __file__, which in a PyInstaller bundle
+# resolves CWD-relative and points at the wrong place — so the bundled llama.dll/
+# ggml*.dll are never found and the 3B model silently fails to load (app drops to
+# rule-based mode / crashes). The library honours LLAMA_CPP_LIB_PATH as an explicit
+# override; point it at the bundled libs (PyInstaller unpacks them to
+# <_MEIPASS>/llama_cpp/lib via build_tool1.spec's collect_dynamic_libs).
+if getattr(sys, "frozen", False):
+    _meipass = getattr(sys, "_MEIPASS", "")
+    if _meipass:
+        _libdir = os.path.join(_meipass, "llama_cpp", "lib")
+        if os.path.isdir(_libdir):
+            os.environ.setdefault("LLAMA_CPP_LIB_PATH", _libdir)
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
