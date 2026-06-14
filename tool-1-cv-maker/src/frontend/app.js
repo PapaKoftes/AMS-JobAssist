@@ -2240,6 +2240,10 @@ function applyTranslations() {
     setText('closeReviewBtn',  'closeReviewBtn');
     setText('consentText',     'consentText');
 
+    // --- Bewerbungs-Check (hire-readiness checklist) ---
+    setText('checkHeading',     'checkHeading');
+    setText('checkTodoHeading', 'checkTodoHeading');
+
     // --- ATS input section ---
     setText('atsInputHeading',    'atsInputHeading');
     setText('atsInputDesc',       'atsInputDesc');
@@ -3101,20 +3105,24 @@ class UIManager {
         const card = document.getElementById('checkCard');
         if (!card || !report) return;
 
-        const pct   = Number(report.percent) || 0;
         const badge = document.getElementById('checkScoreBadge');
-        const subEl = document.getElementById('checkSubtitle');
+        const grade = document.getElementById('checkGrade');
+        const sub   = document.getElementById('checkSubtitle');
         const list  = document.getElementById('checkList');
         const todoWrap = document.getElementById('checkTodoWrap');
         const todo  = document.getElementById('checkTodo');
 
-        if (badge) badge.textContent = `${pct}% ${t('checkScoreSuffix')}`;
+        const pct = Number(report.percent) || 0;
+        // Band colour lives on the card; the CSS keys both border + badge off it.
         card.classList.remove('check-high', 'check-mid', 'check-low');
         card.classList.add(pct >= 85 ? 'check-high' : pct >= 50 ? 'check-mid' : 'check-low');
-        if (subEl) {
-            subEl.textContent = pct >= 85 ? t('checkSubtitleHigh')
-                              : pct >= 50 ? t('checkSubtitleMid')
-                              : t('checkSubtitleLow');
+
+        if (badge) badge.textContent = `${pct}% ${t('checkScoreSuffix')}`;
+        if (grade) grade.textContent = report.grade || '';
+        if (sub) {
+            sub.textContent = pct >= 85 ? t('checkSubtitleHigh')
+                            : pct >= 50 ? t('checkSubtitleMid')
+                            : t('checkSubtitleLow');
         }
 
         if (list) {
@@ -3128,10 +3136,10 @@ class UIManager {
             }).join('');
         }
 
-        const tips = report.todo || [];
+        const todos = report.todo || [];
         if (todoWrap && todo) {
-            if (tips.length) {
-                todo.innerHTML = tips.map(tip => `<li>${this._escape(tip)}</li>`).join('');
+            if (todos.length) {
+                todo.innerHTML = todos.map(x => `<li>${this._escape(x)}</li>`).join('');
                 todoWrap.style.display = 'block';
             } else {
                 todoWrap.style.display = 'none';
@@ -3951,7 +3959,8 @@ class InterviewManager {
                 .then(r => ui.showProfileSummary(r?.data?.summary ?? null, false))
                 .catch(() => ui.showProfileSummary(null, false));
 
-            // Bewerbungs-Check — hire-readiness checklist (non-blocking, no JD needed)
+            // Bewerbungs-Check — run the hire-readiness analysis (no JD needed) so
+            // the participant immediately sees how interview-ready the CV is.
             api.getCvCheck(state.sessionId)
                 .then(r => ui.renderCheckCard(r?.data))
                 .catch(e => console.warn('cv-check non-fatal:', e));

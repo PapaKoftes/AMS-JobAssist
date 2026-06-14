@@ -386,13 +386,16 @@
                     <p id="profileSummaryText"></p>
                 </div>
 
-                <!-- Bewerbungs-Check — hire-readiness checklist, auto-run on
-                     completion. Goes beyond the keyword ATS: checks what Austrian
-                     recruiters actually filter on and lists concrete fixes. -->
+                <!-- Bewerbungs-Check — weighted hire-readiness checklist. Auto-runs
+                     on completion: shows what an Austrian recruiter / application
+                     system looks for and gives concrete fixes to get more interviews. -->
                 <div class="check-card" id="checkCard" style="display:none;">
                     <div class="check-header-row">
                         <h3 id="checkHeading">✅ Bewerbungs-Check</h3>
-                        <span class="check-score-badge" id="checkScoreBadge">--</span>
+                        <div class="check-score-wrap">
+                            <span class="check-score-badge" id="checkScoreBadge">--</span>
+                            <span class="check-grade" id="checkGrade"></span>
+                        </div>
                     </div>
                     <p class="check-subtitle" id="checkSubtitle"></p>
                     <ul class="check-list" id="checkList"></ul>

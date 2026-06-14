@@ -1158,6 +1158,19 @@ body {
 .check-mid  .check-score-badge { background: var(--warning); }
 .check-low  .check-score-badge { background: var(--danger); }
 
+.check-score-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.check-grade {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+}
+
 .check-subtitle {
     font-size: 14px;
     line-height: 1.5;
