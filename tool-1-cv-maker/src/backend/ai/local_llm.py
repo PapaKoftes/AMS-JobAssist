@@ -464,9 +464,44 @@ _SKILL_TRIGGERS = _re_mod.compile(
 _SKILL_STOP = {"alles", "lots", "gut", "viel", "vieles", "etwas", "ein", "bisschen",
                "ein bisschen", "gearbeitet", "deutsch", "englisch"}
 
+# Reject fragments that are PROSE, not skills. A captured clause like
+# "gut mit menschen umgehen" or "bin sehr motiviert" is a sentence fragment, not a
+# discrete skill — emitting it as a CV "skill" is the regex's main failure mode.
+_SKILL_NEG = _re_mod.compile(r"\b(nicht|kein|keine|kaum|schlecht|wenig)\b", _re_mod.IGNORECASE)
+_SKILL_LEAD_FILLER = _re_mod.compile(r"^(?:sehr\s+gut|ganz\s+gut|gut|sehr|ganz)\s+", _re_mod.IGNORECASE)
+# A skill doesn't start with a preposition or a finite verb/pronoun.
+_SKILL_BAD_PREFIX = ("mit ", "in ", "im ", "an ", "auf ", "für ", "fuer ", "zu ", "zum ",
+                     "bei ", "über ", "ueber ", "von ", "vom ", "aus ", "the ", "a ")
+_SKILL_BAD_START = {"bin", "habe", "hatte", "arbeite", "mache", "kann", "möchte", "moechte",
+                    "will", "mich", "mir", "mein", "meine", "meinen", "ich", "wir", "es",
+                    "am", "is", "was", "have", "can", "very"}
+
+
+def _looks_like_skill(p: str) -> bool:
+    """True if a captured fragment reads like a discrete skill, not a prose clause."""
+    p = _SKILL_LEAD_FILLER.sub("", p).strip()
+    low = p.lower()
+    if not p or len(p) > 40 or p.lower() in _SKILL_STOP:
+        return False
+    if _SKILL_NEG.search(low):
+        return False
+    words = low.split()
+    if len(words) > 4:
+        return False
+    if words[0] in _SKILL_BAD_START:
+        return False
+    if any(low.startswith(pre) for pre in _SKILL_BAD_PREFIX):
+        return False
+    return True
+
 
 def _extract_skills_regex(text: str) -> list:
-    """Deterministic skill extraction from 'ich kann/kenne/beherrsche … X, Y und Z'."""
+    """Deterministic skill extraction from 'ich kann/kenne/beherrsche … X, Y und Z'.
+
+    Captures discrete skills only — prose clauses ("gut mit menschen umgehen",
+    "bin sehr motiviert", "nicht so gut deutsch") are filtered out, since emitting
+    those as CV skills is worse than missing them.
+    """
     out = []
     for m in _SKILL_TRIGGERS.finditer(text or ""):
         frag = m.group(1)
@@ -474,7 +509,8 @@ def _extract_skills_regex(text: str) -> list:
         frag = _re_mod.split(r"\b(?:und\s+habe|gearbeitet|von\s+\d|seit\s+\d)\b", frag)[0]
         for part in _re_mod.split(r"\s*(?:,|\bund\b|\band\b|/|\|)\s*", frag):
             p = _re_mod.sub(r"\s{2,}", " ", part).strip(" ,;.:-")
-            if p and p.lower() not in _SKILL_STOP and 1 < len(p) <= 40 and p not in out:
+            p = _SKILL_LEAD_FILLER.sub("", p).strip()   # normalise "gut Excel" → "Excel"
+            if _looks_like_skill(p) and p not in out:
                 out.append(p)
     return out
 

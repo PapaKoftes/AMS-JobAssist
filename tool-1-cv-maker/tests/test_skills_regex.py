@@ -21,3 +21,24 @@ def test_no_trigger_empty():
 def test_english_triggers():
     out = S("I know Python, Django and PostgreSQL")
     assert "Python" in out and "PostgreSQL" in out
+
+
+def test_prose_clauses_are_not_skills():
+    # The main failure mode: verb/soft-skill clauses must NOT become skills.
+    assert S("ich kann gut mit menschen umgehen und bin sehr motiviert") == []
+    assert S("ich kann nicht so gut deutsch") == []
+    assert "bin sehr motiviert" not in S("ich kann pünktlich sein und bin sehr motiviert")
+
+
+def test_leading_filler_stripped():
+    # "gut Excel" should yield "Excel", not "gut Excel".
+    out = S("ich kann gut Excel und sehr gut Word")
+    assert "Excel" in out and "Word" in out
+    assert "gut Excel" not in out
+
+
+def test_real_skills_still_extracted():
+    out = S("Ich kann Excel, Word und PowerPoint")
+    assert out == ["Excel", "Word", "PowerPoint"]
+    assert "Stapler fahren" in S("ich kann Stapler fahren")
+    assert "Kassa" in S("Erfahrung mit Kassa und Lagerverwaltung")
