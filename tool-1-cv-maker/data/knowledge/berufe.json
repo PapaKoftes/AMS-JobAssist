@@ -4,11 +4,52 @@
     "title_de": "Einzelhandelskaufmann/-frau",
     "title_en": "Retail Salesperson",
     "category": "handel",
-    "keywords": ["einzelhandel", "verkauf", "shop", "geschäft", "laden", "retail", "sales", "verkäufer", "verkäuferin", "EHK", "lehre einzelhandel"],
-    "verbs_de": ["beraten", "verkauft", "kassiert", "präsentiert", "betreut", "bestellt", "sortiert", "inventarisiert"],
-    "verbs_en": ["advised", "sold", "processed", "presented", "managed", "organized"],
-    "skills": ["Kassensystem", "Kundenberatung", "Warenpräsentation", "Lagerverwaltung", "Reklamationsbearbeitung", "Inventur"],
-    "tasks_de": ["Kundenberatung und Verkauf", "Kassatätigkeiten", "Warenpflege und Regalpflege", "Bestellungen und Lieferannahme", "Inventurdurchführung"],
+    "keywords": [
+      "einzelhandel",
+      "verkauf",
+      "shop",
+      "geschäft",
+      "laden",
+      "retail",
+      "sales",
+      "verkäufer",
+      "verkäuferin",
+      "EHK",
+      "lehre einzelhandel"
+    ],
+    "verbs_de": [
+      "beraten",
+      "verkauft",
+      "kassiert",
+      "präsentiert",
+      "betreut",
+      "bestellt",
+      "sortiert",
+      "inventarisiert"
+    ],
+    "verbs_en": [
+      "advised",
+      "sold",
+      "processed",
+      "presented",
+      "managed",
+      "organized"
+    ],
+    "skills": [
+      "Kassensystem",
+      "Kundenberatung",
+      "Warenpräsentation",
+      "Lagerverwaltung",
+      "Reklamationsbearbeitung",
+      "Inventur"
+    ],
+    "tasks_de": [
+      "Kundenberatung und Verkauf",
+      "Kassatätigkeiten",
+      "Warenpflege und Regalpflege",
+      "Bestellungen und Lieferannahme",
+      "Inventurdurchführung"
+    ],
     "example_phrases_de": [
       "Beriet täglich bis zu 50 Kunden im Bereich Bekleidung und Accessoires.",
       "Verwaltete den Kassenbereich und rechnete Tagesumsätze von bis zu 8.000 € ab.",
@@ -20,11 +61,51 @@
     "title_de": "Bürokaufmann/-frau",
     "title_en": "Office Clerk",
     "category": "buero",
-    "keywords": ["büro", "bürokaufmann", "bürokauffrau", "office", "verwaltung", "administration", "sachbearbeitung", "lehre büro", "sekretariat"],
-    "verbs_de": ["organisiert", "koordiniert", "verfasst", "verwaltet", "abgelegt", "terminiert", "protokolliert", "bearbeitet"],
-    "verbs_en": ["organized", "coordinated", "drafted", "managed", "filed", "scheduled"],
-    "skills": ["MS Office", "Schriftverkehr", "Terminplanung", "Buchhaltungsgrundlagen", "Telefonmanagement", "Dokumentenablage", "SAP Grundkenntnisse"],
-    "tasks_de": ["Allgemeine Büroorganisation und Verwaltung", "Korrespondenz und Schriftverkehr", "Terminkoordination und Besprechungsvorbereitung", "Rechnungsprüfung und Zahlungsverkehr", "Ablage und Dokumentenmanagement"],
+    "keywords": [
+      "büro",
+      "bürokaufmann",
+      "bürokauffrau",
+      "office",
+      "verwaltung",
+      "administration",
+      "sachbearbeitung",
+      "lehre büro",
+      "sekretariat"
+    ],
+    "verbs_de": [
+      "organisiert",
+      "koordiniert",
+      "verfasst",
+      "verwaltet",
+      "abgelegt",
+      "terminiert",
+      "protokolliert",
+      "bearbeitet"
+    ],
+    "verbs_en": [
+      "organized",
+      "coordinated",
+      "drafted",
+      "managed",
+      "filed",
+      "scheduled"
+    ],
+    "skills": [
+      "MS Office",
+      "Schriftverkehr",
+      "Terminplanung",
+      "Buchhaltungsgrundlagen",
+      "Telefonmanagement",
+      "Dokumentenablage",
+      "SAP Grundkenntnisse"
+    ],
+    "tasks_de": [
+      "Allgemeine Büroorganisation und Verwaltung",
+      "Korrespondenz und Schriftverkehr",
+      "Terminkoordination und Besprechungsvorbereitung",
+      "Rechnungsprüfung und Zahlungsverkehr",
+      "Ablage und Dokumentenmanagement"
+    ],
     "example_phrases_de": [
       "Koordinierte den Terminkalender für ein Team von 12 Mitarbeitern und organisierte wöchentliche Besprechungen.",
       "Bearbeitete täglich bis zu 40 eingehende Anfragen per E-Mail und Telefon.",
@@ -36,11 +117,50 @@
     "title_de": "Kellner/in",
     "title_en": "Waiter/Waitress",
     "category": "gastro",
-    "keywords": ["kellner", "kellnerin", "servicekraft", "gastro", "gastronomie", "bedienung", "waiter", "waitress", "service", "servierer", "serviererin"],
-    "verbs_de": ["serviert", "beraten", "empfangen", "abkassiert", "koordiniert", "betreut", "aufgenommen"],
-    "verbs_en": ["served", "advised", "greeted", "processed payments", "coordinated", "recorded"],
-    "skills": ["Servicekenntnisse", "Getränkekunde", "Kassasystem", "Reklamationsmanagement", "Allergenkennzeichnung", "Mise en place"],
-    "tasks_de": ["Gästebetreuung und Bestellaufnahme", "Servieren von Speisen und Getränken", "Kassatätigkeiten und Tagesabrechnung", "Vorbereitung des Gastraums"],
+    "keywords": [
+      "kellner",
+      "kellnerin",
+      "servicekraft",
+      "gastro",
+      "gastronomie",
+      "bedienung",
+      "waiter",
+      "waitress",
+      "service",
+      "servierer",
+      "serviererin"
+    ],
+    "verbs_de": [
+      "serviert",
+      "beraten",
+      "empfangen",
+      "abkassiert",
+      "koordiniert",
+      "betreut",
+      "aufgenommen"
+    ],
+    "verbs_en": [
+      "served",
+      "advised",
+      "greeted",
+      "processed payments",
+      "coordinated",
+      "recorded"
+    ],
+    "skills": [
+      "Servicekenntnisse",
+      "Getränkekunde",
+      "Kassasystem",
+      "Reklamationsmanagement",
+      "Allergenkennzeichnung",
+      "Mise en place"
+    ],
+    "tasks_de": [
+      "Gästebetreuung und Bestellaufnahme",
+      "Servieren von Speisen und Getränken",
+      "Kassatätigkeiten und Tagesabrechnung",
+      "Vorbereitung des Gastraums"
+    ],
     "example_phrases_de": [
       "Betreute bis zu 60 Gäste pro Schicht in einem gehobenen Restaurant mit 80 Sitzplätzen.",
       "Beriet Gäste zu Speise- und Weinkarte und steigerte den durchschnittlichen Bon um 12%.",
@@ -52,11 +172,52 @@
     "title_de": "Koch/Köchin",
     "title_en": "Cook/Chef",
     "category": "gastro",
-    "keywords": ["koch", "köchin", "küche", "cook", "chef", "gastro", "gastronomie", "kulinarik", "küchenhilfe", "jungkoch"],
-    "verbs_de": ["zubereitet", "kreiert", "kalkuliert", "angerichtet", "bestellt", "kontrolliert", "organisiert", "portioniert"],
-    "verbs_en": ["prepared", "created", "calculated", "plated", "inspected", "organized"],
-    "skills": ["Speisenzubereitung", "HACCP", "Kalkulation", "Wareneinkauf", "Allergenmanagement", "Menüplanung", "Hygienevorschriften"],
-    "tasks_de": ["Zubereitung von Speisen nach Rezeptur und Speisekarte", "Wareneinkauf und Lagerhaltung", "Einhaltung der Hygienevorschriften (HACCP)", "Menüplanung und Kalkulation", "Anleitung von Küchenhilfen"],
+    "keywords": [
+      "koch",
+      "köchin",
+      "küche",
+      "cook",
+      "chef",
+      "gastro",
+      "gastronomie",
+      "kulinarik",
+      "küchenhilfe",
+      "jungkoch"
+    ],
+    "verbs_de": [
+      "zubereitet",
+      "kreiert",
+      "kalkuliert",
+      "angerichtet",
+      "bestellt",
+      "kontrolliert",
+      "organisiert",
+      "portioniert"
+    ],
+    "verbs_en": [
+      "prepared",
+      "created",
+      "calculated",
+      "plated",
+      "inspected",
+      "organized"
+    ],
+    "skills": [
+      "Speisenzubereitung",
+      "HACCP",
+      "Kalkulation",
+      "Wareneinkauf",
+      "Allergenmanagement",
+      "Menüplanung",
+      "Hygienevorschriften"
+    ],
+    "tasks_de": [
+      "Zubereitung von Speisen nach Rezeptur und Speisekarte",
+      "Wareneinkauf und Lagerhaltung",
+      "Einhaltung der Hygienevorschriften (HACCP)",
+      "Menüplanung und Kalkulation",
+      "Anleitung von Küchenhilfen"
+    ],
     "example_phrases_de": [
       "Bereitete täglich Speisen für bis zu 200 Gäste in einem À-la-carte-Restaurant zu.",
       "Kalkulierte die Speisekarte und senkte den Wareneinsatz um 8% durch optimierte Einkaufsplanung.",
@@ -68,11 +229,48 @@
     "title_de": "Reinigungskraft",
     "title_en": "Cleaning Staff",
     "category": "sozial",
-    "keywords": ["reinigung", "reinigungskraft", "putzen", "cleaning", "raumpflege", "gebäudereinigung", "putzfrau", "hausdienst", "sauberkeit"],
-    "verbs_de": ["gereinigt", "desinfiziert", "gepflegt", "kontrolliert", "dokumentiert", "entsorgt", "aufbereitet"],
-    "verbs_en": ["cleaned", "disinfected", "maintained", "inspected", "disposed", "sanitized"],
-    "skills": ["Reinigungstechniken", "Desinfektionsverfahren", "Materialkunde", "Arbeitssicherheit", "Zeitmanagement", "Dosierung von Reinigungsmitteln"],
-    "tasks_de": ["Unterhalts- und Grundreinigung von Räumlichkeiten", "Desinfektion und Hygienemaßnahmen", "Pflege und Wartung der Reinigungsgeräte", "Entsorgung und Mülltrennung"],
+    "keywords": [
+      "reinigung",
+      "reinigungskraft",
+      "putzen",
+      "cleaning",
+      "raumpflege",
+      "gebäudereinigung",
+      "putzfrau",
+      "hausdienst",
+      "sauberkeit"
+    ],
+    "verbs_de": [
+      "gereinigt",
+      "desinfiziert",
+      "gepflegt",
+      "kontrolliert",
+      "dokumentiert",
+      "entsorgt",
+      "aufbereitet"
+    ],
+    "verbs_en": [
+      "cleaned",
+      "disinfected",
+      "maintained",
+      "inspected",
+      "disposed",
+      "sanitized"
+    ],
+    "skills": [
+      "Reinigungstechniken",
+      "Desinfektionsverfahren",
+      "Materialkunde",
+      "Arbeitssicherheit",
+      "Zeitmanagement",
+      "Dosierung von Reinigungsmitteln"
+    ],
+    "tasks_de": [
+      "Unterhalts- und Grundreinigung von Räumlichkeiten",
+      "Desinfektion und Hygienemaßnahmen",
+      "Pflege und Wartung der Reinigungsgeräte",
+      "Entsorgung und Mülltrennung"
+    ],
     "example_phrases_de": [
       "Reinigte und pflegte Büroflächen von über 3.000 m² in einem Geschäftsgebäude.",
       "Führte Desinfektionsmaßnahmen in einer Arztpraxis gemäß geltenden Hygienestandards durch.",
@@ -84,11 +282,50 @@
     "title_de": "Lagerarbeiter/in",
     "title_en": "Warehouse Worker",
     "category": "transport",
-    "keywords": ["lager", "lagerarbeiter", "lagerlogistik", "warehouse", "kommissionierung", "versand", "logistik", "staplerfahrer", "lagerhaus"],
-    "verbs_de": ["kommissioniert", "verpackt", "verladen", "kontrolliert", "eingelagert", "versandt", "inventarisiert", "sortiert"],
-    "verbs_en": ["picked", "packed", "loaded", "inspected", "stored", "dispatched"],
-    "skills": ["Staplerschein", "Kommissionierung", "Lagerverwaltungssoftware", "Ladungssicherung", "Inventur", "Wareneingangsprüfung"],
-    "tasks_de": ["Warenein- und -ausgang", "Kommissionierung und Verpackung", "Be- und Entladung von LKW", "Lagerhaltung und Bestandspflege", "Inventurdurchführung"],
+    "keywords": [
+      "lager",
+      "lagerarbeiter",
+      "lagerlogistik",
+      "warehouse",
+      "kommissionierung",
+      "versand",
+      "logistik",
+      "staplerfahrer",
+      "lagerhaus"
+    ],
+    "verbs_de": [
+      "kommissioniert",
+      "verpackt",
+      "verladen",
+      "kontrolliert",
+      "eingelagert",
+      "versandt",
+      "inventarisiert",
+      "sortiert"
+    ],
+    "verbs_en": [
+      "picked",
+      "packed",
+      "loaded",
+      "inspected",
+      "stored",
+      "dispatched"
+    ],
+    "skills": [
+      "Staplerschein",
+      "Kommissionierung",
+      "Lagerverwaltungssoftware",
+      "Ladungssicherung",
+      "Inventur",
+      "Wareneingangsprüfung"
+    ],
+    "tasks_de": [
+      "Warenein- und -ausgang",
+      "Kommissionierung und Verpackung",
+      "Be- und Entladung von LKW",
+      "Lagerhaltung und Bestandspflege",
+      "Inventurdurchführung"
+    ],
     "example_phrases_de": [
       "Kommissionierte durchschnittlich 150 Aufträge pro Schicht mit einer Fehlerquote unter 0,5%.",
       "Bediente Frontstapler und Schubmaststapler für die Ein- und Auslagerung von Waren auf 5.000 m² Lagerfläche.",
@@ -100,11 +337,51 @@
     "title_de": "Friseur/in",
     "title_en": "Hairdresser",
     "category": "handwerk",
-    "keywords": ["friseur", "friseurin", "frisör", "hairdresser", "haarstylist", "coiffeur", "coiffeuse", "salon", "haarschnitt", "stylist"],
-    "verbs_de": ["geschnitten", "gefärbt", "beraten", "gestylt", "gepflegt", "behandelt", "frisiert"],
-    "verbs_en": ["cut", "colored", "advised", "styled", "treated", "applied"],
-    "skills": ["Schnitttechniken", "Färbetechniken", "Kundenberatung", "Haarpflege", "Strähnentechniken", "Bartpflege", "Produktberatung"],
-    "tasks_de": ["Haarschnitte und Styling für Damen und Herren", "Farb- und Strähnentechniken", "Kundenberatung zu Pflege und Styling", "Terminplanung und Kundenempfang", "Kassatätigkeiten und Produktverkauf"],
+    "keywords": [
+      "friseur",
+      "friseurin",
+      "frisör",
+      "hairdresser",
+      "haarstylist",
+      "coiffeur",
+      "coiffeuse",
+      "salon",
+      "haarschnitt",
+      "stylist"
+    ],
+    "verbs_de": [
+      "geschnitten",
+      "gefärbt",
+      "beraten",
+      "gestylt",
+      "gepflegt",
+      "behandelt",
+      "frisiert"
+    ],
+    "verbs_en": [
+      "cut",
+      "colored",
+      "advised",
+      "styled",
+      "treated",
+      "applied"
+    ],
+    "skills": [
+      "Schnitttechniken",
+      "Färbetechniken",
+      "Kundenberatung",
+      "Haarpflege",
+      "Strähnentechniken",
+      "Bartpflege",
+      "Produktberatung"
+    ],
+    "tasks_de": [
+      "Haarschnitte und Styling für Damen und Herren",
+      "Farb- und Strähnentechniken",
+      "Kundenberatung zu Pflege und Styling",
+      "Terminplanung und Kundenempfang",
+      "Kassatätigkeiten und Produktverkauf"
+    ],
     "example_phrases_de": [
       "Betreute täglich 8–12 Kunden mit Schnitten, Färbungen und Stylings in einem Salon mit gehobener Klientel.",
       "Beriet Kunden individuell zu Frisurentrends und steigerte den Produktverkauf um 25%.",
@@ -116,11 +393,52 @@
     "title_de": "Pflegeassistenz",
     "title_en": "Care Assistant",
     "category": "sozial",
-    "keywords": ["pflege", "pflegeassistenz", "pflegehilfe", "altenpflege", "care", "nursing assistant", "betreuung", "pflegeheim", "hauskrankenpflege", "PA"],
-    "verbs_de": ["gepflegt", "betreut", "unterstützt", "dokumentiert", "mobilisiert", "verabreicht", "begleitet", "beobachtet"],
-    "verbs_en": ["cared for", "assisted", "supported", "documented", "mobilized", "administered"],
-    "skills": ["Grundpflege", "Dokumentation", "Vitalzeichenkontrolle", "Mobilisation", "Hygienemaßnahmen", "Erste Hilfe", "Demenzbetreuung"],
-    "tasks_de": ["Unterstützung bei der Körperpflege und Ernährung", "Vitalzeichenmessung und Dokumentation", "Mobilisation und Lagerung von Bewohnern", "Begleitung bei Alltagsaktivitäten", "Zusammenarbeit mit diplomiertem Pflegepersonal"],
+    "keywords": [
+      "pflege",
+      "pflegeassistenz",
+      "pflegehilfe",
+      "altenpflege",
+      "care",
+      "nursing assistant",
+      "betreuung",
+      "pflegeheim",
+      "hauskrankenpflege",
+      "PA"
+    ],
+    "verbs_de": [
+      "gepflegt",
+      "betreut",
+      "unterstützt",
+      "dokumentiert",
+      "mobilisiert",
+      "verabreicht",
+      "begleitet",
+      "beobachtet"
+    ],
+    "verbs_en": [
+      "cared for",
+      "assisted",
+      "supported",
+      "documented",
+      "mobilized",
+      "administered"
+    ],
+    "skills": [
+      "Grundpflege",
+      "Dokumentation",
+      "Vitalzeichenkontrolle",
+      "Mobilisation",
+      "Hygienemaßnahmen",
+      "Erste Hilfe",
+      "Demenzbetreuung"
+    ],
+    "tasks_de": [
+      "Unterstützung bei der Körperpflege und Ernährung",
+      "Vitalzeichenmessung und Dokumentation",
+      "Mobilisation und Lagerung von Bewohnern",
+      "Begleitung bei Alltagsaktivitäten",
+      "Zusammenarbeit mit diplomiertem Pflegepersonal"
+    ],
     "example_phrases_de": [
       "Betreute 15 Bewohner einer Pflegestation und unterstützte bei der täglichen Grund- und Körperpflege.",
       "Dokumentierte Vitalzeichen und Pflegemaßnahmen lückenlos im elektronischen Pflegedokumentationssystem.",
@@ -132,11 +450,51 @@
     "title_de": "Elektrotechniker/in",
     "title_en": "Electrician",
     "category": "technik",
-    "keywords": ["elektrotechniker", "elektriker", "elektroinstallation", "electrician", "elektro", "strom", "E-Technik", "lehre elektro", "elektroinstallateur"],
-    "verbs_de": ["installiert", "verdrahtet", "geprüft", "instandgesetzt", "konfiguriert", "gemessen", "gewartet", "montiert"],
-    "verbs_en": ["installed", "wired", "tested", "repaired", "configured", "maintained"],
-    "skills": ["Elektroinstallation", "Schaltplanlesen", "SPS-Programmierung", "Messtechnik", "VDE-Normen", "Gebäudeautomation", "Fehlersuche"],
-    "tasks_de": ["Installation und Wartung elektrischer Anlagen", "Fehlersuche und Störungsbehebung", "Prüfung nach ÖVE/ÖNORM-Vorschriften", "Verdrahtung von Schalt- und Verteilerschränken", "Inbetriebnahme von Anlagen"],
+    "keywords": [
+      "elektrotechniker",
+      "elektriker",
+      "elektroinstallation",
+      "electrician",
+      "elektro",
+      "strom",
+      "E-Technik",
+      "lehre elektro",
+      "elektroinstallateur"
+    ],
+    "verbs_de": [
+      "installiert",
+      "verdrahtet",
+      "geprüft",
+      "instandgesetzt",
+      "konfiguriert",
+      "gemessen",
+      "gewartet",
+      "montiert"
+    ],
+    "verbs_en": [
+      "installed",
+      "wired",
+      "tested",
+      "repaired",
+      "configured",
+      "maintained"
+    ],
+    "skills": [
+      "Elektroinstallation",
+      "Schaltplanlesen",
+      "SPS-Programmierung",
+      "Messtechnik",
+      "VDE-Normen",
+      "Gebäudeautomation",
+      "Fehlersuche"
+    ],
+    "tasks_de": [
+      "Installation und Wartung elektrischer Anlagen",
+      "Fehlersuche und Störungsbehebung",
+      "Prüfung nach ÖVE/ÖNORM-Vorschriften",
+      "Verdrahtung von Schalt- und Verteilerschränken",
+      "Inbetriebnahme von Anlagen"
+    ],
     "example_phrases_de": [
       "Installierte die komplette Elektrik in Wohn- und Gewerbebauten mit bis zu 50 Wohneinheiten.",
       "Führte jährlich über 100 Überprüfungen elektrischer Anlagen gemäß ÖVE/ÖNORM durch.",
@@ -148,11 +506,51 @@
     "title_de": "KFZ-Mechaniker/in",
     "title_en": "Auto Mechanic",
     "category": "technik",
-    "keywords": ["kfz", "kfz-mechaniker", "kfz-techniker", "auto", "mechaniker", "autowerkstatt", "mechanic", "fahrzeugtechnik", "kfz-mechatroniker"],
-    "verbs_de": ["repariert", "diagnostiziert", "gewartet", "ausgetauscht", "überprüft", "eingestellt", "instandgesetzt", "montiert"],
-    "verbs_en": ["repaired", "diagnosed", "serviced", "replaced", "inspected", "adjusted"],
-    "skills": ["Fahrzeugdiagnose", "Motorinstandsetzung", "Bremsentechnik", "Abgasuntersuchung", "Klimaanlagenwartung", "EDV-Diagnose", "§57a-Überprüfung"],
-    "tasks_de": ["Reparatur und Wartung von Kraftfahrzeugen", "Fehlerdiagnose mit computergestützten Systemen", "Durchführung von §57a-Überprüfungen (Pickerl)", "Reifenservice und Fahrwerksvermessung", "Einbau von Zusatzausstattung und Zubehör"],
+    "keywords": [
+      "kfz",
+      "kfz-mechaniker",
+      "kfz-techniker",
+      "auto",
+      "mechaniker",
+      "autowerkstatt",
+      "mechanic",
+      "fahrzeugtechnik",
+      "kfz-mechatroniker"
+    ],
+    "verbs_de": [
+      "repariert",
+      "diagnostiziert",
+      "gewartet",
+      "ausgetauscht",
+      "überprüft",
+      "eingestellt",
+      "instandgesetzt",
+      "montiert"
+    ],
+    "verbs_en": [
+      "repaired",
+      "diagnosed",
+      "serviced",
+      "replaced",
+      "inspected",
+      "adjusted"
+    ],
+    "skills": [
+      "Fahrzeugdiagnose",
+      "Motorinstandsetzung",
+      "Bremsentechnik",
+      "Abgasuntersuchung",
+      "Klimaanlagenwartung",
+      "EDV-Diagnose",
+      "§57a-Überprüfung"
+    ],
+    "tasks_de": [
+      "Reparatur und Wartung von Kraftfahrzeugen",
+      "Fehlerdiagnose mit computergestützten Systemen",
+      "Durchführung von §57a-Überprüfungen (Pickerl)",
+      "Reifenservice und Fahrwerksvermessung",
+      "Einbau von Zusatzausstattung und Zubehör"
+    ],
     "example_phrases_de": [
       "Führte monatlich rund 40 Service- und Reparaturarbeiten an PKW verschiedener Marken durch.",
       "Diagnostizierte Fahrzeugstörungen mittels computergestützter Diagnose und behob Fehler fachgerecht.",
@@ -164,11 +562,52 @@
     "title_de": "Installateur/in",
     "title_en": "Plumber/HVAC Installer",
     "category": "handwerk",
-    "keywords": ["installateur", "sanitär", "heizung", "plumber", "HVAC", "gas-wasser", "rohrinstallateur", "heizungstechniker", "haustechnik", "GWH"],
-    "verbs_de": ["installiert", "verlegt", "angeschlossen", "gewartet", "gelötet", "montiert", "geprüft", "instandgesetzt"],
-    "verbs_en": ["installed", "laid", "connected", "serviced", "soldered", "tested"],
-    "skills": ["Rohrinstallation", "Heizungstechnik", "Sanitärtechnik", "Schweißen/Löten", "Gasinstallation", "Wärmepumpentechnik", "Rohrleitungsplanung"],
-    "tasks_de": ["Installation von Sanitär-, Heizungs- und Gasanlagen", "Wartung und Reparatur bestehender Anlagen", "Verlegung von Rohrleitungen", "Inbetriebnahme von Heizungssystemen", "Störungsbehebung und Notdienst"],
+    "keywords": [
+      "installateur",
+      "sanitär",
+      "heizung",
+      "plumber",
+      "HVAC",
+      "gas-wasser",
+      "rohrinstallateur",
+      "heizungstechniker",
+      "haustechnik",
+      "GWH"
+    ],
+    "verbs_de": [
+      "installiert",
+      "verlegt",
+      "angeschlossen",
+      "gewartet",
+      "gelötet",
+      "montiert",
+      "geprüft",
+      "instandgesetzt"
+    ],
+    "verbs_en": [
+      "installed",
+      "laid",
+      "connected",
+      "serviced",
+      "soldered",
+      "tested"
+    ],
+    "skills": [
+      "Rohrinstallation",
+      "Heizungstechnik",
+      "Sanitärtechnik",
+      "Schweißen/Löten",
+      "Gasinstallation",
+      "Wärmepumpentechnik",
+      "Rohrleitungsplanung"
+    ],
+    "tasks_de": [
+      "Installation von Sanitär-, Heizungs- und Gasanlagen",
+      "Wartung und Reparatur bestehender Anlagen",
+      "Verlegung von Rohrleitungen",
+      "Inbetriebnahme von Heizungssystemen",
+      "Störungsbehebung und Notdienst"
+    ],
     "example_phrases_de": [
       "Installierte Sanitär- und Heizungsanlagen in Neubauprojekten mit bis zu 30 Wohneinheiten.",
       "Führte Wartungsarbeiten an Gasthermen und Heizkesseln durch und betreute über 200 Kundenanlagen jährlich.",
@@ -180,11 +619,51 @@
     "title_de": "Maurer/in",
     "title_en": "Bricklayer/Mason",
     "category": "handwerk",
-    "keywords": ["maurer", "bau", "hochbau", "bricklayer", "mason", "baustelle", "mauern", "betonieren", "bauarbeiter"],
-    "verbs_de": ["gemauert", "betoniert", "verputzt", "geschalt", "verlegt", "abgedichtet", "hergestellt", "errichtet"],
-    "verbs_en": ["laid bricks", "concreted", "plastered", "formed", "waterproofed", "constructed"],
-    "skills": ["Mauerwerksbau", "Betonarbeiten", "Schalungsbau", "Verputzarbeiten", "Bauplanlesung", "Feuchtigkeitsabdichtung", "Wärmedämmung"],
-    "tasks_de": ["Errichten von Mauerwerk und Betonkonstruktionen", "Herstellung von Schalungen", "Verputz- und Estricharbeiten", "Abdichtungs- und Isolierarbeiten", "Sanierung und Umbauarbeiten"],
+    "keywords": [
+      "maurer",
+      "bau",
+      "hochbau",
+      "bricklayer",
+      "mason",
+      "baustelle",
+      "mauern",
+      "betonieren",
+      "bauarbeiter"
+    ],
+    "verbs_de": [
+      "gemauert",
+      "betoniert",
+      "verputzt",
+      "geschalt",
+      "verlegt",
+      "abgedichtet",
+      "hergestellt",
+      "errichtet"
+    ],
+    "verbs_en": [
+      "laid bricks",
+      "concreted",
+      "plastered",
+      "formed",
+      "waterproofed",
+      "constructed"
+    ],
+    "skills": [
+      "Mauerwerksbau",
+      "Betonarbeiten",
+      "Schalungsbau",
+      "Verputzarbeiten",
+      "Bauplanlesung",
+      "Feuchtigkeitsabdichtung",
+      "Wärmedämmung"
+    ],
+    "tasks_de": [
+      "Errichten von Mauerwerk und Betonkonstruktionen",
+      "Herstellung von Schalungen",
+      "Verputz- und Estricharbeiten",
+      "Abdichtungs- und Isolierarbeiten",
+      "Sanierung und Umbauarbeiten"
+    ],
     "example_phrases_de": [
       "Errichtete Mauerwerk für Wohnhausanlagen mit bis zu 20 Wohneinheiten in Ziegelmassivbauweise.",
       "Führte Betonier- und Schalungsarbeiten für Kellerbauwerke und Fundamente fachgerecht aus.",
@@ -196,11 +675,51 @@
     "title_de": "Tischler/in",
     "title_en": "Carpenter",
     "category": "handwerk",
-    "keywords": ["tischler", "tischlerin", "schreiner", "holz", "carpenter", "joiner", "möbelbau", "tischlerei", "holzbearbeitung"],
-    "verbs_de": ["gefertigt", "montiert", "zugeschnitten", "geschliffen", "verleimt", "oberflächenbehandelt", "konstruiert", "restauriert"],
-    "verbs_en": ["crafted", "assembled", "cut", "sanded", "finished", "restored"],
-    "skills": ["CNC-Bearbeitung", "Möbelbau", "Oberflächenbehandlung", "Technisches Zeichnen", "Maschinenkenntnisse", "Materialkunde Holz", "Montage"],
-    "tasks_de": ["Fertigung von Möbeln und Einbauschränken", "Montage von Türen, Fenstern und Einrichtungen", "Bedienung von Holzbearbeitungsmaschinen", "Anfertigung nach Maß und Kundenplan", "Oberflächenbehandlung und Endmontage"],
+    "keywords": [
+      "tischler",
+      "tischlerin",
+      "schreiner",
+      "holz",
+      "carpenter",
+      "joiner",
+      "möbelbau",
+      "tischlerei",
+      "holzbearbeitung"
+    ],
+    "verbs_de": [
+      "gefertigt",
+      "montiert",
+      "zugeschnitten",
+      "geschliffen",
+      "verleimt",
+      "oberflächenbehandelt",
+      "konstruiert",
+      "restauriert"
+    ],
+    "verbs_en": [
+      "crafted",
+      "assembled",
+      "cut",
+      "sanded",
+      "finished",
+      "restored"
+    ],
+    "skills": [
+      "CNC-Bearbeitung",
+      "Möbelbau",
+      "Oberflächenbehandlung",
+      "Technisches Zeichnen",
+      "Maschinenkenntnisse",
+      "Materialkunde Holz",
+      "Montage"
+    ],
+    "tasks_de": [
+      "Fertigung von Möbeln und Einbauschränken",
+      "Montage von Türen, Fenstern und Einrichtungen",
+      "Bedienung von Holzbearbeitungsmaschinen",
+      "Anfertigung nach Maß und Kundenplan",
+      "Oberflächenbehandlung und Endmontage"
+    ],
     "example_phrases_de": [
       "Fertigte maßgeschneiderte Einbaumöbel und Küchen für Privat- und Geschäftskunden an.",
       "Bediente CNC-Fräse und Kantenanleimmaschine für die Serienproduktion von Korpusmöbeln.",
@@ -212,11 +731,51 @@
     "title_de": "Maler/in und Anstreicher/in",
     "title_en": "Painter",
     "category": "handwerk",
-    "keywords": ["maler", "anstreicher", "malerin", "painter", "lackierer", "fassade", "beschichtung", "malerarbeiten", "raumgestaltung"],
-    "verbs_de": ["gestrichen", "gespachtelt", "tapeziert", "grundiert", "lackiert", "beschichtet", "vorbereitet", "abgeklebt"],
-    "verbs_en": ["painted", "filled", "wallpapered", "primed", "varnished", "coated"],
-    "skills": ["Streich- und Spritztechniken", "Spachtelarbeiten", "Tapezieren", "Farbmischung", "Fassadenanstrich", "Lackiertechnik", "Wärmedämmverbundsystem"],
-    "tasks_de": ["Innen- und Außenanstriche", "Spachtel- und Grundierarbeiten", "Tapezier- und Dekorarbeiten", "Fassadengestaltung und -sanierung", "Lackier- und Beschichtungsarbeiten"],
+    "keywords": [
+      "maler",
+      "anstreicher",
+      "malerin",
+      "painter",
+      "lackierer",
+      "fassade",
+      "beschichtung",
+      "malerarbeiten",
+      "raumgestaltung"
+    ],
+    "verbs_de": [
+      "gestrichen",
+      "gespachtelt",
+      "tapeziert",
+      "grundiert",
+      "lackiert",
+      "beschichtet",
+      "vorbereitet",
+      "abgeklebt"
+    ],
+    "verbs_en": [
+      "painted",
+      "filled",
+      "wallpapered",
+      "primed",
+      "varnished",
+      "coated"
+    ],
+    "skills": [
+      "Streich- und Spritztechniken",
+      "Spachtelarbeiten",
+      "Tapezieren",
+      "Farbmischung",
+      "Fassadenanstrich",
+      "Lackiertechnik",
+      "Wärmedämmverbundsystem"
+    ],
+    "tasks_de": [
+      "Innen- und Außenanstriche",
+      "Spachtel- und Grundierarbeiten",
+      "Tapezier- und Dekorarbeiten",
+      "Fassadengestaltung und -sanierung",
+      "Lackier- und Beschichtungsarbeiten"
+    ],
     "example_phrases_de": [
       "Führte Maler- und Anstreicherarbeiten in Neubauwohnungen mit insgesamt über 5.000 m² Wandfläche aus.",
       "Sanierte Altbaufassaden und brachte Wärmedämmverbundsysteme auf einer Fläche von 1.200 m² auf.",
@@ -228,11 +787,51 @@
     "title_de": "Gärtner/in",
     "title_en": "Gardener/Landscaper",
     "category": "handwerk",
-    "keywords": ["gärtner", "gärtnerin", "garten", "landschaftsbau", "gardener", "landscaper", "grünflächenpflege", "gartenbau", "landschaftspflege"],
-    "verbs_de": ["bepflanzt", "gepflegt", "geschnitten", "angelegt", "bewässert", "gestaltet", "gemäht", "gerodet"],
-    "verbs_en": ["planted", "maintained", "pruned", "designed", "irrigated", "landscaped"],
-    "skills": ["Pflanzenkunde", "Baumpflege", "Bewässerungssysteme", "Gartengestaltung", "Maschinenbedienung", "Pflanzenschutz", "Erdarbeiten"],
-    "tasks_de": ["Pflege und Gestaltung von Grünanlagen", "Baum- und Strauchschnitt", "Anlegen von Gärten und Außenanlagen", "Rasenpflege und Bewässerung", "Pflanzenschutz und Düngung"],
+    "keywords": [
+      "gärtner",
+      "gärtnerin",
+      "garten",
+      "landschaftsbau",
+      "gardener",
+      "landscaper",
+      "grünflächenpflege",
+      "gartenbau",
+      "landschaftspflege"
+    ],
+    "verbs_de": [
+      "bepflanzt",
+      "gepflegt",
+      "geschnitten",
+      "angelegt",
+      "bewässert",
+      "gestaltet",
+      "gemäht",
+      "gerodet"
+    ],
+    "verbs_en": [
+      "planted",
+      "maintained",
+      "pruned",
+      "designed",
+      "irrigated",
+      "landscaped"
+    ],
+    "skills": [
+      "Pflanzenkunde",
+      "Baumpflege",
+      "Bewässerungssysteme",
+      "Gartengestaltung",
+      "Maschinenbedienung",
+      "Pflanzenschutz",
+      "Erdarbeiten"
+    ],
+    "tasks_de": [
+      "Pflege und Gestaltung von Grünanlagen",
+      "Baum- und Strauchschnitt",
+      "Anlegen von Gärten und Außenanlagen",
+      "Rasenpflege und Bewässerung",
+      "Pflanzenschutz und Düngung"
+    ],
     "example_phrases_de": [
       "Pflegte und gestaltete Grünanlagen für eine Hausverwaltung mit über 30 Wohnobjekten.",
       "Legte Gartenanlagen für Neubauprojekte an und führte Pflanzungen auf einer Fläche von 2.000 m² durch.",
@@ -244,11 +843,53 @@
     "title_de": "Berufskraftfahrer/in",
     "title_en": "Professional Driver",
     "category": "transport",
-    "keywords": ["berufskraftfahrer", "lkw-fahrer", "busfahrer", "fahrer", "driver", "transport", "logistik", "spedition", "C-Führerschein", "CE-Führerschein", "D-Führerschein"],
-    "verbs_de": ["transportiert", "gefahren", "beladen", "gesichert", "dokumentiert", "zugestellt", "gewartet", "kontrolliert"],
-    "verbs_en": ["transported", "drove", "loaded", "secured", "delivered", "maintained"],
-    "skills": ["Führerschein C/CE", "Ladungssicherung", "Fahrtenschreiber", "ADR-Schein", "Tourenplanung", "Fahrzeugpflege", "Arbeitszeitgesetz"],
-    "tasks_de": ["Transport von Gütern im Nah- und Fernverkehr", "Be- und Entladung sowie Ladungssicherung", "Fahrtenschreiber- und Dokumentenführung", "Fahrzeugkontrolle und Wartung", "Einhaltung von Lenk- und Ruhezeiten"],
+    "keywords": [
+      "berufskraftfahrer",
+      "lkw-fahrer",
+      "busfahrer",
+      "fahrer",
+      "driver",
+      "transport",
+      "logistik",
+      "spedition",
+      "C-Führerschein",
+      "CE-Führerschein",
+      "D-Führerschein"
+    ],
+    "verbs_de": [
+      "transportiert",
+      "gefahren",
+      "beladen",
+      "gesichert",
+      "dokumentiert",
+      "zugestellt",
+      "gewartet",
+      "kontrolliert"
+    ],
+    "verbs_en": [
+      "transported",
+      "drove",
+      "loaded",
+      "secured",
+      "delivered",
+      "maintained"
+    ],
+    "skills": [
+      "Führerschein C/CE",
+      "Ladungssicherung",
+      "Fahrtenschreiber",
+      "ADR-Schein",
+      "Tourenplanung",
+      "Fahrzeugpflege",
+      "Arbeitszeitgesetz"
+    ],
+    "tasks_de": [
+      "Transport von Gütern im Nah- und Fernverkehr",
+      "Be- und Entladung sowie Ladungssicherung",
+      "Fahrtenschreiber- und Dokumentenführung",
+      "Fahrzeugkontrolle und Wartung",
+      "Einhaltung von Lenk- und Ruhezeiten"
+    ],
     "example_phrases_de": [
       "Transportierte Waren im Fernverkehr mit einem 40-Tonnen-Sattelzug auf Strecken von bis zu 800 km täglich.",
       "Führte tägliche Fahrzeugkontrollen durch und stellte die Einhaltung aller ADR-Vorschriften sicher.",
@@ -260,11 +901,51 @@
     "title_de": "Kindergartenpädagog/in",
     "title_en": "Kindergarten Pedagogue",
     "category": "sozial",
-    "keywords": ["kindergarten", "kindergartenpädagogin", "kindergartenpädagoge", "pädagogik", "kinderbetreuung", "kindergarten teacher", "BAFEP", "elementarpädagogik", "krabbelstube"],
-    "verbs_de": ["betreut", "gefördert", "beobachtet", "dokumentiert", "geplant", "angeleitet", "gestaltet", "begleitet"],
-    "verbs_en": ["supervised", "supported", "observed", "documented", "planned", "guided"],
-    "skills": ["Pädagogische Planung", "Entwicklungsbeobachtung", "Elternarbeit", "Bildungsrahmplan", "Kreativpädagogik", "Sprachförderung", "Inklusion"],
-    "tasks_de": ["Pädagogische Betreuung und Bildung von Kindern", "Planung und Durchführung von Bildungsangeboten", "Entwicklungsdokumentation und Portfolioarbeit", "Elternarbeit und Entwicklungsgespräche", "Gestaltung von Tages- und Jahresabläufen"],
+    "keywords": [
+      "kindergarten",
+      "kindergartenpädagogin",
+      "kindergartenpädagoge",
+      "pädagogik",
+      "kinderbetreuung",
+      "kindergarten teacher",
+      "BAFEP",
+      "elementarpädagogik",
+      "krabbelstube"
+    ],
+    "verbs_de": [
+      "betreut",
+      "gefördert",
+      "beobachtet",
+      "dokumentiert",
+      "geplant",
+      "angeleitet",
+      "gestaltet",
+      "begleitet"
+    ],
+    "verbs_en": [
+      "supervised",
+      "supported",
+      "observed",
+      "documented",
+      "planned",
+      "guided"
+    ],
+    "skills": [
+      "Pädagogische Planung",
+      "Entwicklungsbeobachtung",
+      "Elternarbeit",
+      "Bildungsrahmplan",
+      "Kreativpädagogik",
+      "Sprachförderung",
+      "Inklusion"
+    ],
+    "tasks_de": [
+      "Pädagogische Betreuung und Bildung von Kindern",
+      "Planung und Durchführung von Bildungsangeboten",
+      "Entwicklungsdokumentation und Portfolioarbeit",
+      "Elternarbeit und Entwicklungsgespräche",
+      "Gestaltung von Tages- und Jahresabläufen"
+    ],
     "example_phrases_de": [
       "Betreute eine Gruppe von 22 Kindern im Alter von 3 bis 6 Jahren und förderte ihre individuelle Entwicklung.",
       "Plante und führte wöchentlich 5 Bildungsangebote in den Bereichen Sprache, Kreativität und Bewegung durch.",
@@ -276,11 +957,51 @@
     "title_de": "Rezeptionist/in",
     "title_en": "Receptionist/Front Desk",
     "category": "buero",
-    "keywords": ["rezeptionist", "rezeptionistin", "empfang", "rezeption", "receptionist", "front desk", "hotel", "front office", "empfangsmitarbeiter"],
-    "verbs_de": ["empfangen", "eingecheckt", "beraten", "koordiniert", "reserviert", "betreut", "abgerechnet", "telefoniert"],
-    "verbs_en": ["welcomed", "checked in", "advised", "coordinated", "booked", "invoiced"],
-    "skills": ["Reservierungssysteme", "Check-in/Check-out", "Telefonmanagement", "Beschwerdemanagement", "Fremdsprachen", "MS Office", "Kassaführung"],
-    "tasks_de": ["Check-in und Check-out von Gästen", "Reservierungsverwaltung und Korrespondenz", "Telefonische und persönliche Gästebetreuung", "Rechnungserstellung und Kassaabschluss", "Koordination mit Housekeeping und Haustechnik"],
+    "keywords": [
+      "rezeptionist",
+      "rezeptionistin",
+      "empfang",
+      "rezeption",
+      "receptionist",
+      "front desk",
+      "hotel",
+      "front office",
+      "empfangsmitarbeiter"
+    ],
+    "verbs_de": [
+      "empfangen",
+      "eingecheckt",
+      "beraten",
+      "koordiniert",
+      "reserviert",
+      "betreut",
+      "abgerechnet",
+      "telefoniert"
+    ],
+    "verbs_en": [
+      "welcomed",
+      "checked in",
+      "advised",
+      "coordinated",
+      "booked",
+      "invoiced"
+    ],
+    "skills": [
+      "Reservierungssysteme",
+      "Check-in/Check-out",
+      "Telefonmanagement",
+      "Beschwerdemanagement",
+      "Fremdsprachen",
+      "MS Office",
+      "Kassaführung"
+    ],
+    "tasks_de": [
+      "Check-in und Check-out von Gästen",
+      "Reservierungsverwaltung und Korrespondenz",
+      "Telefonische und persönliche Gästebetreuung",
+      "Rechnungserstellung und Kassaabschluss",
+      "Koordination mit Housekeeping und Haustechnik"
+    ],
     "example_phrases_de": [
       "Betreute den Empfang eines 4-Sterne-Hotels mit 120 Zimmern und wickelte Check-in und Check-out ab.",
       "Verwaltete Reservierungen über Protel und bearbeitete täglich bis zu 60 Buchungsanfragen.",
@@ -292,11 +1013,52 @@
     "title_de": "IT-Techniker/in",
     "title_en": "IT Technician",
     "category": "technik",
-    "keywords": ["it", "it-techniker", "informatik", "EDV", "systemadministrator", "it technician", "helpdesk", "support", "netzwerk", "systemtechniker"],
-    "verbs_de": ["installiert", "konfiguriert", "administriert", "gewartet", "behoben", "betreut", "migriert", "dokumentiert"],
-    "verbs_en": ["installed", "configured", "administered", "resolved", "supported", "migrated"],
-    "skills": ["Windows Server", "Active Directory", "Netzwerktechnik", "Helpdesk/Ticketsystem", "Office 365", "IT-Sicherheit", "Virtualisierung"],
-    "tasks_de": ["Installation und Konfiguration von Hard- und Software", "Netzwerkadministration und -wartung", "First-Level- und Second-Level-Support", "Benutzerverwaltung und Rechtevergabe", "Datensicherung und IT-Sicherheit"],
+    "keywords": [
+      "it",
+      "it-techniker",
+      "informatik",
+      "EDV",
+      "systemadministrator",
+      "it technician",
+      "helpdesk",
+      "support",
+      "netzwerk",
+      "systemtechniker"
+    ],
+    "verbs_de": [
+      "installiert",
+      "konfiguriert",
+      "administriert",
+      "gewartet",
+      "behoben",
+      "betreut",
+      "migriert",
+      "dokumentiert"
+    ],
+    "verbs_en": [
+      "installed",
+      "configured",
+      "administered",
+      "resolved",
+      "supported",
+      "migrated"
+    ],
+    "skills": [
+      "Windows Server",
+      "Active Directory",
+      "Netzwerktechnik",
+      "Helpdesk/Ticketsystem",
+      "Office 365",
+      "IT-Sicherheit",
+      "Virtualisierung"
+    ],
+    "tasks_de": [
+      "Installation und Konfiguration von Hard- und Software",
+      "Netzwerkadministration und -wartung",
+      "First-Level- und Second-Level-Support",
+      "Benutzerverwaltung und Rechtevergabe",
+      "Datensicherung und IT-Sicherheit"
+    ],
     "example_phrases_de": [
       "Administrierte die IT-Infrastruktur für ein Unternehmen mit 150 Arbeitsplätzen und 5 Standorten.",
       "Bearbeitete monatlich über 200 Support-Tickets im Helpdesk und erreichte eine Lösungsquote von 95%.",
@@ -308,11 +1070,51 @@
     "title_de": "Buchhalter/in",
     "title_en": "Accountant/Bookkeeper",
     "category": "buero",
-    "keywords": ["buchhalter", "buchhalterin", "buchhaltung", "rechnungswesen", "accountant", "bookkeeper", "bilanzbuchhalter", "FIBU", "lohnverrechnung"],
-    "verbs_de": ["verbucht", "abgestimmt", "erstellt", "kontrolliert", "bilanziert", "kalkuliert", "ausgewertet", "abgeschlossen"],
-    "verbs_en": ["recorded", "reconciled", "prepared", "reviewed", "balanced", "analyzed"],
-    "skills": ["BMD NTCS", "SAP", "Doppelte Buchhaltung", "UStG/EStG", "Bilanzierung", "Kostenrechnung", "Lohnverrechnung"],
-    "tasks_de": ["Laufende Buchhaltung und Belegverbuchung", "Erstellung von Monats- und Jahresabschlüssen", "Umsatzsteuervoranmeldung und Steuererklärungen", "Kontenabstimmung und Mahnwesen", "Lohn- und Gehaltsverrechnung"],
+    "keywords": [
+      "buchhalter",
+      "buchhalterin",
+      "buchhaltung",
+      "rechnungswesen",
+      "accountant",
+      "bookkeeper",
+      "bilanzbuchhalter",
+      "FIBU",
+      "lohnverrechnung"
+    ],
+    "verbs_de": [
+      "verbucht",
+      "abgestimmt",
+      "erstellt",
+      "kontrolliert",
+      "bilanziert",
+      "kalkuliert",
+      "ausgewertet",
+      "abgeschlossen"
+    ],
+    "verbs_en": [
+      "recorded",
+      "reconciled",
+      "prepared",
+      "reviewed",
+      "balanced",
+      "analyzed"
+    ],
+    "skills": [
+      "BMD NTCS",
+      "SAP",
+      "Doppelte Buchhaltung",
+      "UStG/EStG",
+      "Bilanzierung",
+      "Kostenrechnung",
+      "Lohnverrechnung"
+    ],
+    "tasks_de": [
+      "Laufende Buchhaltung und Belegverbuchung",
+      "Erstellung von Monats- und Jahresabschlüssen",
+      "Umsatzsteuervoranmeldung und Steuererklärungen",
+      "Kontenabstimmung und Mahnwesen",
+      "Lohn- und Gehaltsverrechnung"
+    ],
     "example_phrases_de": [
       "Führte die laufende Buchhaltung für 12 KMU-Klienten mit einem Jahresumsatz von insgesamt 8 Mio. € in BMD NTCS.",
       "Erstellte monatliche Umsatzsteuervoranmeldungen und Jahresabschlüsse fristgerecht für alle Klienten.",
@@ -324,11 +1126,51 @@
     "title_de": "Verkaufsberater/in",
     "title_en": "Sales Consultant",
     "category": "handel",
-    "keywords": ["verkaufsberater", "verkaufsberaterin", "vertrieb", "sales consultant", "außendienst", "kundenberater", "sales advisor", "beratung", "akquise"],
-    "verbs_de": ["akquiriert", "beraten", "präsentiert", "verhandelt", "abgeschlossen", "betreut", "analysiert", "übertroffen"],
-    "verbs_en": ["acquired", "advised", "presented", "negotiated", "closed", "managed"],
-    "skills": ["Kundenakquise", "Verhandlungsführung", "CRM-Systeme", "Angebotserstellung", "Marktanalyse", "Produktpräsentation", "Key-Account-Management"],
-    "tasks_de": ["Neukundenakquise und Bestandskundenpflege", "Beratung und Verkauf von Produkten und Dienstleistungen", "Angebotserstellung und Vertragsverhandlung", "Umsatzplanung und Reportings", "Teilnahme an Messen und Verkaufsveranstaltungen"],
+    "keywords": [
+      "verkaufsberater",
+      "verkaufsberaterin",
+      "vertrieb",
+      "sales consultant",
+      "außendienst",
+      "kundenberater",
+      "sales advisor",
+      "beratung",
+      "akquise"
+    ],
+    "verbs_de": [
+      "akquiriert",
+      "beraten",
+      "präsentiert",
+      "verhandelt",
+      "abgeschlossen",
+      "betreut",
+      "analysiert",
+      "übertroffen"
+    ],
+    "verbs_en": [
+      "acquired",
+      "advised",
+      "presented",
+      "negotiated",
+      "closed",
+      "managed"
+    ],
+    "skills": [
+      "Kundenakquise",
+      "Verhandlungsführung",
+      "CRM-Systeme",
+      "Angebotserstellung",
+      "Marktanalyse",
+      "Produktpräsentation",
+      "Key-Account-Management"
+    ],
+    "tasks_de": [
+      "Neukundenakquise und Bestandskundenpflege",
+      "Beratung und Verkauf von Produkten und Dienstleistungen",
+      "Angebotserstellung und Vertragsverhandlung",
+      "Umsatzplanung und Reportings",
+      "Teilnahme an Messen und Verkaufsveranstaltungen"
+    ],
     "example_phrases_de": [
       "Akquirierte jährlich über 40 Neukunden und steigerte den Umsatz im Vertriebsgebiet um 22%.",
       "Betreute ein Portfolio von 80 Bestandskunden und erreichte eine Kundenbindungsrate von 93%.",
@@ -340,11 +1182,51 @@
     "title_de": "Sozialarbeiter/in",
     "title_en": "Social Worker",
     "category": "sozial",
-    "keywords": ["sozialarbeiter", "sozialarbeiterin", "sozialarbeit", "social worker", "beratung", "betreuung", "sozialpädagogik", "DSA", "sozialhilfe"],
-    "verbs_de": ["beraten", "betreut", "vermittelt", "begleitet", "dokumentiert", "vernetzt", "interveniert", "unterstützt"],
-    "verbs_en": ["counseled", "supported", "mediated", "accompanied", "documented", "intervened"],
-    "skills": ["Fallmanagement", "Gesprächsführung", "Krisenintervention", "Sozialrecht", "Netzwerkarbeit", "Dokumentation", "Gruppenarbeit"],
-    "tasks_de": ["Beratung und Betreuung von Klienten in sozialen Notlagen", "Krisenintervention und Soforthilfe", "Vernetzung mit Behörden, Ämtern und sozialen Einrichtungen", "Fallführung und Dokumentation", "Durchführung von Gruppen- und Beratungsangeboten"],
+    "keywords": [
+      "sozialarbeiter",
+      "sozialarbeiterin",
+      "sozialarbeit",
+      "social worker",
+      "beratung",
+      "betreuung",
+      "sozialpädagogik",
+      "DSA",
+      "sozialhilfe"
+    ],
+    "verbs_de": [
+      "beraten",
+      "betreut",
+      "vermittelt",
+      "begleitet",
+      "dokumentiert",
+      "vernetzt",
+      "interveniert",
+      "unterstützt"
+    ],
+    "verbs_en": [
+      "counseled",
+      "supported",
+      "mediated",
+      "accompanied",
+      "documented",
+      "intervened"
+    ],
+    "skills": [
+      "Fallmanagement",
+      "Gesprächsführung",
+      "Krisenintervention",
+      "Sozialrecht",
+      "Netzwerkarbeit",
+      "Dokumentation",
+      "Gruppenarbeit"
+    ],
+    "tasks_de": [
+      "Beratung und Betreuung von Klienten in sozialen Notlagen",
+      "Krisenintervention und Soforthilfe",
+      "Vernetzung mit Behörden, Ämtern und sozialen Einrichtungen",
+      "Fallführung und Dokumentation",
+      "Durchführung von Gruppen- und Beratungsangeboten"
+    ],
     "example_phrases_de": [
       "Betreute einen Caseload von 35 Klienten in der Wohnungslosenhilfe und vermittelte 60% erfolgreich in Wohnraum.",
       "Führte wöchentlich 15–20 Beratungsgespräche und dokumentierte alle Maßnahmen im elektronischen Fallführungssystem.",
@@ -356,11 +1238,52 @@
     "title_de": "Schweißer/in",
     "title_en": "Welder",
     "category": "produktion",
-    "keywords": ["schweißer", "schweißerin", "schweißen", "welder", "welding", "metallbau", "schlosser", "WIG", "MAG", "MIG"],
-    "verbs_de": ["geschweißt", "gefertigt", "geprüft", "montiert", "geschliffen", "vorbereitet", "konstruiert", "nachbearbeitet"],
-    "verbs_en": ["welded", "fabricated", "inspected", "assembled", "ground", "prepared"],
-    "skills": ["WIG-Schweißen", "MAG-Schweißen", "MIG-Schweißen", "Technisches Zeichnen", "Metallbearbeitung", "Schweißzertifikate nach EN ISO 9606", "Qualitätskontrolle"],
-    "tasks_de": ["Schweißarbeiten an Stahl-, Edelstahl- und Aluminiumkonstruktionen", "Vorbereitung und Nachbearbeitung von Schweißnähten", "Qualitätskontrolle und Sichtprüfung", "Fertigung nach technischen Zeichnungen", "Instandhaltung und Reparaturschweißungen"],
+    "keywords": [
+      "schweißer",
+      "schweißerin",
+      "schweißen",
+      "welder",
+      "welding",
+      "metallbau",
+      "schlosser",
+      "WIG",
+      "MAG",
+      "MIG"
+    ],
+    "verbs_de": [
+      "geschweißt",
+      "gefertigt",
+      "geprüft",
+      "montiert",
+      "geschliffen",
+      "vorbereitet",
+      "konstruiert",
+      "nachbearbeitet"
+    ],
+    "verbs_en": [
+      "welded",
+      "fabricated",
+      "inspected",
+      "assembled",
+      "ground",
+      "prepared"
+    ],
+    "skills": [
+      "WIG-Schweißen",
+      "MAG-Schweißen",
+      "MIG-Schweißen",
+      "Technisches Zeichnen",
+      "Metallbearbeitung",
+      "Schweißzertifikate nach EN ISO 9606",
+      "Qualitätskontrolle"
+    ],
+    "tasks_de": [
+      "Schweißarbeiten an Stahl-, Edelstahl- und Aluminiumkonstruktionen",
+      "Vorbereitung und Nachbearbeitung von Schweißnähten",
+      "Qualitätskontrolle und Sichtprüfung",
+      "Fertigung nach technischen Zeichnungen",
+      "Instandhaltung und Reparaturschweißungen"
+    ],
     "example_phrases_de": [
       "Führte WIG- und MAG-Schweißarbeiten an Edelstahlkonstruktionen für den Anlagenbau nach EN ISO 9606 aus.",
       "Fertigte Stahlbaukonstruktionen nach Plan und hielt eine Nacharbeitsquote von unter 2% ein.",
@@ -372,11 +1295,52 @@
     "title_de": "CNC-Fachkraft",
     "title_en": "CNC Operator",
     "category": "produktion",
-    "keywords": ["cnc", "cnc-fachkraft", "cnc-dreher", "cnc-fräser", "zerspanungstechnik", "cnc operator", "maschinenbediener", "programmierer", "drehen", "fräsen"],
-    "verbs_de": ["programmiert", "eingerichtet", "gefertigt", "gemessen", "optimiert", "gewartet", "überwacht", "korrigiert"],
-    "verbs_en": ["programmed", "set up", "manufactured", "measured", "optimized", "monitored"],
-    "skills": ["CNC-Programmierung", "G-Code", "CAD/CAM", "Messtechnik", "Werkzeugkunde", "Qualitätssicherung", "Siemens/Heidenhain-Steuerung"],
-    "tasks_de": ["Programmierung und Einrichtung von CNC-Dreh- und Fräsmaschinen", "Fertigung von Werkstücken nach technischen Zeichnungen", "Qualitätskontrolle und Maßprüfung", "Wartung und Pflege der Maschinen", "Optimierung von Fertigungsprozessen"],
+    "keywords": [
+      "cnc",
+      "cnc-fachkraft",
+      "cnc-dreher",
+      "cnc-fräser",
+      "zerspanungstechnik",
+      "cnc operator",
+      "maschinenbediener",
+      "cnc-programmierung",
+      "drehen",
+      "fräsen"
+    ],
+    "verbs_de": [
+      "programmiert",
+      "eingerichtet",
+      "gefertigt",
+      "gemessen",
+      "optimiert",
+      "gewartet",
+      "überwacht",
+      "korrigiert"
+    ],
+    "verbs_en": [
+      "programmed",
+      "set up",
+      "manufactured",
+      "measured",
+      "optimized",
+      "monitored"
+    ],
+    "skills": [
+      "CNC-Programmierung",
+      "G-Code",
+      "CAD/CAM",
+      "Messtechnik",
+      "Werkzeugkunde",
+      "Qualitätssicherung",
+      "Siemens/Heidenhain-Steuerung"
+    ],
+    "tasks_de": [
+      "Programmierung und Einrichtung von CNC-Dreh- und Fräsmaschinen",
+      "Fertigung von Werkstücken nach technischen Zeichnungen",
+      "Qualitätskontrolle und Maßprüfung",
+      "Wartung und Pflege der Maschinen",
+      "Optimierung von Fertigungsprozessen"
+    ],
     "example_phrases_de": [
       "Programmierte und bediente CNC-Fräsmaschinen (Heidenhain TNC 640) für die Serienfertigung von Präzisionsteilen.",
       "Fertigte Werkstücke mit Toleranzen von ±0,01 mm und erreichte eine Ausschussquote unter 1%.",
@@ -388,15 +1352,1734 @@
     "title_de": "Produktionsmitarbeiter/in",
     "title_en": "Production Worker",
     "category": "produktion",
-    "keywords": ["produktion", "produktionsmitarbeiter", "produktionshelfer", "fertigung", "production worker", "fabrikarbeiter", "maschinenbediener", "montage", "fließband", "schichtarbeit"],
-    "verbs_de": ["gefertigt", "montiert", "kontrolliert", "bedient", "verpackt", "überwacht", "dokumentiert", "bestückt"],
-    "verbs_en": ["manufactured", "assembled", "inspected", "operated", "packed", "monitored"],
-    "skills": ["Maschinenbedienung", "Qualitätskontrolle", "Montage", "Arbeitssicherheit", "Schichtarbeit", "5S-Methode", "Produktionsplanung"],
-    "tasks_de": ["Bedienung und Überwachung von Produktionsanlagen", "Montage von Baugruppen und Komponenten", "Qualitätskontrolle und Sichtprüfung", "Verpackung und Versandvorbereitung", "Dokumentation der Produktionsdaten"],
+    "keywords": [
+      "produktion",
+      "produktionsmitarbeiter",
+      "produktionshelfer",
+      "fertigung",
+      "production worker",
+      "fabrikarbeiter",
+      "maschinenbediener",
+      "montage",
+      "fließband",
+      "schichtarbeit"
+    ],
+    "verbs_de": [
+      "gefertigt",
+      "montiert",
+      "kontrolliert",
+      "bedient",
+      "verpackt",
+      "überwacht",
+      "dokumentiert",
+      "bestückt"
+    ],
+    "verbs_en": [
+      "manufactured",
+      "assembled",
+      "inspected",
+      "operated",
+      "packed",
+      "monitored"
+    ],
+    "skills": [
+      "Maschinenbedienung",
+      "Qualitätskontrolle",
+      "Montage",
+      "Arbeitssicherheit",
+      "Schichtarbeit",
+      "5S-Methode",
+      "Produktionsplanung"
+    ],
+    "tasks_de": [
+      "Bedienung und Überwachung von Produktionsanlagen",
+      "Montage von Baugruppen und Komponenten",
+      "Qualitätskontrolle und Sichtprüfung",
+      "Verpackung und Versandvorbereitung",
+      "Dokumentation der Produktionsdaten"
+    ],
     "example_phrases_de": [
       "Bediente Produktionsanlagen in der Serienfertigung und erreichte konstant eine Stückzahl von 500+ Teilen pro Schicht.",
       "Führte laufende Qualitätskontrollen durch und hielt die Ausschussquote bei unter 1,5%.",
       "Montierte elektronische Baugruppen im 3-Schicht-Betrieb und schulte 3 neue Mitarbeiter in den Arbeitsabläufen ein."
+    ]
+  },
+  {
+    "id": "softwareentwickler",
+    "title_de": "Softwareentwickler/in (Programmierer/in)",
+    "title_en": "Software Developer",
+    "category": "it",
+    "keywords": [
+      "programmierer",
+      "programmiererin",
+      "softwareentwickler",
+      "softwareentwicklerin",
+      "entwickler",
+      "software",
+      "developer",
+      "coding",
+      "it",
+      "programmieren",
+      "applikationsentwickler"
+    ],
+    "verbs_de": [
+      "entwickelt",
+      "programmiert",
+      "implementiert",
+      "getestet",
+      "konzipiert",
+      "optimiert",
+      "wartet",
+      "dokumentiert"
+    ],
+    "verbs_en": [
+      "developed",
+      "programmed",
+      "implemented",
+      "tested",
+      "designed",
+      "optimized"
+    ],
+    "skills": [
+      "Objektorientierte Programmierung",
+      "Versionsverwaltung mit Git",
+      "Datenbankentwurf (SQL)",
+      "Webentwicklung (Frontend/Backend)",
+      "Fehleranalyse und Debugging",
+      "agile Arbeitsmethoden (Scrum)",
+      "automatisierte Tests",
+      "Schnittstellenprogrammierung (API)"
+    ],
+    "tasks_de": [
+      "Entwicklung neuer Softwarefunktionen",
+      "Behebung von Programmfehlern",
+      "Erstellung technischer Dokumentation",
+      "Zusammenarbeit im Entwicklungsteam",
+      "Wartung bestehender Anwendungen"
+    ],
+    "example_phrases_de": [
+      "Entwickelte eine Webanwendung, die die Bearbeitungszeit um 40 % reduzierte.",
+      "Behob über 150 Programmfehler innerhalb von 6 Monaten.",
+      "Betreute 3 produktive Anwendungen mit insgesamt rund 2.000 Nutzern."
+    ]
+  },
+  {
+    "id": "kuechenhilfe",
+    "title_de": "Küchenhilfe",
+    "title_en": "Kitchen Assistant",
+    "category": "gastro",
+    "keywords": [
+      "küchenhilfe",
+      "kuechenhilfe",
+      "küchengehilfe",
+      "abwäscher",
+      "spüler",
+      "beikoch",
+      "küche",
+      "gastro",
+      "kitchen",
+      "hilfskraft",
+      "abwasch"
+    ],
+    "verbs_de": [
+      "vorbereitet",
+      "unterstützt",
+      "gereinigt",
+      "zubereitet",
+      "portioniert",
+      "geschält",
+      "geholfen",
+      "eingehalten"
+    ],
+    "verbs_en": [
+      "prepared",
+      "supported",
+      "cleaned",
+      "assisted",
+      "portioned",
+      "maintained"
+    ],
+    "skills": [
+      "Vorbereitung von Speisen (Mise en place)",
+      "Lebensmittelhygiene nach HACCP",
+      "Bedienung von Spülmaschinen",
+      "Reinigung von Küchengeräten",
+      "Lagerung von Lebensmitteln",
+      "Schneiden und Portionieren",
+      "Unterstützung am Herd",
+      "Mülltrennung und Entsorgung"
+    ],
+    "tasks_de": [
+      "Vorbereiten von Zutaten",
+      "Abwasch und Reinigung der Küche",
+      "Unterstützung der Köche",
+      "Einhaltung der Hygienevorschriften",
+      "Lagerung und Kontrolle von Waren"
+    ],
+    "example_phrases_de": [
+      "Bereitete täglich Zutaten für bis zu 200 Gerichte vor.",
+      "Reinigte und desinfizierte 5 Küchenstationen nach jedem Service.",
+      "Unterstützte ein Küchenteam von 8 Personen während der Hauptsaison."
+    ]
+  },
+  {
+    "id": "systemgastronomie",
+    "title_de": "Mitarbeiter/in Systemgastronomie",
+    "title_en": "Fast Food / Quick Service Worker",
+    "category": "gastro",
+    "keywords": [
+      "systemgastronomie",
+      "fastfood",
+      "fast food",
+      "imbiss",
+      "mcdonalds",
+      "würstelstand",
+      "wuerstelstand",
+      "burger",
+      "gastro",
+      "schnellrestaurant",
+      "counter",
+      "fritteuse"
+    ],
+    "verbs_de": [
+      "zubereitet",
+      "kassiert",
+      "bedient",
+      "verkauft",
+      "gereinigt",
+      "aufgefüllt",
+      "beraten",
+      "eingehalten"
+    ],
+    "verbs_en": [
+      "prepared",
+      "served",
+      "cashiered",
+      "sold",
+      "cleaned",
+      "restocked"
+    ],
+    "skills": [
+      "Zubereitung von Fast-Food-Speisen",
+      "Bedienung der Registrierkasse",
+      "Kundenbedienung am Counter",
+      "Lebensmittelhygiene nach HACCP",
+      "Arbeiten an der Fritteuse und am Grill",
+      "Warenauffüllung",
+      "Reinigung des Arbeitsbereichs",
+      "Arbeiten unter Zeitdruck"
+    ],
+    "tasks_de": [
+      "Zubereitung von Speisen und Getränken",
+      "Kassieren und Geldverwaltung",
+      "Bedienung und Beratung der Gäste",
+      "Auffüllen der Vorräte",
+      "Reinigung des Verkaufs- und Küchenbereichs"
+    ],
+    "example_phrases_de": [
+      "Bediente in Stoßzeiten bis zu 120 Gäste pro Stunde.",
+      "Kassierte täglich Bargeldumsätze von rund 3.000 Euro.",
+      "Reduzierte die Wartezeit am Counter durch optimierte Abläufe um 15 %."
+    ]
+  },
+  {
+    "id": "baecker",
+    "title_de": "Bäcker/in",
+    "title_en": "Baker",
+    "category": "gastro",
+    "keywords": [
+      "bäcker",
+      "baecker",
+      "bäckerin",
+      "baeckerin",
+      "bäckerei",
+      "brot",
+      "gebäck",
+      "backstube",
+      "gastro",
+      "baker",
+      "teig",
+      "semmeln"
+    ],
+    "verbs_de": [
+      "gebacken",
+      "geknetet",
+      "zubereitet",
+      "produziert",
+      "geformt",
+      "kontrolliert",
+      "eingeteilt",
+      "eingehalten"
+    ],
+    "verbs_en": [
+      "baked",
+      "kneaded",
+      "produced",
+      "prepared",
+      "shaped",
+      "monitored"
+    ],
+    "skills": [
+      "Herstellung von Brot und Gebäck",
+      "Teigführung und Gärung",
+      "Bedienung von Backöfen",
+      "Rezepturberechnung",
+      "Lebensmittelhygiene nach HACCP",
+      "Qualitätskontrolle der Backwaren",
+      "Arbeiten im Nachtdienst",
+      "Lagerung von Rohstoffen"
+    ],
+    "tasks_de": [
+      "Herstellung von Brot, Semmeln und Gebäck",
+      "Vorbereitung und Führung der Teige",
+      "Bedienung der Backöfen",
+      "Kontrolle der Produktqualität",
+      "Einhaltung der Hygienestandards"
+    ],
+    "example_phrases_de": [
+      "Produzierte täglich bis zu 1.500 Backwaren in der Frühschicht.",
+      "Verarbeitete pro Nacht rund 200 kg Mehl zu verschiedenen Teigsorten.",
+      "Reduzierte den Ausschuss durch optimierte Teigführung um 10 %."
+    ]
+  },
+  {
+    "id": "konditor",
+    "title_de": "Konditor/in",
+    "title_en": "Pastry Chef / Confectioner",
+    "category": "gastro",
+    "keywords": [
+      "konditor",
+      "konditorin",
+      "konditorei",
+      "patissier",
+      "torten",
+      "süßspeisen",
+      "suessspeisen",
+      "mehlspeisen",
+      "gastro",
+      "zuckerbäcker",
+      "pastry",
+      "dessert"
+    ],
+    "verbs_de": [
+      "hergestellt",
+      "dekoriert",
+      "zubereitet",
+      "verziert",
+      "gebacken",
+      "kreiert",
+      "kontrolliert",
+      "eingehalten"
+    ],
+    "verbs_en": [
+      "produced",
+      "decorated",
+      "prepared",
+      "garnished",
+      "baked",
+      "created"
+    ],
+    "skills": [
+      "Herstellung von Torten und Mehlspeisen",
+      "Dekorations- und Verziertechniken",
+      "Verarbeitung von Schokolade und Zucker",
+      "Cremeherstellung",
+      "Lebensmittelhygiene nach HACCP",
+      "Rezepturberechnung",
+      "Qualitäts- und Frischekontrolle",
+      "Anrichten von Desserts"
+    ],
+    "tasks_de": [
+      "Herstellung von Torten, Pralinen und Desserts",
+      "Dekoration und Verzierung von Süßspeisen",
+      "Verarbeitung von Schokolade und Marzipan",
+      "Kontrolle der Produktqualität",
+      "Einhaltung der Hygienevorschriften"
+    ],
+    "example_phrases_de": [
+      "Fertigte wöchentlich bis zu 80 Torten für Feiern und Verkauf an.",
+      "Entwickelte 12 neue Dessertkreationen für die Saisonkarte.",
+      "Dekorierte täglich rund 150 Stück Feingebäck nach Vorgabe."
+    ]
+  },
+  {
+    "id": "fleischer",
+    "title_de": "Fleischer/in",
+    "title_en": "Butcher",
+    "category": "gastro",
+    "keywords": [
+      "fleischer",
+      "fleischerin",
+      "metzger",
+      "metzgerin",
+      "fleischhauer",
+      "fleischhauerin",
+      "fleischerei",
+      "wurst",
+      "gastro",
+      "butcher",
+      "zerlegung",
+      "fleisch"
+    ],
+    "verbs_de": [
+      "zerlegt",
+      "verarbeitet",
+      "hergestellt",
+      "verkauft",
+      "kontrolliert",
+      "verpackt",
+      "beraten",
+      "eingehalten"
+    ],
+    "verbs_en": [
+      "cut",
+      "processed",
+      "produced",
+      "sold",
+      "inspected",
+      "packaged"
+    ],
+    "skills": [
+      "Zerlegung von Fleisch",
+      "Wurst- und Selchwarenherstellung",
+      "Bedienung von Schneidemaschinen",
+      "Lebensmittelhygiene nach HACCP",
+      "Kühlkettenkontrolle",
+      "Fleischpräsentation in der Theke",
+      "Kundenberatung und Verkauf",
+      "Vakuumverpackung"
+    ],
+    "tasks_de": [
+      "Zerlegen und Zuschneiden von Fleisch",
+      "Herstellung von Wurst- und Selchwaren",
+      "Bedienung und Beratung der Kundschaft",
+      "Kontrolle der Kühlkette und Frische",
+      "Einhaltung der Hygienevorschriften"
+    ],
+    "example_phrases_de": [
+      "Verarbeitete täglich bis zu 300 kg Fleisch in der Produktion.",
+      "Bediente und beriet pro Tag rund 100 Kundinnen und Kunden an der Theke.",
+      "Stellte wöchentlich über 20 verschiedene Wurstsorten her."
+    ]
+  },
+  {
+    "id": "schneider",
+    "title_de": "Schneider/in (Näher/in)",
+    "title_en": "Tailor / Seamstress",
+    "category": "sonstiges",
+    "keywords": [
+      "schneider",
+      "schneiderin",
+      "näher",
+      "naeher",
+      "näherin",
+      "naeherin",
+      "textil",
+      "schneiderei",
+      "nähen",
+      "naehen",
+      "änderungsschneider",
+      "tailor"
+    ],
+    "verbs_de": [
+      "genäht",
+      "geändert",
+      "zugeschnitten",
+      "angefertigt",
+      "repariert",
+      "ausgemessen",
+      "gefertigt",
+      "beraten"
+    ],
+    "verbs_en": [
+      "sewed",
+      "altered",
+      "tailored",
+      "repaired",
+      "measured",
+      "produced"
+    ],
+    "skills": [
+      "Nähen mit Industrie- und Haushaltsmaschinen",
+      "Maßnehmen und Anpassen",
+      "Zuschnitt nach Schnittmuster",
+      "Änderungsschneiderei",
+      "Verarbeitung verschiedener Stoffe",
+      "Bügeln und Finish",
+      "Reparatur von Kleidung",
+      "Qualitätskontrolle der Nähte"
+    ],
+    "tasks_de": [
+      "Anfertigen und Ändern von Kleidung",
+      "Maßnehmen bei der Kundschaft",
+      "Zuschnitt von Stoffen",
+      "Reparatur und Ausbesserung",
+      "Bedienung von Nähmaschinen"
+    ],
+    "example_phrases_de": [
+      "Führte täglich bis zu 25 Kleidungsänderungen termingerecht durch.",
+      "Fertigte pro Monat rund 40 Maßkleidungsstücke an.",
+      "Reduzierte die Reklamationsquote durch sorgfältige Nahtkontrolle auf unter 2 %."
+    ]
+  },
+  {
+    "id": "pflegeassistenz",
+    "title_de": "Pflegeassistent/in",
+    "title_en": "Nursing Assistant",
+    "category": "gesundheit",
+    "keywords": [
+      "pflegeassistent",
+      "pflegeassistentin",
+      "pflegeassistenz",
+      "pflege",
+      "altenpflege",
+      "heimhilfe",
+      "betreuung",
+      "pflegehelfer",
+      "gesundheit",
+      "krankenpflege",
+      "pflegekraft",
+      "care"
+    ],
+    "verbs_de": [
+      "betreut",
+      "gepflegt",
+      "unterstützt",
+      "dokumentiert",
+      "mobilisiert",
+      "verabreicht",
+      "beobachtet",
+      "begleitet"
+    ],
+    "verbs_en": [
+      "cared",
+      "supported",
+      "assisted",
+      "documented",
+      "mobilized",
+      "monitored"
+    ],
+    "skills": [
+      "Grundpflege und Körperpflege",
+      "Unterstützung bei der Mobilisation",
+      "Pflegedokumentation",
+      "Vitalzeichenkontrolle",
+      "Medikamentengabe nach Anordnung",
+      "Hygiene- und Infektionsschutz",
+      "Unterstützung bei der Nahrungsaufnahme",
+      "Beobachtung des Gesundheitszustands"
+    ],
+    "tasks_de": [
+      "Durchführung der Grundpflege",
+      "Unterstützung im Alltag der Bewohner",
+      "Dokumentation der Pflegemaßnahmen",
+      "Kontrolle der Vitalzeichen",
+      "Begleitung bei Arztbesuchen"
+    ],
+    "example_phrases_de": [
+      "Betreute bis zu 30 Bewohnerinnen und Bewohner pro Schicht.",
+      "Führte täglich Vitalzeichenkontrollen bei rund 15 Patienten durch.",
+      "Dokumentierte alle Pflegemaßnahmen für ein Team von 12 Pflegekräften."
+    ]
+  },
+  {
+    "id": "heimhilfe",
+    "title_de": "Heimhelfer/in (Personenbetreuung)",
+    "title_en": "Home Care Aide",
+    "category": "sozial",
+    "keywords": [
+      "heimhilfe",
+      "heimhelfer",
+      "heimhelferin",
+      "personenbetreuung",
+      "betreuung",
+      "24-stunden-betreuung",
+      "alltagsbegleitung",
+      "haushaltshilfe",
+      "sozial",
+      "pflege",
+      "betreuer",
+      "care"
+    ],
+    "verbs_de": [
+      "betreut",
+      "unterstützt",
+      "begleitet",
+      "versorgt",
+      "erledigt",
+      "geholfen",
+      "gefördert",
+      "entlastet"
+    ],
+    "verbs_en": [
+      "cared",
+      "supported",
+      "accompanied",
+      "assisted",
+      "helped",
+      "managed"
+    ],
+    "skills": [
+      "Unterstützung im Haushalt",
+      "Einkaufs- und Botengänge",
+      "Hilfe bei der Körperpflege",
+      "Begleitung zu Terminen",
+      "Zubereitung von Mahlzeiten",
+      "Förderung der Selbstständigkeit",
+      "Gesprächsbegleitung und soziale Aktivierung",
+      "Beobachtung des Allgemeinzustands"
+    ],
+    "tasks_de": [
+      "Unterstützung im Haushalt der betreuten Person",
+      "Hilfe bei der täglichen Körperpflege",
+      "Begleitung bei Einkäufen und Terminen",
+      "Zubereitung von Mahlzeiten",
+      "Förderung sozialer Kontakte"
+    ],
+    "example_phrases_de": [
+      "Betreute regelmäßig 8 Klientinnen und Klienten in deren Zuhause.",
+      "Übernahm wöchentlich rund 20 Einkaufs- und Begleitwege.",
+      "Unterstützte eine pflegebedürftige Person über 18 Monate im Alltag."
+    ]
+  },
+  {
+    "id": "ordinationsassistenz",
+    "title_de": "Ordinationsassistent/in",
+    "title_en": "Medical Office Assistant",
+    "category": "gesundheit",
+    "keywords": [
+      "ordinationsassistent",
+      "ordinationsassistentin",
+      "ordinationsassistenz",
+      "ordination",
+      "arztpraxis",
+      "arzthelfer",
+      "arzthelferin",
+      "praxis",
+      "gesundheit",
+      "ordinationshilfe",
+      "empfang",
+      "medizin"
+    ],
+    "verbs_de": [
+      "empfangen",
+      "terminiert",
+      "assistiert",
+      "dokumentiert",
+      "verwaltet",
+      "vorbereitet",
+      "betreut",
+      "organisiert"
+    ],
+    "verbs_en": [
+      "received",
+      "scheduled",
+      "assisted",
+      "documented",
+      "managed",
+      "organized"
+    ],
+    "skills": [
+      "Patientenempfang und -verwaltung",
+      "Terminkoordination",
+      "Assistenz bei Untersuchungen",
+      "Führung der Patientenkartei",
+      "Abrechnung mit Krankenkassen",
+      "Hygiene und Sterilisation",
+      "Blutabnahme nach Anordnung",
+      "Bestellwesen für Praxismaterial"
+    ],
+    "tasks_de": [
+      "Empfang und Betreuung der Patienten",
+      "Terminvergabe und Organisation",
+      "Assistenz bei ärztlichen Untersuchungen",
+      "Verwaltung der Patientendaten",
+      "Abrechnung und Dokumentation"
+    ],
+    "example_phrases_de": [
+      "Betreute täglich bis zu 60 Patientinnen und Patienten am Empfang.",
+      "Koordinierte rund 80 Termine pro Tag für 2 Ärzte.",
+      "Reduzierte Wartezeiten durch optimierte Terminplanung um 20 %."
+    ]
+  },
+  {
+    "id": "zahnarztassistenz",
+    "title_de": "Zahnärztliche/r Assistent/in",
+    "title_en": "Dental Assistant",
+    "category": "gesundheit",
+    "keywords": [
+      "zahnarztassistent",
+      "zahnarztassistentin",
+      "zahnarztassistenz",
+      "zahnärztliche assistenz",
+      "zahnarzthelfer",
+      "zahnarzt",
+      "zahnarztpraxis",
+      "dental",
+      "gesundheit",
+      "prophylaxe",
+      "stuhlassistenz",
+      "zahn"
+    ],
+    "verbs_de": [
+      "assistiert",
+      "vorbereitet",
+      "betreut",
+      "dokumentiert",
+      "sterilisiert",
+      "empfangen",
+      "terminiert",
+      "verwaltet"
+    ],
+    "verbs_en": [
+      "assisted",
+      "prepared",
+      "documented",
+      "sterilized",
+      "received",
+      "scheduled"
+    ],
+    "skills": [
+      "Stuhlassistenz bei Behandlungen",
+      "Vorbereitung von Instrumenten",
+      "Sterilisation und Hygiene",
+      "Patientenbetreuung",
+      "Röntgenassistenz",
+      "Prophylaxe-Unterstützung",
+      "Terminverwaltung",
+      "Materialbestellung und Lagerhaltung"
+    ],
+    "tasks_de": [
+      "Assistenz bei zahnärztlichen Behandlungen",
+      "Vorbereitung von Behandlungsräumen",
+      "Sterilisation der Instrumente",
+      "Betreuung der Patienten",
+      "Verwaltung von Terminen und Material"
+    ],
+    "example_phrases_de": [
+      "Assistierte täglich bei bis zu 40 Behandlungen.",
+      "Sterilisierte und bereitete pro Tag rund 50 Instrumentensets auf.",
+      "Betreute am Empfang durchschnittlich 55 Patienten pro Tag."
+    ]
+  },
+  {
+    "id": "apothekenhelfer",
+    "title_de": "Pharmazeutisch-kaufmännische/r Assistent/in",
+    "title_en": "Pharmacy Assistant",
+    "category": "gesundheit",
+    "keywords": [
+      "apothekenhelfer",
+      "apothekenhelferin",
+      "pka",
+      "pharmazeutisch-kaufmännische assistenz",
+      "apotheke",
+      "apothekenassistent",
+      "drogerie",
+      "gesundheit",
+      "medikamente",
+      "pharmacy",
+      "verkauf",
+      "beratung"
+    ],
+    "verbs_de": [
+      "beraten",
+      "verkauft",
+      "verwaltet",
+      "bestellt",
+      "kontrolliert",
+      "kommissioniert",
+      "dokumentiert",
+      "betreut"
+    ],
+    "verbs_en": [
+      "advised",
+      "sold",
+      "managed",
+      "ordered",
+      "inspected",
+      "documented"
+    ],
+    "skills": [
+      "Beratung zu freiverkäuflichen Produkten",
+      "Warenbewirtschaftung und Bestellwesen",
+      "Lagerhaltung von Arzneimitteln",
+      "Kassenführung",
+      "Kontrolle von Verfallsdaten",
+      "Herstellung einfacher Präparate",
+      "Kundenservice in der Apotheke",
+      "Dokumentation nach Vorschrift"
+    ],
+    "tasks_de": [
+      "Beratung und Verkauf im Handverkauf",
+      "Warenbestellung und Lagerverwaltung",
+      "Kontrolle der Verfallsdaten",
+      "Kassieren und Abrechnung",
+      "Unterstützung bei der Präparateherstellung"
+    ],
+    "example_phrases_de": [
+      "Beriet täglich bis zu 90 Kundinnen und Kunden im Handverkauf.",
+      "Verwaltete einen Warenbestand von über 8.000 Artikeln.",
+      "Bearbeitete pro Woche rund 50 Lieferungen und kontrollierte die Verfallsdaten."
+    ]
+  },
+  {
+    "id": "lagerlogistik",
+    "title_de": "Lagerlogistiker/in (Staplerfahrer/in)",
+    "title_en": "Warehouse Logistics Worker / Forklift Operator",
+    "category": "lager",
+    "keywords": [
+      "lagerlogistiker",
+      "lagerlogistik",
+      "staplerfahrer",
+      "staplerfahrerin",
+      "stapler",
+      "gabelstapler",
+      "kommissionierer",
+      "lagerist",
+      "lager",
+      "logistik",
+      "warehouse",
+      "kommissionierung"
+    ],
+    "verbs_de": [
+      "kommissioniert",
+      "verladen",
+      "eingelagert",
+      "kontrolliert",
+      "transportiert",
+      "verpackt",
+      "gebucht",
+      "inventarisiert"
+    ],
+    "verbs_en": [
+      "picked",
+      "loaded",
+      "stored",
+      "inspected",
+      "transported",
+      "packed"
+    ],
+    "skills": [
+      "Bedienung von Gabelstaplern",
+      "Kommissionierung von Waren",
+      "Wareneingangs- und Warenausgangskontrolle",
+      "Bedienung von Scannern und Lagersoftware",
+      "Verpacken und Verladen",
+      "Inventur und Bestandsführung",
+      "Ladungssicherung",
+      "Einhaltung der Arbeitssicherheit"
+    ],
+    "tasks_de": [
+      "Ein- und Auslagern von Waren",
+      "Kommissionierung von Aufträgen",
+      "Be- und Entladen von LKW",
+      "Kontrolle von Warenein- und -ausgang",
+      "Durchführung von Inventuren"
+    ],
+    "example_phrases_de": [
+      "Kommissionierte täglich bis zu 400 Auftragspositionen.",
+      "Bediente einen Gabelstapler bei der Verladung von rund 30 Paletten pro Tag.",
+      "Senkte die Fehlerquote bei der Kommissionierung auf unter 1 %."
+    ]
+  },
+  {
+    "id": "zusteller",
+    "title_de": "Paketzusteller/in",
+    "title_en": "Parcel Delivery Driver",
+    "category": "lager",
+    "keywords": [
+      "zusteller",
+      "zustellerin",
+      "paketzusteller",
+      "paketbote",
+      "paketbotin",
+      "lieferant",
+      "post",
+      "kurier",
+      "lager",
+      "zustellung",
+      "delivery",
+      "auslieferung"
+    ],
+    "verbs_de": [
+      "zugestellt",
+      "ausgeliefert",
+      "sortiert",
+      "transportiert",
+      "geplant",
+      "übergeben",
+      "gescannt",
+      "kassiert"
+    ],
+    "verbs_en": [
+      "delivered",
+      "distributed",
+      "sorted",
+      "transported",
+      "planned",
+      "scanned"
+    ],
+    "skills": [
+      "Zustellung von Paketen und Briefen",
+      "Tourenplanung",
+      "Bedienung von Scangeräten",
+      "Be- und Entladen des Lieferfahrzeugs",
+      "Umgang mit Nachnahmebeträgen",
+      "Kundenkontakt bei der Übergabe",
+      "Ortskenntnis und Navigation",
+      "Sorgfältiger Umgang mit Sendungen"
+    ],
+    "tasks_de": [
+      "Zustellung von Paketen und Sendungen",
+      "Beladen und Sortieren der Sendungen",
+      "Planung der täglichen Tour",
+      "Scannen und Dokumentation der Zustellung",
+      "Kassieren von Nachnahmen"
+    ],
+    "example_phrases_de": [
+      "Stellte täglich bis zu 180 Pakete in einem festen Zustellgebiet zu.",
+      "Bewältigte eine Tagestour mit rund 90 Stopps termingerecht.",
+      "Erreichte eine Zustellquote von über 98 % beim ersten Versuch."
+    ]
+  },
+  {
+    "id": "taxifahrer",
+    "title_de": "Taxifahrer/in",
+    "title_en": "Taxi Driver",
+    "category": "technik",
+    "keywords": [
+      "taxifahrer",
+      "taxifahrerin",
+      "taxi",
+      "fahrer",
+      "fahrerin",
+      "uber",
+      "mietwagen",
+      "chauffeur",
+      "technik",
+      "personenbeförderung",
+      "lenker",
+      "transport"
+    ],
+    "verbs_de": [
+      "befördert",
+      "transportiert",
+      "navigiert",
+      "kassiert",
+      "geplant",
+      "betreut",
+      "gewartet",
+      "eingehalten"
+    ],
+    "verbs_en": [
+      "transported",
+      "drove",
+      "navigated",
+      "collected",
+      "planned",
+      "assisted"
+    ],
+    "skills": [
+      "Sichere Personenbeförderung",
+      "Orts- und Routenkenntnis",
+      "Bedienung von Navigationssystemen",
+      "Abrechnung und Kassieren",
+      "Fahrzeugpflege und Kontrolle",
+      "Kundenfreundliches Auftreten",
+      "Einhaltung der Lenk- und Ruhezeiten",
+      "Taxameter-Bedienung"
+    ],
+    "tasks_de": [
+      "Beförderung von Fahrgästen",
+      "Routenplanung und Navigation",
+      "Kassieren der Fahrtkosten",
+      "Pflege und Kontrolle des Fahrzeugs",
+      "Einhaltung der Verkehrs- und Beförderungsvorschriften"
+    ],
+    "example_phrases_de": [
+      "Beförderte täglich bis zu 25 Fahrgäste im Stadt- und Flughafenverkehr.",
+      "Legte pro Schicht rund 250 km unfallfrei zurück.",
+      "Erreichte über 3 Jahre eine unfallfreie Fahrleistung von 120.000 km."
+    ]
+  },
+  {
+    "id": "busfahrer",
+    "title_de": "Buslenker/in",
+    "title_en": "Bus Driver",
+    "category": "technik",
+    "keywords": [
+      "busfahrer",
+      "busfahrerin",
+      "buslenker",
+      "buslenkerin",
+      "buschauffeur",
+      "bus",
+      "linienbus",
+      "reisebus",
+      "technik",
+      "personenbeförderung",
+      "chauffeur",
+      "öffentlicher verkehr"
+    ],
+    "verbs_de": [
+      "gelenkt",
+      "befördert",
+      "eingehalten",
+      "betreut",
+      "kontrolliert",
+      "navigiert",
+      "verkauft",
+      "gewartet"
+    ],
+    "verbs_en": [
+      "drove",
+      "transported",
+      "maintained",
+      "assisted",
+      "monitored",
+      "navigated"
+    ],
+    "skills": [
+      "Sichere Personenbeförderung im Linienverkehr",
+      "Einhaltung von Fahrplänen",
+      "Fahrkartenverkauf und -kontrolle",
+      "Fahrzeugkontrolle vor Fahrtantritt",
+      "Orts- und Streckenkenntnis",
+      "Einhaltung der Lenk- und Ruhezeiten",
+      "Kundenfreundliches Auftreten",
+      "Verhalten bei Notfällen"
+    ],
+    "tasks_de": [
+      "Beförderung von Fahrgästen im Linien- oder Reiseverkehr",
+      "Einhaltung des Fahrplans",
+      "Verkauf und Kontrolle von Fahrkarten",
+      "Kontrolle und Pflege des Busses",
+      "Gewährleistung der Fahrgastsicherheit"
+    ],
+    "example_phrases_de": [
+      "Beförderte täglich bis zu 600 Fahrgäste auf festen Linien.",
+      "Hielt einen Fahrplan mit 40 Haltestellen pünktlich ein.",
+      "Fuhr über 5 Jahre rund 200.000 km im Linienverkehr unfallfrei."
+    ]
+  },
+  {
+    "id": "sicherheitsdienst",
+    "title_de": "Sicherheitsmitarbeiter/in",
+    "title_en": "Security Guard",
+    "category": "sonstiges",
+    "keywords": [
+      "sicherheitsmitarbeiter",
+      "sicherheitsdienst",
+      "security",
+      "wachdienst",
+      "türsteher",
+      "tuersteher",
+      "objektschutz",
+      "bewachung",
+      "sonstiges",
+      "wachmann",
+      "sicherheit",
+      "ordnerdienst"
+    ],
+    "verbs_de": [
+      "überwacht",
+      "kontrolliert",
+      "gesichert",
+      "beobachtet",
+      "dokumentiert",
+      "eingegriffen",
+      "betreut",
+      "gewährleistet"
+    ],
+    "verbs_en": [
+      "monitored",
+      "controlled",
+      "secured",
+      "observed",
+      "documented",
+      "intervened"
+    ],
+    "skills": [
+      "Objekt- und Personenschutz",
+      "Zutrittskontrolle",
+      "Bedienung von Überwachungsanlagen",
+      "Streifengänge und Kontrollen",
+      "Deeskalation und Konfliktmanagement",
+      "Verfassen von Berichten",
+      "Erste Hilfe",
+      "Brandschutz und Notfallmaßnahmen"
+    ],
+    "tasks_de": [
+      "Überwachung von Objekten und Veranstaltungen",
+      "Zutritts- und Ausweiskontrolle",
+      "Durchführung von Streifengängen",
+      "Dokumentation von Vorfällen",
+      "Eingreifen bei Störungen und Notfällen"
+    ],
+    "example_phrases_de": [
+      "Überwachte ein Objekt mit über 15 Zugängen im Schichtdienst.",
+      "Kontrollierte bei Veranstaltungen den Zutritt von bis zu 2.000 Besuchern.",
+      "Dokumentierte und meldete pro Monat rund 30 sicherheitsrelevante Vorfälle."
+    ]
+  },
+  {
+    "id": "housekeeping",
+    "title_de": "Zimmermädchen / Etagenservice (Housekeeping)",
+    "title_en": "Housekeeping Attendant",
+    "category": "gastro",
+    "keywords": [
+      "housekeeping",
+      "zimmermädchen",
+      "zimmermaedchen",
+      "etagenservice",
+      "roomboy",
+      "hotelreinigung",
+      "zimmerreinigung",
+      "stubenmädchen",
+      "gastro",
+      "hotel",
+      "reinigung",
+      "etage"
+    ],
+    "verbs_de": [
+      "gereinigt",
+      "vorbereitet",
+      "kontrolliert",
+      "ausgestattet",
+      "gepflegt",
+      "aufgefüllt",
+      "desinfiziert",
+      "eingehalten"
+    ],
+    "verbs_en": [
+      "cleaned",
+      "prepared",
+      "inspected",
+      "equipped",
+      "maintained",
+      "restocked"
+    ],
+    "skills": [
+      "Reinigung von Hotelzimmern",
+      "Bettenmachen und Wäschewechsel",
+      "Auffüllen von Minibar und Ausstattung",
+      "Reinigung von Sanitärbereichen",
+      "Umgang mit Reinigungsmitteln",
+      "Qualitätskontrolle der Zimmer",
+      "Umgang mit Fundsachen",
+      "Einhaltung der Hygienestandards"
+    ],
+    "tasks_de": [
+      "Reinigung und Herrichtung der Gästezimmer",
+      "Wechsel von Bettwäsche und Handtüchern",
+      "Auffüllen der Zimmerausstattung",
+      "Reinigung der Bäder",
+      "Kontrolle der Zimmerqualität"
+    ],
+    "example_phrases_de": [
+      "Reinigte und richtete täglich bis zu 18 Hotelzimmer her.",
+      "Wechselte pro Schicht Bettwäsche in rund 20 Zimmern.",
+      "Erreichte bei Qualitätskontrollen eine Beanstandungsquote unter 3 %."
+    ]
+  },
+  {
+    "id": "bauhelfer",
+    "title_de": "Bauhelfer/in (Hilfsarbeiter/in Bau)",
+    "title_en": "Construction Helper",
+    "category": "bau",
+    "keywords": [
+      "bauhelfer",
+      "bauhelferin",
+      "hilfsarbeiter",
+      "hilfsarbeiterin",
+      "bauarbeiter",
+      "baustelle",
+      "handlanger",
+      "bau",
+      "construction",
+      "baustellenhelfer",
+      "hochbau",
+      "tiefbau"
+    ],
+    "verbs_de": [
+      "unterstützt",
+      "transportiert",
+      "vorbereitet",
+      "gemischt",
+      "abgesichert",
+      "aufgeräumt",
+      "verlegt",
+      "geholfen"
+    ],
+    "verbs_en": [
+      "supported",
+      "transported",
+      "prepared",
+      "mixed",
+      "secured",
+      "assisted"
+    ],
+    "skills": [
+      "Materialtransport auf der Baustelle",
+      "Anmischen von Mörtel und Beton",
+      "Bedienung einfacher Baumaschinen",
+      "Auf- und Abbau von Gerüsten",
+      "Baustellenreinigung",
+      "Absicherung der Baustelle",
+      "Einhaltung der Arbeitssicherheit",
+      "Unterstützung der Facharbeiter"
+    ],
+    "tasks_de": [
+      "Transport von Baumaterial",
+      "Anmischen von Mörtel und Beton",
+      "Unterstützung der Facharbeiter",
+      "Auf- und Abbau von Gerüsten",
+      "Reinigung und Absicherung der Baustelle"
+    ],
+    "example_phrases_de": [
+      "Unterstützte ein Bauteam von 10 Facharbeitern auf der Großbaustelle.",
+      "Verarbeitete täglich rund 2 Tonnen Baumaterial.",
+      "Sorgte über 12 Monate für eine unfallfreie Materialversorgung der Baustelle."
+    ]
+  },
+  {
+    "id": "dachdecker",
+    "title_de": "Dachdecker/in",
+    "title_en": "Roofer",
+    "category": "bau",
+    "keywords": [
+      "dachdecker",
+      "dachdeckerin",
+      "dach",
+      "dacheindeckung",
+      "spengler",
+      "dachstuhl",
+      "ziegel",
+      "bau",
+      "roofer",
+      "dachsanierung",
+      "abdichtung",
+      "flachdach"
+    ],
+    "verbs_de": [
+      "eingedeckt",
+      "abgedichtet",
+      "montiert",
+      "saniert",
+      "verlegt",
+      "isoliert",
+      "repariert",
+      "abgesichert"
+    ],
+    "verbs_en": [
+      "roofed",
+      "sealed",
+      "installed",
+      "renovated",
+      "laid",
+      "insulated"
+    ],
+    "skills": [
+      "Eindeckung von Dächern",
+      "Verlegung von Dachziegeln und -platten",
+      "Abdichtung von Flachdächern",
+      "Wärmedämmung",
+      "Montage von Dachrinnen",
+      "Arbeiten mit Absturzsicherung",
+      "Dachsanierung",
+      "Materialberechnung"
+    ],
+    "tasks_de": [
+      "Eindeckung und Sanierung von Dächern",
+      "Verlegung von Ziegeln und Dämmung",
+      "Abdichtung gegen Witterung",
+      "Montage von Dachrinnen und Anschlüssen",
+      "Arbeiten mit Sicherheitsausrüstung in der Höhe"
+    ],
+    "example_phrases_de": [
+      "Deckte pro Saison über 40 Dächer mit dem Team ein.",
+      "Sanierte eine Dachfläche von rund 500 m² innerhalb von 3 Wochen.",
+      "Arbeitete über 6 Jahre unfallfrei in großer Höhe."
+    ]
+  },
+  {
+    "id": "fliesenleger",
+    "title_de": "Fliesenleger/in",
+    "title_en": "Tiler",
+    "category": "bau",
+    "keywords": [
+      "fliesenleger",
+      "fliesenlegerin",
+      "fliesen",
+      "plattenleger",
+      "fliesenverlegung",
+      "verfliesung",
+      "bau",
+      "tiler",
+      "mosaik",
+      "verfugung",
+      "bad",
+      "boden"
+    ],
+    "verbs_de": [
+      "verlegt",
+      "verfugt",
+      "zugeschnitten",
+      "abgedichtet",
+      "vorbereitet",
+      "ausgemessen",
+      "verklebt",
+      "kontrolliert"
+    ],
+    "verbs_en": [
+      "laid",
+      "grouted",
+      "cut",
+      "sealed",
+      "prepared",
+      "measured"
+    ],
+    "skills": [
+      "Verlegung von Boden- und Wandfliesen",
+      "Zuschnitt von Fliesen",
+      "Untergrundvorbereitung",
+      "Verfugung und Abdichtung",
+      "Verlegung von Mosaiken",
+      "Aufmaß und Materialberechnung",
+      "Bedienung von Fliesenschneidern",
+      "Abdichtung von Nassräumen"
+    ],
+    "tasks_de": [
+      "Verlegung von Wand- und Bodenfliesen",
+      "Vorbereitung des Untergrunds",
+      "Zuschnitt und Anpassung der Fliesen",
+      "Verfugung und Abdichtung",
+      "Aufmaß und Materialplanung"
+    ],
+    "example_phrases_de": [
+      "Verlegte täglich bis zu 25 m² Fliesen in gleichbleibender Qualität.",
+      "Verfliesste pro Auftrag durchschnittlich 3 Bäder vollständig.",
+      "Reduzierte den Verschnitt durch genaues Aufmaß auf unter 5 %."
+    ]
+  },
+  {
+    "id": "bodenleger",
+    "title_de": "Bodenleger/in",
+    "title_en": "Floor Layer",
+    "category": "bau",
+    "keywords": [
+      "bodenleger",
+      "bodenlegerin",
+      "boden",
+      "parkett",
+      "laminat",
+      "teppich",
+      "vinyl",
+      "bau",
+      "flooring",
+      "bodenverlegung",
+      "estrich",
+      "fußboden"
+    ],
+    "verbs_de": [
+      "verlegt",
+      "vorbereitet",
+      "zugeschnitten",
+      "verklebt",
+      "ausgeglichen",
+      "geschliffen",
+      "versiegelt",
+      "kontrolliert"
+    ],
+    "verbs_en": [
+      "laid",
+      "prepared",
+      "cut",
+      "glued",
+      "leveled",
+      "sanded"
+    ],
+    "skills": [
+      "Verlegung von Parkett und Laminat",
+      "Verlegung von Teppich- und Vinylböden",
+      "Untergrundvorbereitung und Ausgleich",
+      "Zuschnitt von Bodenbelägen",
+      "Schleifen und Versiegeln von Parkett",
+      "Aufmaß und Materialberechnung",
+      "Verklebung von Belägen",
+      "Qualitätskontrolle der Verlegung"
+    ],
+    "tasks_de": [
+      "Verlegung verschiedener Bodenbeläge",
+      "Vorbereitung und Ausgleich des Untergrunds",
+      "Zuschnitt und Anpassung der Beläge",
+      "Schleifen und Versiegeln von Parkett",
+      "Aufmaß und Materialplanung"
+    ],
+    "example_phrases_de": [
+      "Verlegte täglich bis zu 40 m² Laminat- und Parkettböden.",
+      "Schliff und versiegelte eine Parkettfläche von 300 m² pro Auftrag.",
+      "Reduzierte Reklamationen durch sorgfältige Untergrundvorbereitung um 15 %."
+    ]
+  },
+  {
+    "id": "schlosser",
+    "title_de": "Schlosser/in (Metallbauer/in)",
+    "title_en": "Metalworker / Locksmith",
+    "category": "technik",
+    "keywords": [
+      "schlosser",
+      "schlosserin",
+      "metallbauer",
+      "metallbauerin",
+      "metall",
+      "schweißer",
+      "schweisser",
+      "metallbau",
+      "technik",
+      "stahlbau",
+      "schlosserei",
+      "metalworker"
+    ],
+    "verbs_de": [
+      "geschweißt",
+      "montiert",
+      "gefertigt",
+      "repariert",
+      "zugeschnitten",
+      "gebogen",
+      "konstruiert",
+      "gewartet"
+    ],
+    "verbs_en": [
+      "welded",
+      "assembled",
+      "manufactured",
+      "repaired",
+      "cut",
+      "constructed"
+    ],
+    "skills": [
+      "Schweißen (MIG/MAG, WIG)",
+      "Metallbearbeitung und Zuschnitt",
+      "Lesen technischer Zeichnungen",
+      "Montage von Metallkonstruktionen",
+      "Bedienung von Werkzeugmaschinen",
+      "Schmieden und Biegen von Metall",
+      "Reparatur und Wartung",
+      "Qualitätskontrolle nach Norm"
+    ],
+    "tasks_de": [
+      "Anfertigung von Metallkonstruktionen",
+      "Schweißarbeiten an Bauteilen",
+      "Montage von Stahl- und Metallbauten",
+      "Reparatur und Wartung von Anlagen",
+      "Arbeiten nach technischen Zeichnungen"
+    ],
+    "example_phrases_de": [
+      "Fertigte pro Woche rund 30 Metallbauteile nach Zeichnung an.",
+      "Führte Schweißarbeiten an über 50 Konstruktionen pro Monat aus.",
+      "Senkte die Ausschussquote durch genaue Maßkontrolle auf unter 2 %."
+    ]
+  },
+  {
+    "id": "florist",
+    "title_de": "Florist/in",
+    "title_en": "Florist",
+    "category": "handel",
+    "keywords": [
+      "florist",
+      "floristin",
+      "blumen",
+      "blumengeschäft",
+      "blumenladen",
+      "gärtnerei",
+      "gesteck",
+      "handel",
+      "floristik",
+      "strauß",
+      "strauss",
+      "dekoration"
+    ],
+    "verbs_de": [
+      "gebunden",
+      "gestaltet",
+      "beraten",
+      "verkauft",
+      "dekoriert",
+      "gepflegt",
+      "arrangiert",
+      "bestellt"
+    ],
+    "verbs_en": [
+      "arranged",
+      "designed",
+      "advised",
+      "sold",
+      "decorated",
+      "maintained"
+    ],
+    "skills": [
+      "Binden von Sträußen und Gestecken",
+      "Floristische Gestaltung",
+      "Pflanzen- und Blumenpflege",
+      "Kundenberatung und Verkauf",
+      "Dekoration für Anlässe",
+      "Warenbestellung und Lagerhaltung",
+      "Trauer- und Hochzeitsfloristik",
+      "Kassenführung"
+    ],
+    "tasks_de": [
+      "Binden von Sträußen und Gestecken",
+      "Beratung und Verkauf an die Kundschaft",
+      "Pflege der Blumen und Pflanzen",
+      "Dekoration für Feste und Anlässe",
+      "Warenbestellung und Präsentation"
+    ],
+    "example_phrases_de": [
+      "Band an Spitzentagen bis zu 60 Sträuße und Gestecke.",
+      "Beriet und bediente täglich rund 70 Kundinnen und Kunden.",
+      "Gestaltete die florale Dekoration für über 25 Hochzeiten pro Saison."
+    ]
+  },
+  {
+    "id": "kosmetik",
+    "title_de": "Kosmetiker/in",
+    "title_en": "Beautician",
+    "category": "sonstiges",
+    "keywords": [
+      "kosmetiker",
+      "kosmetikerin",
+      "kosmetik",
+      "nageldesign",
+      "beauty",
+      "wimpern",
+      "gesichtsbehandlung",
+      "maniküre",
+      "sonstiges",
+      "schönheitspflege",
+      "kosmetikstudio",
+      "nagelstudio"
+    ],
+    "verbs_de": [
+      "behandelt",
+      "beraten",
+      "gepflegt",
+      "modelliert",
+      "durchgeführt",
+      "betreut",
+      "gestaltet",
+      "verkauft"
+    ],
+    "verbs_en": [
+      "treated",
+      "advised",
+      "groomed",
+      "performed",
+      "styled",
+      "assisted"
+    ],
+    "skills": [
+      "Gesichtsbehandlungen",
+      "Maniküre und Pediküre",
+      "Nagelmodellage und Nageldesign",
+      "Wimpernverlängerung",
+      "Hautanalyse und Beratung",
+      "Anwendung kosmetischer Produkte",
+      "Hygiene im Kosmetikstudio",
+      "Verkauf von Pflegeprodukten"
+    ],
+    "tasks_de": [
+      "Durchführung von Gesichts- und Körperbehandlungen",
+      "Maniküre, Pediküre und Nageldesign",
+      "Beratung zu Hautpflege und Produkten",
+      "Wimpern- und Augenbrauenstyling",
+      "Verkauf von Kosmetikprodukten"
+    ],
+    "example_phrases_de": [
+      "Betreute täglich bis zu 12 Kundinnen mit individuellen Behandlungen.",
+      "Führte pro Monat rund 80 Nagelmodellagen durch.",
+      "Steigerte den Produktverkauf durch gezielte Beratung um 20 %."
+    ]
+  },
+  {
+    "id": "masseur",
+    "title_de": "Masseur/in",
+    "title_en": "Masseur / Massage Therapist",
+    "category": "gesundheit",
+    "keywords": [
+      "masseur",
+      "masseurin",
+      "massage",
+      "heilmasseur",
+      "wellness",
+      "physiotherapie",
+      "massagetherapie",
+      "gesundheit",
+      "therapie",
+      "entspannung",
+      "behandlung",
+      "körpertherapie"
+    ],
+    "verbs_de": [
+      "massiert",
+      "behandelt",
+      "beraten",
+      "betreut",
+      "gelockert",
+      "durchgeführt",
+      "dokumentiert",
+      "angewendet"
+    ],
+    "verbs_en": [
+      "massaged",
+      "treated",
+      "advised",
+      "assisted",
+      "relieved",
+      "performed"
+    ],
+    "skills": [
+      "Klassische Massagetechniken",
+      "Wellness- und Entspannungsmassagen",
+      "Anatomie- und Muskelkenntnisse",
+      "Befundung und Beratung",
+      "Anwendung von Wärme- und Kältetherapie",
+      "Hygiene im Behandlungsraum",
+      "Dokumentation der Behandlungen",
+      "Kundenbetreuung"
+    ],
+    "tasks_de": [
+      "Durchführung von Massagen",
+      "Beratung zu Behandlungen",
+      "Befundung des Behandlungsbedarfs",
+      "Anwendung von Wärme- und Wellnessanwendungen",
+      "Dokumentation der Behandlungsverläufe"
+    ],
+    "example_phrases_de": [
+      "Führte täglich bis zu 10 Massagebehandlungen durch.",
+      "Betreute einen festen Kundenstamm von über 150 Personen.",
+      "Erreichte durch gezielte Behandlung eine Weiterempfehlungsquote von rund 90 %."
+    ]
+  },
+  {
+    "id": "callcenter",
+    "title_de": "Call-Center-Agent/in (Kundenservice)",
+    "title_en": "Call Center Agent / Customer Service Representative",
+    "category": "buero",
+    "keywords": [
+      "callcenter",
+      "call-center-agent",
+      "call center",
+      "telefonist",
+      "telefonistin",
+      "kundendienst",
+      "kundenservice",
+      "hotline",
+      "buero",
+      "kundenberater",
+      "support",
+      "telefonie"
+    ],
+    "verbs_de": [
+      "beraten",
+      "betreut",
+      "bearbeitet",
+      "dokumentiert",
+      "gelöst",
+      "telefoniert",
+      "verkauft",
+      "erfasst"
+    ],
+    "verbs_en": [
+      "advised",
+      "supported",
+      "processed",
+      "documented",
+      "resolved",
+      "handled"
+    ],
+    "skills": [
+      "Telefonische Kundenberatung",
+      "Bearbeitung von Anfragen und Reklamationen",
+      "Bedienung von CRM-Systemen",
+      "Beschwerdemanagement",
+      "Dokumentation von Kundenkontakten",
+      "Verkauf und Cross-Selling am Telefon",
+      "Freundliche Gesprächsführung",
+      "Arbeiten mit Kennzahlen (KPIs)"
+    ],
+    "tasks_de": [
+      "Telefonische Betreuung von Kunden",
+      "Bearbeitung von Anfragen und Beschwerden",
+      "Erfassung der Kundendaten im System",
+      "Lösung von Problemen am Telefon",
+      "Verkauf von Produkten und Dienstleistungen"
+    ],
+    "example_phrases_de": [
+      "Bearbeitete täglich bis zu 80 Kundenanrufe.",
+      "Erreichte eine Erstlösungsquote von über 85 %.",
+      "Steigerte den Zusatzverkauf am Telefon um 15 % pro Quartal."
+    ]
+  },
+  {
+    "id": "kassier",
+    "title_de": "Kassier/in",
+    "title_en": "Cashier",
+    "category": "handel",
+    "keywords": [
+      "kassier",
+      "kassierin",
+      "kassiererin",
+      "kassa",
+      "kasse",
+      "supermarkt",
+      "kassakraft",
+      "handel",
+      "cashier",
+      "scannerkasse",
+      "kassenbereich",
+      "checkout"
+    ],
+    "verbs_de": [
+      "kassiert",
+      "gescannt",
+      "abgerechnet",
+      "beraten",
+      "eingeräumt",
+      "kontrolliert",
+      "bedient",
+      "abgeschlossen"
+    ],
+    "verbs_en": [
+      "cashiered",
+      "scanned",
+      "balanced",
+      "advised",
+      "stocked",
+      "served"
+    ],
+    "skills": [
+      "Bedienung der Scannerkasse",
+      "Bargeld- und Kartenzahlung",
+      "Kassenabrechnung",
+      "Kundenfreundliche Bedienung",
+      "Warenkenntnis und Preisauszeichnung",
+      "Reklamationsbearbeitung",
+      "Auffüllen der Regale",
+      "Einhaltung der Kassenrichtlinien"
+    ],
+    "tasks_de": [
+      "Kassieren von Waren an der Supermarktkasse",
+      "Abrechnung der Kassa am Schichtende",
+      "Bedienung und Beratung der Kundschaft",
+      "Bearbeitung von Reklamationen",
+      "Auffüllen und Ordnung im Kassenbereich"
+    ],
+    "example_phrases_de": [
+      "Kassierte täglich bis zu 400 Kundinnen und Kunden an der Scannerkasse.",
+      "Rechnete pro Schicht eine Kassa mit rund 5.000 Euro fehlerfrei ab.",
+      "Erreichte eine Kassendifferenz von unter 0,1 % über das gesamte Jahr."
     ]
   }
 ]

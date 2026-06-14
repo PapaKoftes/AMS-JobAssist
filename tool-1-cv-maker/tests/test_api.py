@@ -145,6 +145,15 @@ class TestAmsJobSearch:
         r = client.get("/api/jobs/ams-search", params={"target_job": "Koch"})
         assert r.status_code == 200
 
+    def test_suggested_occupation_is_non_destructive(self, client):
+        # A colloquial/typo term gets a canonical "also search as" suggestion, but
+        # the URL still uses the user's OWN term (suggestion is additive only).
+        r = client.get("/api/jobs/ams-search", params={"target_job": "Programmierer"})
+        data = r.json()["data"]
+        assert data["occupation"] == "Programmierer"          # user's term preserved
+        assert "Programmierer" in data["url"] or "programmierer" in data["url"].lower()
+        assert data.get("suggested_occupation") == "Softwareentwickler/in (Programmierer/in)"
+
 
 class TestBewerbungsCheck:
     """Test the /api/cv/check hire-readiness endpoint + its CVData mapper."""

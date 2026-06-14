@@ -37,10 +37,10 @@ from ai.knowledge import (
 # ── 1. Loading ───────────────────────────────────────────────────────────────
 
 def test_knowledge_base_loads():
-    """Knowledge base loads 25 Austrian job entries from berufe.json."""
+    """Knowledge base loads the full Austrian occupation set from berufe.json."""
     assert is_loaded()
     stats = get_stats()
-    assert stats["jobs"] == 25
+    assert stats["jobs"] == 53
     assert stats["loaded"] is True
 
 
@@ -131,12 +131,12 @@ def test_get_context_for_prompt_no_match():
 
 # ── 11. get_all_jobs ─────────────────────────────────────────────────────────
 
-def test_get_all_jobs_returns_25():
-    """get_all_jobs() returns 25 entries with required fields."""
+def test_get_all_jobs_returns_full_set():
+    """get_all_jobs() returns all entries with required fields and unique ids."""
     jobs = get_all_jobs()
     assert isinstance(jobs, list)
-    assert len(jobs) == 25
-    # Each entry has the expected summary fields
+    assert len(jobs) == 53
+    assert len({j["id"] for j in jobs}) == 53  # ids unique
     for job in jobs:
         assert "id" in job
         assert "title_de" in job
@@ -146,15 +146,13 @@ def test_get_all_jobs_returns_25():
 
 # ── 12. get_job_categories ───────────────────────────────────────────────────
 
-def test_get_job_categories_returns_8():
-    """get_job_categories() returns dict with 8 categories."""
+def test_get_job_categories():
+    """get_job_categories() groups all jobs; core categories are present."""
     categories = get_job_categories()
     assert isinstance(categories, dict)
-    assert len(categories) == 8
-    # Known categories from berufe.json
-    expected = {"handel", "buero", "gastro", "sozial", "transport", "handwerk", "technik", "produktion"}
-    assert set(categories.keys()) == expected
-    # Each category has at least one job
+    # The expanded set adds bau, lager, gesundheit, it, sonstiges to the originals.
+    for core in {"handel", "buero", "gastro", "sozial", "technik", "bau", "lager", "gesundheit", "it"}:
+        assert core in categories, f"missing category {core}"
     for cat, jobs in categories.items():
         assert isinstance(jobs, list)
         assert len(jobs) >= 1
@@ -165,9 +163,44 @@ def test_get_job_categories_returns_8():
 def test_get_stats_totals():
     """get_stats() returns correct totals for the knowledge base."""
     stats = get_stats()
-    assert stats["jobs"] == 25
-    assert stats["categories"] == 8
+    assert stats["jobs"] == 53
+    assert stats["categories"] >= 9
     assert stats["total_verbs"] > 0
     assert stats["total_skills"] > 0
     assert stats["total_examples"] > 0
     assert stats["loaded"] is True
+
+
+# ── 14. Expanded taxonomy + matcher accuracy (audit follow-up) ───────────────
+
+def test_programmierer_no_longer_misfires_to_cnc():
+    """'Programmierer' must resolve to software dev, not CNC machinist."""
+    assert find_job("Programmierer")["id"] == "softwareentwickler"
+    assert find_job("CNC-Fräser")["id"] == "cnc"  # CNC still works
+
+
+def test_new_occupations_resolve():
+    for text, expected in [
+        ("Schneiderin", "schneider"), ("Pflegeassistentin", "pflegeassistenz"),
+        ("Staplerfahrer", "lagerlogistik"), ("Taxifahrer", "taxifahrer"),
+        ("Bäcker", "baecker"), ("Sicherheitsmitarbeiter", "sicherheitsdienst"),
+        ("Kassiererin", "kassier"),
+    ]:
+        job = find_job(text)
+        assert job is not None and job["id"] == expected, f"{text} -> {job}"
+
+
+def test_fuzzy_typo_and_compound_matching():
+    assert find_job("Verküferin")["id"] == "einzelhandel"     # typo
+    assert find_job("Maeurer")["id"] == "maurer"               # typo
+    assert find_job("Imbissverkäufer")["id"] == "systemgastronomie"  # compound
+    # but gibberish still must not match
+    assert find_job("blabla xyz") is None
+    assert find_job("asdf") is None
+
+
+def test_suggest_occupation():
+    from ai.knowledge import suggest_occupation
+    assert suggest_occupation("programmierer") == "Softwareentwickler/in (Programmierer/in)"
+    assert suggest_occupation("verküferin") == "Einzelhandelskaufmann/-frau"
+    assert suggest_occupation("qwertz nonsense") is None

@@ -1475,6 +1475,16 @@ def jobs_ams_search(target_job: str = "", location: str = ""):
     """
     from jobs.ams_search import build_ams_search_url
     result = build_ams_search_url(target_job, location)
+    # Non-destructive "also search as" hint: map the user's term to a canonical
+    # Austrian Berufsbezeichnung when we recognise it. The URL still uses the
+    # user's OWN term — this only adds an optional suggestion the UI may show.
+    try:
+        from ai.knowledge import suggest_occupation
+        suggestion = suggest_occupation(result.get("occupation") or target_job)
+        if suggestion and suggestion.lower() != (result.get("occupation") or "").lower():
+            result["suggested_occupation"] = suggestion
+    except Exception:
+        pass
     return {"status": "success", "data": result}
 
 

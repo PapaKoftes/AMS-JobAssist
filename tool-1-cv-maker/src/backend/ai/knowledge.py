@@ -4,9 +4,11 @@ Austrian Job Knowledge Base — local RAG for CV polish and coaching.
 Loads structured job data from data/knowledge/berufe.json and provides
 retrieval functions for the polish engine and LLM prompts.
 
-No external dependencies. Fully offline. ~25 common Austrian AMS jobs.
+No external dependencies. Fully offline. ~53 common Austrian AMS occupations
+spanning trades, care, gastro, retail, logistics, office and IT.
 """
 
+import difflib
 import json
 import logging
 import re
@@ -110,8 +112,45 @@ def find_job(text: str) -> Optional[dict]:
             best_score = score
             best_match = job
 
+    # Typo/compound-tolerant fallback: when nothing matched on keywords/title and the
+    # input is short enough to be a job title (not a long answer), fuzzy-match it
+    # against titles + keywords. Catches "Verküferin" → Einzelhandel, "Maeurer" →
+    # Maurer, and compounds like "Imbissverkäufer" → Systemgastronomie.
+    if best_score < 3:
+        target = text_lower.strip()
+        if 3 <= len(target) <= 40:
+            words = [w for w in re.findall(r"[a-zà-ÿ]+", target) if len(w) >= 4]
+            best_ratio = 0.0
+            fuzzy_match = None
+            for job in _berufe:
+                cands = [job["title_de"].lower(), job.get("title_en", "").lower()]
+                cands += [k.lower() for k in job.get("keywords", [])]
+                for c in cands:
+                    if not c:
+                        continue
+                    r = difflib.SequenceMatcher(None, target, c).ratio()
+                    for w in words:
+                        r = max(r, difflib.SequenceMatcher(None, w, c).ratio())
+                        # compound word contains/extends a keyword ("imbiss"⊂"imbissverkäufer")
+                        if len(c) >= 5 and (w.startswith(c) or c.startswith(w)):
+                            r = max(r, 0.9)
+                    if r > best_ratio:
+                        best_ratio = r
+                        fuzzy_match = job
+            if best_ratio >= 0.85:
+                return fuzzy_match
+
     # Minimum threshold to avoid false matches
     return best_match if best_score >= 3 else None
+
+
+def suggest_occupation(text: str) -> Optional[str]:
+    """Canonical Austrian Berufsbezeichnung for free text, for a NON-DESTRUCTIVE
+    "did you mean / also search as" suggestion. Returns None when there is no
+    confident match — never rewrites the participant's own term.
+    """
+    job = find_job(text)
+    return job.get("title_de") if job else None
 
 
 def get_verbs_for_job(job_id_or_text: str, language: str = "de") -> List[str]:

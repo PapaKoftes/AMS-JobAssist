@@ -428,6 +428,8 @@ const TRANSLATIONS = {
                               (occ ? ` mit der Suche „${occ}“` : '') +
                               `. Dabei wird NUR Ihr Suchbegriff an das AMS übermittelt — ` +
                               `Ihr Name, Ihre Kontaktdaten und Ihr Lebenslauf werden NICHT gesendet.`,
+        jobSearchSuggestion:  (title) => `Tipp: Beim AMS heißt dieser Beruf oft „${title}“ — ` +
+                              `probieren Sie auch diesen Suchbegriff.`,
         jobSearchOpen:        'Beim AMS suchen ↗',
         jobSearchCancel:      'Abbrechen',
         jobSearchLoopHint:    'Tipp: Kopieren Sie eine passende Stelle und fügen Sie sie ' +
@@ -659,6 +661,8 @@ const TRANSLATIONS = {
                               (occ ? ` with the search “${occ}”` : '') +
                               `. Only your search term is sent to the AMS — ` +
                               `your name, contact details and CV are NOT sent.`,
+        jobSearchSuggestion:  (title) => `Tip: at the AMS this occupation is often called ` +
+                              `“${title}” — try that search term too.`,
         jobSearchOpen:        'Search at the AMS ↗',
         jobSearchCancel:      'Cancel',
         jobSearchLoopHint:    'Tip: copy a job you like and paste it above under ' +
@@ -4107,8 +4111,13 @@ class InterviewManager {
             const resp = await api.getAmsJobLink(targetJob, location);
             const url  = resp?.data?.url;
             const occ  = resp?.data?.occupation || targetJob;
+            const suggestion = resp?.data?.suggested_occupation;
             if (!url) return;
-            if (noticeText) noticeText.textContent = t('jobSearchNotice', occ);
+            if (noticeText) {
+                let msg = t('jobSearchNotice', occ);
+                if (suggestion) msg += ' ' + t('jobSearchSuggestion', suggestion);
+                noticeText.textContent = msg;
+            }
             if (loopHint)   loopHint.textContent   = t('jobSearchLoopHint');
             if (openBtn) openBtn.textContent = t('jobSearchOpen');
             if (openBtn) openBtn.onclick = () => {
