@@ -20,6 +20,7 @@ from pathlib import Path
 from datetime import datetime
 
 from cv.models import CVData
+from cv.language_levels import is_cefr
 from export.base import CVExporter
 
 logger = logging.getLogger(__name__)
@@ -150,7 +151,9 @@ class EuropassExporter(CVExporter):
                     else:
                         fl = ET.SubElement(ling, "ForeignLanguage")
                         ET.SubElement(fl, "Description").text = name
-                        if level:
+                        # Only emit a CEFR ProficiencyLevel for an actual band —
+                        # descriptive levels ("Gut", "Fließend") are not valid CEFR.
+                        if is_cefr(level):
                             ET.SubElement(fl, "ProficiencyLevel").text = level.upper()
             if cv_data.all_skills:
                 other = ET.SubElement(skills_el, "OtherSkills")

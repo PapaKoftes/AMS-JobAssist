@@ -23,6 +23,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 from cv.models import CVData, CVSection
+from cv.language_levels import display_label as _level_display_label
 from export.base import CVExporter
 
 logger = logging.getLogger(__name__)
@@ -50,15 +51,7 @@ _LABELS_EN = {
     "languages":  "LANGUAGES",
 }
 
-_CEFR_LABELS = {
-    "native":  "Muttersprache",
-    "c2":      "C2 – Verhandlungssicher",
-    "c1":      "C1 – Fließend",
-    "b2":      "B2 – Arbeitsniveau",
-    "b1":      "B1 – Gute Kenntnisse",
-    "a2":      "A2 – Grundkenntnisse",
-    "a1":      "A1 – Anfänger",
-}
+# Language-level display labels live in cv.language_levels (single source of truth).
 
 # Photo dimensions (Austrian standard)
 PHOTO_W_CM = 3.5
@@ -471,8 +464,7 @@ class DOCXExporter(CVExporter):
         for lang_entry in languages:
             row = tbl.add_row()
             lang_name  = lang_entry.get("language", "")
-            level_raw  = lang_entry.get("level", "").lower()
-            level_label = _CEFR_LABELS.get(level_raw, level_raw.upper())
+            level_label = _level_display_label(lang_entry.get("level", ""))
 
             name_cell  = row.cells[0]
             level_cell = row.cells[1]

@@ -59,6 +59,37 @@ def test_quantified_detects_numbers():
     assert next(c for c in C.analyze_cv(cv)["checks"] if c["id"] == "quantified")["ok"] is False
 
 
+def _quant_ok(exp_text):
+    cv = _full_cv(); cv["experiences"] = [exp_text]
+    return next(c for c in C.analyze_cv(cv)["checks"] if c["id"] == "quantified")["ok"]
+
+
+def test_quantified_requires_a_real_metric_not_a_bare_year():
+    # M2: a plain employment year must NOT count as a quantified achievement.
+    assert _quant_ok("Seit 2019 bei Hofer") is False
+    assert _quant_ok("2018 bis 2022 als Kellner") is False
+    # but real metrics do count
+    assert _quant_ok("ca. 150 Kunden pro Tag betreut") is True
+    assert _quant_ok("Team von 5 Personen geleitet") is True
+    assert _quant_ok("5 Jahre Erfahrung im Verkauf") is True
+    assert _quant_ok("20 Kinder betreut") is True
+
+
+def _license_ok(all_text):
+    cv = _full_cv(); cv["all_text"] = all_text
+    return next(c for c in C.analyze_cv(cv)["checks"] if c["id"] == "license")["ok"]
+
+
+def test_license_not_falsely_detected_from_class_words():
+    # M1: school / language "Klasse"/"Deutschklasse" must NOT read as a driving licence.
+    assert _license_ok("Hassan Ali Deutschklasse B abgeschlossen") is False
+    assert _license_ok("Sprachklasse B2 besucht") is False
+    # but genuine licences still detected (incl. Austrian 'Lenkberechtigung')
+    assert _license_ok("Führerschein der Klasse B vorhanden") is True
+    assert _license_ok("B-Führerschein") is True
+    assert _license_ok("Lenkberechtigung B und Staplerschein") is True
+
+
 def test_keywords_check_added_only_with_job():
     r0 = C.analyze_cv(_full_cv())
     assert all(c["id"] != "keywords" for c in r0["checks"])

@@ -84,21 +84,11 @@ _LANGUAGE_MAP = {
 }
 
 
-def _detect_language_level(text: str) -> str:
-    """Map free-text proficiency wording to a CEFR level (or 'native')."""
-    low = text.lower()
-    m = re.search(r"\b([abc][12])\b", low)
-    if m:
-        return m.group(1).upper()
-    if re.search(r"muttersprache|muttersprachlich|native|mother\s*tongue|maternel", low):
-        return "native"
-    if re.search(r"fließend|fliessend|fluent|verhandlungssicher|sehr\s+gut|excellent", low):
-        return "C1"
-    if re.search(r"\bgut\b|good|advanced|fortgeschritten", low):
-        return "B2"
-    if re.search(r"grundkenntnisse|basic|basis|anfänger|anfaenger|beginner|wenig", low):
-        return "A2"
-    return ""
+# Language-level detection lives in language_levels (single source of truth). It
+# only emits a CEFR band when one is actually stated — vague adjectives become a
+# descriptive level and negation is never upgraded — so the CV stays honest.
+from .language_levels import detect_level as _detect_language_level  # noqa: E402
+from .language_levels import level_rank as _level_rank  # noqa: E402
 
 
 def _extract_languages_from_skills(skills: List[str]):
@@ -107,7 +97,6 @@ def _extract_languages_from_skills(skills: List[str]):
     flat skills list. Returns (languages, remaining_skills) where languages is a
     list of {language, code, level} dicts (deduped by code, best level kept).
     """
-    _LEVEL_RANK = {"": 0, "A1": 1, "A2": 2, "B1": 3, "B2": 4, "C1": 5, "C2": 6, "native": 7}
     languages: Dict[str, Dict[str, str]] = {}
     remaining: List[str] = []
     for skill in skills:
@@ -125,7 +114,7 @@ def _extract_languages_from_skills(skills: List[str]):
         canon, code = matched
         level = _detect_language_level(skill)
         prev = languages.get(code)
-        if prev is None or _LEVEL_RANK.get(level, 0) > _LEVEL_RANK.get(prev["level"], 0):
+        if prev is None or _level_rank(level) > _level_rank(prev["level"]):
             languages[code] = {"language": canon, "code": code, "level": level}
     return list(languages.values()), remaining
 
@@ -684,6 +673,21 @@ class CVBuilder:
             merged.training = cv_data1.training + cv_data2.training
             merged.projects = cv_data1.projects + cv_data2.projects
 
+            # Carry over identity / target / languages — otherwise the merge
+            # silently loses the person's name, contact and language levels.
+            merged.identity = cv_data1.identity or cv_data2.identity
+            merged.target_job = (cv_data1.target_job or cv_data2.target_job or "").strip()
+            merged.detected_languages = sorted(
+                set(cv_data1.detected_languages or []) | set(cv_data2.detected_languages or []))
+            # Merge language proficiencies by code, keeping the strongest stated level.
+            by_code: Dict[str, Dict[str, str]] = {}
+            for entry in (cv_data1.languages or []) + (cv_data2.languages or []):
+                code = entry.get("code") or entry.get("language", "")
+                prev = by_code.get(code)
+                if prev is None or _level_rank(entry.get("level", "")) > _level_rank(prev.get("level", "")):
+                    by_code[code] = entry
+            merged.languages = list(by_code.values())
+
             # Deduplicate skills
             all_skills = set(cv_data1.all_skills or []) | set(cv_data2.all_skills or [])
             merged.all_skills = sorted(list(all_skills))
@@ -697,8 +701,13 @@ class CVBuilder:
             if quality_scores:
                 merged.overall_quality = sum(quality_scores) / len(quality_scores)
 
-            merged.ready_for_export = merged.overall_quality >= 0.5
-            logger.info(f"Merged CVData: {len(all_sections)} sections, quality {merged.overall_quality:.2f}")
+            # Same export gate as _build_cv_from_sections (name + ≥1 section), NOT
+            # the quality score — the quality scorer is biased toward English
+            # verbs/skills, so gating on >=0.5 would re-brick valid German CVs.
+            has_name = bool(getattr(merged, "identity", None) and getattr(merged.identity, "full_name", ""))
+            merged.ready_for_export = has_name and len(all_sections) >= 1
+            logger.info(f"Merged CVData: {len(all_sections)} sections, quality {merged.overall_quality:.2f}, "
+                        f"ready_for_export={merged.ready_for_export}")
             return merged
 
         except Exception as e:

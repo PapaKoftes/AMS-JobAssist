@@ -31,6 +31,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 
 from cv.models import CVData, CVSection
+from cv.language_levels import display_label as _level_display_label
 from export.base import CVExporter
 
 logger = logging.getLogger(__name__)
@@ -60,16 +61,7 @@ _LABELS_EN = {
     "all_skills": "ALL SKILLS",
 }
 
-# CEFR / level pretty labels
-_CEFR_LABELS = {
-    "native":  "Muttersprache",
-    "c2":      "C2 – Verhandlungssicher",
-    "c1":      "C1 – Fließend",
-    "b2":      "B2 – Arbeitsniveau",
-    "b1":      "B1 – Gute Kenntnisse",
-    "a2":      "A2 – Grundkenntnisse",
-    "a1":      "A1 – Anfänger",
-}
+# Language-level display labels live in cv.language_levels (single source of truth).
 
 # Date column width (≈4 cm) / content column fills the rest
 DATE_COL_WIDTH = 3.8 * cm
@@ -566,8 +558,7 @@ class PDFExporter(CVExporter):
         rows = []
         for lang_entry in languages:
             lang_name = lang_entry.get("language", "")
-            level_raw = lang_entry.get("level", "").lower()
-            level_label = _CEFR_LABELS.get(level_raw, level_raw.upper() if level_raw else "")
+            level_label = _level_display_label(lang_entry.get("level", ""))
             rows.append([
                 Paragraph(lang_name, styles["entry_title"]),
                 Paragraph(level_label, styles["normal"]),

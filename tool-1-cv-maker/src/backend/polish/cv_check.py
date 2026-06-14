@@ -14,6 +14,29 @@ from __future__ import annotations
 import re
 from typing import Optional
 
+# A driving/operating licence. Requires a licence WORD — we deliberately dropped a
+# bare "Klasse [A-E]" alternative because it false-matched "Deutschklasse B",
+# "Sprachklasse B" etc. ("Lenkberechtigung" is the official Austrian term.)
+_LICENSE_RE = re.compile(
+    r"führerschein|fuehrerschein|driving licen[cs]e|fahrerlaubnis|lenkberechtigung|"
+    r"\b[a-e]-?führerschein\b|staplerschein|gabelstapler",
+    re.IGNORECASE,
+)
+
+# A *quantified* achievement: a number tied to a unit/metric or an explicit
+# magnitude phrase — NOT a bare year ("seit 2019") or house number, which say
+# nothing about impact. Covers the AMS clientele's domains (care, retail, gastro,
+# trades, office).
+_QUANT_RE = re.compile(
+    r"\b\d{1,4}\s*(?:%|€|eur|euro|kund\w*|gäst\w*|gaest\w*|person\w*|mitarbeiter\w*|"
+    r"kolleg\w*|leute|kind\w*|patient\w*|bewohner\w*|schüler\w*|stück|stk\b|kg|km|"
+    r"tonnen?|tisch\w*|projekt\w*|artikel|waren|bett\w*|jahr\w*|monat\w*)"
+    r"|(?:team|gruppe|gruppen)\s+(?:von\s+)?\d{1,3}"
+    r"|\b(?:ca\.?|circa|rund|über|ueber|mehr als|bis zu)\s*\d{1,4}"
+    r"|\b\d{1,4}\s*(?:pro|am|je)\s+(?:tag|stunde|std|woche|monat)",
+    re.IGNORECASE,
+)
+
 
 def _grade(percent: int) -> str:
     if percent >= 85:
@@ -68,10 +91,7 @@ def analyze_cv(cv: dict, job_description: str = "") -> dict:
         "viele Arbeitgeber filtern Bewerbungen genau danach.")
 
     all_text = cv.get("all_text") or ""
-    has_license = bool(re.search(
-        r"führerschein|fuehrerschein|driving licen|fahrerlaubnis|"
-        r"klasse\s*[a-e]\b|\b[a-e]-?führerschein\b|staplerschein|gabelstapler",
-        all_text, re.IGNORECASE))
+    has_license = bool(_LICENSE_RE.search(all_text))
     add("license", "Führerschein / Schein genannt (falls vorhanden)", has_license, 2,
         "Falls vorhanden: Führerschein (B, C) oder Staplerschein angeben — bei Lager, "
         "Transport und Handwerk ist das oft ein Pflichtkriterium.")
@@ -87,7 +107,7 @@ def analyze_cv(cv: dict, job_description: str = "") -> dict:
         "Listen Sie mehrere konkrete Kenntnisse und Stärken auf.")
 
     exp_text = " ".join(exps) if isinstance(exps, list) else str(exps)
-    has_numbers = bool(re.search(r"\b\d{1,4}\b", exp_text))
+    has_numbers = bool(_QUANT_RE.search(exp_text))
     add("quantified", "Zahlen / Erfolge genannt", has_numbers, 1,
         "Nennen Sie konkrete Zahlen (z.B. ca. 150 Kunden pro Tag, Team von 5 Personen, "
         "5 Jahre Erfahrung) — das überzeugt Personalverantwortliche.")

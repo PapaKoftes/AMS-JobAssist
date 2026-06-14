@@ -11,7 +11,7 @@ Tests the CVBuilder class that:
 
 import pytest
 from src.backend.cv.builder import CVBuilder
-from src.backend.cv.models import CVData, CVSection, QuestionCategory
+from src.backend.cv.models import CVData, CVSection, CVIdentity, QuestionCategory
 from src.backend.db import DatabaseManager
 
 
@@ -263,6 +263,37 @@ class TestCVBuilder:
 
         # Has a name (from user) + a content section → exportable despite low score
         assert cv_data.ready_for_export is True
+
+    def test_merge_ready_for_export_uses_completeness_not_quality(self, builder):
+        """H3: merge must NOT gate export on quality>=0.5 (re-bricking). A merged
+        complete-but-low-quality German CV with a name must stay exportable."""
+        def _low(qid):
+            return CVSection(german="OK", english="OK", native="OK",
+                             category=QuestionCategory.EXPERIENCE, question_id=qid,
+                             quality_score=0.20, confidence_level="low", detected_skills=[])
+
+        cv1 = CVData(session_id="1", user_id="u", interview_path="unemployed",
+                     language_input="de", identity=CVIdentity(full_name="Leyla Demir"),
+                     experience=[_low("e1")])
+        cv2 = CVData(session_id="1", user_id="u", interview_path="unemployed",
+                     language_input="de", experience=[_low("e2")])
+
+        merged = builder.merge_cv_data(cv1, cv2)
+        assert merged is not None
+        assert merged.overall_quality < 0.5      # would have been blocked by the old gate
+        assert merged.ready_for_export is True    # name + content → exportable
+
+    def test_merge_not_ready_without_name(self, builder):
+        """Merge fails the export gate when there is no identity name."""
+        sec = CVSection(german="OK", english="OK", native="OK",
+                        category=QuestionCategory.EXPERIENCE, question_id="e1",
+                        quality_score=0.9, confidence_level="high", detected_skills=[])
+        cv1 = CVData(session_id="1", user_id="u", interview_path="unemployed",
+                     language_input="de", experience=[sec])
+        cv2 = CVData(session_id="1", user_id="u", interview_path="unemployed",
+                     language_input="de")
+        merged = builder.merge_cv_data(cv1, cv2)
+        assert merged.ready_for_export is False
 
     def test_build_cv_handles_empty_answers(self, builder):
         """Test building CV from empty answers dictionary."""
