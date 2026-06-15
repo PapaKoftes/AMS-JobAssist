@@ -1488,26 +1488,9 @@ def jobs_ams_search(target_job: str = "", location: str = ""):
     return {"status": "success", "data": result}
 
 
-@app.post("/api/ai/job-match", tags=["AI"])
-def ai_job_match(body: JobMatchRequest, request: Request):
-    """Match CV against a job description and give actionable feedback.
-
-    Tries local LLM first, then Ollama, then falls back to rule-based ATS
-    keyword matching.  Never returns 503.
-    """
-    if not body.job_description or len(body.job_description.strip()) < 20:
-        raise HTTPException(status_code=400, detail="Stellenbeschreibung zu kurz (min. 20 Zeichen).")
-
-    cv_data = None
-    try:
-        cv_storage: CVStorage = request.app.state.cv_storage
-        cv_data = cv_storage.get_cv_data(body.session_id)
-    except AttributeError:
-        pass  # cv_storage not yet initialized — fall through to fallback
-
-    if cv_data is None:
-        raise HTTPException(status_code=404, detail="CV nicht gefunden.")
-
+def _job_match_core(cv_data, job_description: str) -> dict:
+    """Match a CV against a job description: local LLM first, then rule-based ATS
+    keyword overlap. Returns the response `data` dict. Never raises for matching."""
     sections = cv_data.background + cv_data.experience + cv_data.skills
     summary = "\n".join(
         (s.german or s.english or "")[:120]
@@ -1518,21 +1501,20 @@ def ai_job_match(body: JobMatchRequest, request: Request):
     try:
         from ai.local_llm import match_job_description, is_ready
         if is_ready():
-            result = match_job_description(summary, body.job_description)
+            result = match_job_description(summary, job_description)
             if result:
-                return {"status": "success", "data": {"analysis": result, "source": "ai"}}
+                return {"analysis": result, "source": "ai"}
     except Exception:
         pass
 
     # Rule-based fallback — ATS keyword overlap
     try:
         from polish.ats import score_against_job as _ats_score
-        # Build plain text from CV sections for the ATS scorer
         cv_text = "\n".join(
             f"{s.category}: {(s.german or s.english or '')}"
             for s in sections if (s.german or s.english)
         )
-        ats_result = _ats_score(cv_text, body.job_description).to_dict()
+        ats_result = _ats_score(cv_text, job_description).to_dict()
         score = ats_result.get("score", 0.5)
         matched = ats_result.get("matched_keywords", [])
         missing = ats_result.get("missing_keywords", [])
@@ -1550,16 +1532,93 @@ def ai_job_match(body: JobMatchRequest, request: Request):
         if missing:
             lines.append(f"Fehlende Stichworte: {', '.join(missing[:6])}")
         lines.append("Tipp: Erwähnen Sie konkrete Tools, Ergebnisse und Erfahrungen passend zur Stelle.")
-        analysis = "\n".join(lines)
-        return {"status": "success", "data": {"analysis": analysis, "source": "rules", "score": score}}
+        return {"analysis": "\n".join(lines), "source": "rules", "score": score}
     except Exception as _e:
         logger.warning(f"ATS fallback failed: {_e}")
-        analysis = (
+        return {"analysis": (
             "Ihr CV wurde mit der Stellenbeschreibung verglichen.\n"
             "Tipp: Stellen Sie sicher, dass Ihr CV die wichtigsten Begriffe aus der Stellenanzeige enthält.\n"
             "Erwähnen Sie konkrete Erfahrungen, Werkzeuge und Ergebnisse."
-        )
-        return {"status": "success", "data": {"analysis": analysis, "source": "rules"}}
+        ), "source": "rules"}
+
+
+@app.post("/api/ai/job-match", tags=["AI"])
+def ai_job_match(body: JobMatchRequest, request: Request):
+    """Match CV against a job description and give actionable feedback.
+
+    Tries local LLM first, then Ollama, then falls back to rule-based ATS
+    keyword matching.  Never returns 503.
+    """
+    if not body.job_description or len(body.job_description.strip()) < 20:
+        raise HTTPException(status_code=400, detail="Stellenbeschreibung zu kurz (min. 20 Zeichen).")
+
+    cv_data = None
+    try:
+        cv_storage: CVStorage = request.app.state.cv_storage
+        cv_data = cv_storage.get_cv_data(body.session_id)
+    except AttributeError:
+        pass  # cv_storage not yet initialized
+
+    if cv_data is None:
+        raise HTTPException(status_code=404, detail="CV nicht gefunden.")
+
+    return {"status": "success", "data": _job_match_core(cv_data, body.job_description)}
+
+
+class JobUrlMatchRequest(BaseModel):
+    session_id: int
+    url: str
+    consent: bool = False
+
+
+@app.post("/api/jobs/fetch-and-match", tags=["Jobs"])
+def jobs_fetch_and_match(body: JobUrlMatchRequest, request: Request):
+    """OPT-IN: fetch ONE job-ad URL the user pasted and run the fit-check against it.
+
+    This is the only participant-facing outbound request in Tool 1 and runs ONLY
+    on explicit per-action consent. It sends NO CV/personal data — it GETs exactly
+    the one URL, honours the site's robots.txt, makes a single request with a short
+    timeout + size cap, and identifies itself. robots-disallowed pages (incl.
+    jobs.ams.at /public/emps/) are declined; the user can paste the text manually.
+    """
+    if not body.consent:
+        raise HTTPException(status_code=403,
+                            detail="Zustimmung erforderlich, um die Stelle aus dem Internet zu laden.")
+    cv_storage: CVStorage = request.app.state.cv_storage
+    cv_data = cv_storage.get_cv_data(body.session_id)
+    if cv_data is None:
+        raise HTTPException(status_code=404, detail="CV nicht gefunden.")
+
+    from jobs.fetch_job import fetch_job_text, RobotsDisallowed, FetchError
+    try:
+        from privacy.network_block import temporarily_allow_network as _allow_net
+    except Exception:
+        import contextlib as _ctx
+        def _allow_net():
+            return _ctx.nullcontext()
+
+    try:
+        with _allow_net():
+            job_text = fetch_job_text(body.url)
+    except RobotsDisallowed:
+        raise HTTPException(status_code=422, detail=(
+            "Diese Website erlaubt das automatische Abrufen nicht (robots.txt). "
+            "Bitte kopieren Sie den Text der Stelle und fügen Sie ihn manuell ein."))
+    except FetchError as exc:
+        raise HTTPException(status_code=422, detail=(
+            "Die Stelle konnte nicht geladen werden. Bitte kopieren Sie den Text "
+            f"der Stelle und fügen Sie ihn manuell ein. (Grund: {exc})"))
+
+    if len(job_text.strip()) < 20:
+        raise HTTPException(status_code=422, detail="Zu wenig Text auf der Seite gefunden.")
+
+    match = _job_match_core(cv_data, job_text)
+    return {"status": "success", "data": {
+        "match": match,
+        "job_text": job_text,          # returned so the UI can show/edit what was loaded
+        "source_url": body.url,
+        "fetched_chars": len(job_text),
+    }}
 
 
 @app.get("/api/ai/model-status", tags=["AI"])

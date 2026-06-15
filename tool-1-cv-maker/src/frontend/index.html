@@ -445,6 +445,32 @@
                         placeholder="Stellenanzeige hier einfügen — zum Beispiel von AMS, karriere.at oder dem Unternehmen direkt..."
                         rows="6"
                     ></textarea>
+
+                    <!-- Opt-in: load a specific job ad from a URL (at your own risk).
+                         Off by default; requires explicit consent; honours robots.txt;
+                         sends NO personal data — only fetches the one page text. -->
+                    <details class="job-url-fetch" id="jobUrlFetch">
+                        <summary id="jobUrlSummary">🌐 Stelle aus dem Internet laden (optional)</summary>
+                        <p class="job-url-note" id="jobUrlNote">
+                            Wir laden NUR den Text der von Ihnen eingefügten Adresse — Ihr Name,
+                            Ihre Kontaktdaten und Ihr Lebenslauf werden NICHT gesendet. Manche
+                            Seiten (z.&nbsp;B. die AMS-Jobbörse) erlauben das nicht — dann fügen Sie
+                            den Text bitte oben manuell ein.
+                        </p>
+                        <input type="url" id="jobUrlInput" class="job-url-input"
+                               placeholder="https://… (Link zur Stellenanzeige)" />
+                        <label class="job-url-consent">
+                            <input type="checkbox" id="jobUrlConsent" />
+                            <span id="jobUrlConsentLabel">Ich möchte diese Seite einmalig laden (online).</span>
+                        </label>
+                        <div class="job-url-actions">
+                            <button class="btn btn-secondary btn-sm" id="jobUrlFetchBtn" type="button">
+                                <span id="jobUrlFetchLabel">Laden &amp; prüfen</span>
+                            </button>
+                            <span class="job-url-feedback" id="jobUrlFeedback"></span>
+                        </div>
+                    </details>
+
                     <div class="ats-input-actions">
                         <button class="btn btn-primary" id="runAtsBtn" type="button">
                             <span id="runAtsBtnLabel">Lebenslauf analysieren →</span>

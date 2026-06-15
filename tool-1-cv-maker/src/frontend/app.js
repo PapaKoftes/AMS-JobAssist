@@ -487,6 +487,15 @@ const TRANSLATIONS = {
         jobDescPlaceholder:   'Stellenanzeige hier einfügen — zum Beispiel von AMS, karriere.at oder dem Unternehmen direkt...',
         runAtsBtn:            'Lebenslauf analysieren →',
         cancelAtsBtn:         'Abbrechen',
+        // Opt-in: load a job ad from a URL
+        jobUrlSummary:        '🌐 Stelle aus dem Internet laden (optional)',
+        jobUrlConsentLabel:   'Ich möchte diese Seite einmalig laden (online).',
+        jobUrlFetchLabel:     'Laden & prüfen',
+        jobUrlNeedUrl:        'Bitte geben Sie zuerst einen Link (URL) ein.',
+        jobUrlNeedConsent:    'Bitte bestätigen Sie zuerst das Laden der Seite.',
+        jobUrlLoading:        'Lade die Stelle…',
+        jobUrlLoaded:         (n) => `Geladen (${n} Zeichen). Wird geprüft…`,
+        jobUrlFailed:         'Konnte nicht geladen werden. Bitte kopieren Sie den Text der Stelle und fügen Sie ihn oben manuell ein.',
         // Cover letter input
         clInputHeading:       '✉️ Anschreiben personalisieren',
         clCompanyLabel:       'Unternehmen / Arbeitgeber:',
@@ -718,6 +727,14 @@ const TRANSLATIONS = {
         jobDescPlaceholder:   'Paste job listing here — e.g. from AMS, karriere.at or directly from the company...',
         runAtsBtn:            'Analyse CV →',
         cancelAtsBtn:         'Cancel',
+        jobUrlSummary:        '🌐 Load a job ad from the internet (optional)',
+        jobUrlConsentLabel:   'I want to load this page once (online).',
+        jobUrlFetchLabel:     'Load & check',
+        jobUrlNeedUrl:        'Please enter a link (URL) first.',
+        jobUrlNeedConsent:    'Please confirm loading the page first.',
+        jobUrlLoading:        'Loading the job…',
+        jobUrlLoaded:         (n) => `Loaded (${n} characters). Checking…`,
+        jobUrlFailed:         'Could not load it. Please copy the job text and paste it manually above.',
         clInputHeading:       '✉️ Personalise cover letter',
         clCompanyLabel:       'Company / Employer:',
         clCompanyPlaceholder: 'e.g. BILLA AG, Huber GmbH, AMS Wien',
@@ -2254,6 +2271,9 @@ function applyTranslations() {
     setPlaceholder('jobDescInput','jobDescPlaceholder');
     setText('runAtsBtnLabel',     'runAtsBtn');
     setText('cancelAtsBtnLabel',  'cancelAtsBtn');
+    setText('jobUrlSummary',       'jobUrlSummary');
+    setText('jobUrlConsentLabel',  'jobUrlConsentLabel');
+    setText('jobUrlFetchLabel',    'jobUrlFetchLabel');
 
     // --- Cover letter input section ---
     setText('clInputHeading',         'clInputHeading');
@@ -2458,6 +2478,16 @@ class APIClient {
         return this._request('/api/cv/check', 'POST', {
             session_id: sessionId,
             job_description: jobDescription,
+        });
+    }
+
+    // Opt-in: fetch a single job-ad URL (online, robots-respecting) and return its
+    // text + a fit-check. Requires explicit per-action consent.
+    fetchJobFromUrl(sessionId, url, consent) {
+        return this._request('/api/jobs/fetch-and-match', 'POST', {
+            session_id: sessionId,
+            url,
+            consent: !!consent,
         });
     }
 
@@ -4137,6 +4167,39 @@ class InterviewManager {
         if (notice) notice.style.display = 'none';
     }
 
+    // Opt-in: load a specific job ad from a URL the user pastes, then run the
+    // existing fit-check on it. The fetched text fills the textarea (transparent +
+    // editable). robots-disallowed / failed fetches fall back to "paste manually".
+    async handleFetchJobUrl() {
+        const urlEl     = document.getElementById('jobUrlInput');
+        const consentEl = document.getElementById('jobUrlConsent');
+        const fb        = document.getElementById('jobUrlFeedback');
+        const btn       = document.getElementById('jobUrlFetchBtn');
+        const url = (urlEl?.value || '').trim();
+        const setFb = (msg) => { if (fb) fb.textContent = msg; };
+
+        if (!url)               { setFb(t('jobUrlNeedUrl'));     return; }
+        if (!consentEl?.checked){ setFb(t('jobUrlNeedConsent')); return; }
+        if (!state.sessionId)   { setFb(t('jobUrlFailed'));      return; }
+
+        setFb(t('jobUrlLoading'));
+        if (btn) btn.disabled = true;
+        try {
+            const resp = await api.fetchJobFromUrl(state.sessionId, url, true);
+            const d = resp?.data || {};
+            const text = d.job_text || '';
+            const ta = document.getElementById('jobDescInput');
+            if (ta && text) ta.value = text;
+            setFb(t('jobUrlLoaded', d.fetched_chars || text.length || 0));
+            await this._runATSAnalysis();   // reuse the existing analyze + Bewerbungs-Check
+        } catch (err) {
+            console.warn('job-url fetch failed:', err);
+            setFb(t('jobUrlFailed'));        // covers robots-disallowed + fetch errors
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
     // ── Interview mode switch: free conversation ↔ guided step-by-step ────────
     // The structured 65-question interview existed all along but was unreachable;
     // this gives it a door. Some participants freeze on "tell me everything" and
@@ -4653,6 +4716,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // §5 ATS score — two-step flow
     document.getElementById('atsBtn')?.addEventListener('click',    () => interview.handleATSScore());
     document.getElementById('runAtsBtn')?.addEventListener('click', () => interview._runATSAnalysis());
+    document.getElementById('jobUrlFetchBtn')?.addEventListener('click', () => interview.handleFetchJobUrl());
     document.getElementById('amsJobsBtn')?.addEventListener('click',     () => interview.handleFindAmsJobs());
     document.getElementById('amsJobsCancelBtn')?.addEventListener('click', () => interview._cancelAmsJobs());
     document.getElementById('modeSwitchBtn')?.addEventListener('click',  () => interview.toggleInterviewMode());
