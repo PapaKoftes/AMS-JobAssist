@@ -891,6 +891,39 @@ def _cv_data_to_check_dict(cv_data) -> dict:
     }
 
 
+class SkillsUpdateRequest(BaseModel):
+    session_id: int
+    skills: list[str]
+
+
+@app.put("/api/cv/skills", tags=["CV"])
+def update_cv_skills(body: SkillsUpdateRequest, request: Request):
+    """Replace the CV's skills with the user's curated list.
+
+    Skill extraction is best-effort (and the weakest field), so the participant
+    must be able to remove a wrong/auto-extracted skill or add a missing one.
+    Edits the STORED CVData, so every consumer (PDF/DOCX/Europass export,
+    Bewerbungs-Check, job-match) immediately reflects the curated list.
+    """
+    cv_storage: CVStorage = request.app.state.cv_storage
+    cv_data = cv_storage.get_cv_data(body.session_id)
+    if cv_data is None:
+        raise HTTPException(status_code=404, detail="CV nicht gefunden.")
+
+    seen: set = set()
+    clean: list = []
+    for s in (body.skills or []):
+        s = (s or "").strip()
+        if s and 1 < len(s) <= 60 and s.lower() not in seen:
+            seen.add(s.lower())
+            clean.append(s)
+        if len(clean) >= 40:  # sane cap
+            break
+    cv_data.all_skills = clean
+    cv_storage.save_cv_data(cv_data, session_id=body.session_id)
+    return {"status": "success", "data": {"skills": clean}}
+
+
 @app.post("/api/cv/check", tags=["ATS"])
 async def cv_check(body: CVCheckRequest, request: Request):
     """

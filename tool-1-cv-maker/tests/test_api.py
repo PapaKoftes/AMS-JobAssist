@@ -155,6 +155,42 @@ class TestAmsJobSearch:
         assert data.get("suggested_occupation") == "Softwareentwickler/in (Programmierer/in)"
 
 
+class TestSkillsEditor:
+    """Test the /api/cv/skills curation endpoint (remove wrong / add missing)."""
+
+    def test_update_skills_nonexistent_returns_404(self, client):
+        r = client.put("/api/cv/skills", json={"session_id": 999999, "skills": ["Excel"]})
+        assert r.status_code == 404
+
+    def test_update_skills_requires_session_id(self, client):
+        r = client.put("/api/cv/skills", json={"skills": ["Excel"]})
+        assert r.status_code == 422
+
+    def test_update_skills_sanitizes_and_persists(self, client):
+        from app import app as _app
+        from cv.models import CVData, CVIdentity
+        # A real session is needed (cv_data has a FK to sessions).
+        start = client.post("/api/interview/start", json={
+            "user_id": "skilltest", "interview_path": "unemployed",
+            "language": "de", "consent_given": True})
+        assert start.status_code == 200
+        sid = int(start.json()["data"]["session_id"])
+        storage = _app.state.cv_storage
+        cv = CVData(session_id=str(sid), user_id="skilltest", interview_path="unemployed",
+                    language_input="de", identity=CVIdentity(full_name="Test User"),
+                    all_skills=["Excel"])
+        assert storage.save_cv_data(cv, session_id=sid)
+        r = client.put("/api/cv/skills", json={
+            "session_id": sid,
+            "skills": ["  Excel ", "Excel", "", "Kassa", "x", "Teamarbeit"]})
+        assert r.status_code == 200
+        # stripped, case-insensitive dedupe, drop empty + too-short ("x")
+        assert r.json()["data"]["skills"] == ["Excel", "Kassa", "Teamarbeit"]
+        # persisted to the stored CV (so exports/checks see it)
+        r2 = client.get(f"/api/cv/{sid}")
+        assert r2.json()["data"]["all_skills"] == ["Excel", "Kassa", "Teamarbeit"]
+
+
 class TestBewerbungsCheck:
     """Test the /api/cv/check hire-readiness endpoint + its CVData mapper."""
 

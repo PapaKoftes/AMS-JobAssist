@@ -1515,6 +1515,69 @@ body {
     color: #555;
 }
 
+/* Skills editor (completion screen) --------------------------------------- */
+.skills-edit-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    text-align: left;
+}
+.skills-edit-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 0 0 var(--spacing-xs, 4px);
+}
+.skills-edit-note {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #555;
+    margin: 0 0 var(--spacing-md);
+}
+.skills-edit-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: var(--spacing-md);
+}
+.skill-edit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f3eef7;
+    color: var(--primary);
+    border: 1px solid #e0d3ec;
+    border-radius: 16px;
+    padding: 4px 8px 4px 12px;
+    font-size: 13px;
+}
+.skill-chip-remove {
+    border: none;
+    background: transparent;
+    color: var(--secondary);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 50%;
+}
+.skill-chip-remove:hover { background: #e0d3ec; color: var(--danger); }
+.skills-edit-empty { font-size: 13px; color: #888; }
+.skills-edit-add {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.skill-add-input {
+    flex: 1 1 200px;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
 .ats-section h3 {
     font-size: 15px;
     font-weight: 600;

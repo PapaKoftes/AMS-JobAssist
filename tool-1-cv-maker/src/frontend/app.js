@@ -496,6 +496,12 @@ const TRANSLATIONS = {
         jobUrlLoading:        'Lade die Stelle…',
         jobUrlLoaded:         (n) => `Geladen (${n} Zeichen). Wird geprüft…`,
         jobUrlFailed:         'Konnte nicht geladen werden. Bitte kopieren Sie den Text der Stelle und fügen Sie ihn oben manuell ein.',
+        // Skills editor
+        skillsEditHeading:    '🧩 Ihre Kenntnisse',
+        skillsEditNote:       'Diese Kenntnisse erscheinen auf Ihrem Lebenslauf. Entfernen Sie Falsches mit ✕ oder ergänzen Sie Fehlendes.',
+        skillsEditEmpty:      'Noch keine Kenntnisse — fügen Sie unten welche hinzu.',
+        skillAddPlaceholder:  'Kenntnis hinzufügen…',
+        skillAddLabel:        'Hinzufügen',
         // Cover letter input
         clInputHeading:       '✉️ Anschreiben personalisieren',
         clCompanyLabel:       'Unternehmen / Arbeitgeber:',
@@ -735,6 +741,11 @@ const TRANSLATIONS = {
         jobUrlLoading:        'Loading the job…',
         jobUrlLoaded:         (n) => `Loaded (${n} characters). Checking…`,
         jobUrlFailed:         'Could not load it. Please copy the job text and paste it manually above.',
+        skillsEditHeading:    '🧩 Your skills',
+        skillsEditNote:       'These skills appear on your CV. Remove anything wrong with ✕ or add what is missing.',
+        skillsEditEmpty:      'No skills yet — add some below.',
+        skillAddPlaceholder:  'Add a skill…',
+        skillAddLabel:        'Add',
         clInputHeading:       '✉️ Personalise cover letter',
         clCompanyLabel:       'Company / Employer:',
         clCompanyPlaceholder: 'e.g. BILLA AG, Huber GmbH, AMS Wien',
@@ -2274,6 +2285,10 @@ function applyTranslations() {
     setText('jobUrlSummary',       'jobUrlSummary');
     setText('jobUrlConsentLabel',  'jobUrlConsentLabel');
     setText('jobUrlFetchLabel',    'jobUrlFetchLabel');
+    setText('skillsEditHeading',   'skillsEditHeading');
+    setText('skillsEditNote',      'skillsEditNote');
+    setText('skillAddLabel',       'skillAddLabel');
+    setPlaceholder('skillAddInput', 'skillAddPlaceholder');
 
     // --- Cover letter input section ---
     setText('clInputHeading',         'clInputHeading');
@@ -2478,6 +2493,13 @@ class APIClient {
         return this._request('/api/cv/check', 'POST', {
             session_id: sessionId,
             job_description: jobDescription,
+        });
+    }
+
+    // Replace the CV's skills with the user's curated list (persists to stored CV).
+    updateCvSkills(sessionId, skills) {
+        return this._request('/api/cv/skills', 'PUT', {
+            session_id: sessionId, skills,
         });
     }
 
@@ -3179,6 +3201,31 @@ class UIManager {
                 todoWrap.style.display = 'none';
             }
         }
+        card.style.display = 'block';
+    }
+
+    // -------------------------------------------------------------------------
+    // Skills editor — let the user remove wrong / add missing skills
+    // -------------------------------------------------------------------------
+
+    renderSkillsEditor(skills) {
+        const card  = document.getElementById('skillsEditCard');
+        const chips = document.getElementById('skillsEditChips');
+        if (!card || !chips) return;
+        const list = Array.isArray(skills) ? skills : [];
+        chips.innerHTML = list.map((s, i) => `
+            <span class="skill-edit-chip">
+                ${this._escape(s)}
+                <button class="skill-chip-remove" type="button" data-idx="${i}"
+                        aria-label="${this._escape(s)} entfernen" title="entfernen">✕</button>
+            </span>`).join('') || `<span class="skills-edit-empty">${t('skillsEditEmpty')}</span>`;
+        // Wire the remove buttons
+        chips.querySelectorAll('.skill-chip-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-idx'), 10);
+                interview.removeSkill(idx);
+            });
+        });
         card.style.display = 'block';
     }
 
@@ -3999,6 +4046,12 @@ class InterviewManager {
                 .then(r => ui.renderCheckCard(r?.data))
                 .catch(e => console.warn('cv-check non-fatal:', e));
 
+            // Load skills into the editor so the user can remove wrong / add missing
+            // ones (extraction is best-effort — the weakest field).
+            api.get(`/api/cv/${state.sessionId}`)
+                .then(r => { state.cvSkills = r?.data?.all_skills || []; ui.renderSkillsEditor(state.cvSkills); })
+                .catch(e => console.warn('skills load non-fatal:', e));
+
             // C5: Store completed session ID so returning users can re-download
             localStorage.setItem(COMPLETED_SESSION_KEY, String(state.sessionId));
             localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -4198,6 +4251,39 @@ class InterviewManager {
         } finally {
             if (btn) btn.disabled = false;
         }
+    }
+
+    // --- Skills editor: curate the CV's skills (remove wrong / add missing) ------
+
+    async _persistSkills() {
+        ui.renderSkillsEditor(state.cvSkills);
+        try {
+            const r = await api.updateCvSkills(state.sessionId, state.cvSkills || []);
+            state.cvSkills = r?.data?.skills || state.cvSkills;
+            ui.renderSkillsEditor(state.cvSkills);
+        } catch (e) {
+            console.warn('persist skills failed:', e);
+        }
+        // Refresh the Bewerbungs-Check so the "3 Kenntnisse" criterion + score update.
+        api.getCvCheck(state.sessionId).then(r => ui.renderCheckCard(r?.data)).catch(() => {});
+    }
+
+    removeSkill(idx) {
+        if (!Array.isArray(state.cvSkills) || idx < 0 || idx >= state.cvSkills.length) return;
+        state.cvSkills.splice(idx, 1);
+        this._persistSkills();
+    }
+
+    addSkill() {
+        const inp = document.getElementById('skillAddInput');
+        const val = (inp?.value || '').trim();
+        if (!val) return;
+        state.cvSkills = state.cvSkills || [];
+        if (!state.cvSkills.some(s => s.toLowerCase() === val.toLowerCase())) {
+            state.cvSkills.push(val);
+        }
+        if (inp) inp.value = '';
+        this._persistSkills();
     }
 
     // ── Interview mode switch: free conversation ↔ guided step-by-step ────────
@@ -4717,6 +4803,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('atsBtn')?.addEventListener('click',    () => interview.handleATSScore());
     document.getElementById('runAtsBtn')?.addEventListener('click', () => interview._runATSAnalysis());
     document.getElementById('jobUrlFetchBtn')?.addEventListener('click', () => interview.handleFetchJobUrl());
+    document.getElementById('skillAddBtn')?.addEventListener('click', () => interview.addSkill());
+    document.getElementById('skillAddInput')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); interview.addSkill(); }
+    });
     document.getElementById('amsJobsBtn')?.addEventListener('click',     () => interview.handleFindAmsJobs());
     document.getElementById('amsJobsCancelBtn')?.addEventListener('click', () => interview._cancelAmsJobs());
     document.getElementById('modeSwitchBtn')?.addEventListener('click',  () => interview.toggleInterviewMode());

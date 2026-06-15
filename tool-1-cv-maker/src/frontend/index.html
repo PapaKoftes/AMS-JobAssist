@@ -405,6 +405,21 @@
                     </div>
                 </div>
 
+                <!-- Skills editor — extraction is best-effort (the weakest field), so
+                     the participant can remove a wrong auto-detected skill or add a
+                     missing one. Edits persist to the stored CV (exports + checks). -->
+                <div class="skills-edit-card" id="skillsEditCard" style="display:none;">
+                    <h3 id="skillsEditHeading">🧩 Ihre Kenntnisse</h3>
+                    <p class="skills-edit-note" id="skillsEditNote">Diese Kenntnisse erscheinen auf Ihrem Lebenslauf. Entfernen Sie Falsches mit ✕ oder ergänzen Sie Fehlendes.</p>
+                    <div class="skills-edit-chips" id="skillsEditChips"></div>
+                    <div class="skills-edit-add">
+                        <input type="text" id="skillAddInput" class="skill-add-input" placeholder="Kenntnis hinzufügen…" maxlength="60" />
+                        <button class="btn btn-secondary btn-sm" id="skillAddBtn" type="button">
+                            <span id="skillAddLabel">Hinzufügen</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Export buttons — primary action prominent, everything else
                      collapsed under "More options" to reduce decision overload -->
                 <div class="completion-actions">
