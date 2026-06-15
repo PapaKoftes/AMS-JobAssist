@@ -146,3 +146,30 @@ def test_rejects_unrecognised_shape():
 def test_rejects_empty_dict():
     with pytest.raises(ValueError):
         normalise({})
+
+
+# ── canonical → CVData-dict must NOT drop languages / target_job ──────────────
+
+def test_canonical_to_cvdata_carries_languages_and_target_job():
+    from services.cv_mapper import canonical_to_cvdata_dict
+    canon = {
+        "schema_version": "1.0",
+        "session_id": 1, "user_id": "u", "interview_path": "unemployed",
+        "basics": {"full_name": "Leyla Demir"},
+        "target_job": "Bürokauffrau",
+        "languages": [{"language": "Deutsch", "code": "de", "level": "B2"},
+                      {"language": "Türkisch", "code": "tr", "level": "native"}],
+        "all_skills": ["Excel"],
+        "ready_for_export": True,
+    }
+    out = canonical_to_cvdata_dict(canon)
+    assert out["target_job"] == "Bürokauffrau"            # was dropped before
+    assert {l["language"]: l["level"] for l in out["languages"]} == {
+        "Deutsch": "B2", "Türkisch": "native"}            # CEFR survives re-export
+
+
+def test_ready_for_export_fails_closed_when_absent():
+    from services.cv_mapper import canonical_to_cvdata_dict
+    out = canonical_to_cvdata_dict({"schema_version": "1.0", "session_id": 1,
+                                    "user_id": "u", "basics": {}})
+    assert out["ready_for_export"] is False               # not optimistic True

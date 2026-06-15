@@ -228,6 +228,16 @@ def canonical_to_cvdata_dict(canon: dict) -> dict:
         "training": training,
         "projects": projects,
         "all_skills": all_skills,
+        # Carry language proficiencies (CEFR) and the target job — without these the
+        # trainer's re-exported PDF dropped the SPRACHEN section and the Zielberuf.
+        "languages": [
+            {"language": (l.get("language") or ""), "code": (l.get("code") or ""),
+             "level": (l.get("level") or "")}
+            for l in (canon.get("languages") or [])
+        ],
+        "target_job": canon.get("target_job", "") or "",
         "overall_quality": canon.get("overall_quality", 0.0) or 0.0,
-        "ready_for_export": canon.get("ready_for_export", True),
+        # Fail closed: a canonical doc missing the flag must NOT read as export-ready
+        # (it would tell the trainer an incomplete CV is finished).
+        "ready_for_export": canon.get("ready_for_export", False),
     }
