@@ -244,14 +244,35 @@ function convAddUser(text) {
     _convScroll();
 }
 /** Append an assistant message (question / guidance) to the conversation. */
+// Read-aloud via the browser-local Web Speech API (offline; no network). For
+// low-literacy users this is a major unlock — every advisor message can be heard.
+function speakText(text, lang) {
+    try {
+        if (!('speechSynthesis' in window) || !text) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang || document.documentElement.lang || 'de';
+        window.speechSynthesis.speak(u);
+    } catch (_) {}
+}
+const _canSpeak = (typeof window !== 'undefined') && ('speechSynthesis' in window);
+
 function convAddAI(text, hint) {
     const m = document.getElementById('convMessages');
     if (!m) return;
     const row = document.createElement('div');
     row.className = 'conv-row conv-ai';
+    const speakBtn = _canSpeak
+        ? `<button class="speak-btn" type="button" title="${_escapeHtml(t('readAloud'))}" aria-label="${_escapeHtml(t('readAloud'))}">🔊</button>`
+        : '';
     row.innerHTML = `<span class="advisor-avatar" aria-hidden="true">🧑‍💼</span>` +
         `<div class="advisor-bubble"><div class="advisor-text">${_escapeHtml(text)}</div>` +
-        (hint ? `<div class="advisor-hint">${_escapeHtml(hint)}</div>` : '') + `</div>`;
+        (hint ? `<div class="advisor-hint">${_escapeHtml(hint)}</div>` : '') + speakBtn + `</div>`;
+    if (_canSpeak) {
+        const full = hint ? `${text}. ${hint}` : text;
+        row.querySelector('.speak-btn')?.addEventListener('click',
+            () => speakText(full, state.inputLanguage));
+    }
     m.appendChild(row);
     _convScroll();
 }
@@ -352,6 +373,7 @@ const TRANSLATIONS = {
         dumpAckExperience: 'Berufserfahrung', dumpAckEducation: 'Ausbildung', dumpAckSkills: 'Kenntnisse',
         dumpAckNoted: '✓ Notiert.',
         rulesModeNote: 'Hinweis: Das KI-Modell ist gerade nicht aktiv — ich strukturiere Ihre Angaben einfacher. Für ein besseres Ergebnis fragen Sie Ihren Trainer, das Modell zu aktivieren.',
+        readAloud: 'Vorlesen',
         askName:              'Wie heißen Sie? (Vor- und Nachname)',
         askContact:           'Wo wohnen Sie, und wie kann man Sie erreichen? (Stadt, Telefon, E-Mail)',
         askTarget:            'Welche Stelle suchen Sie?',
@@ -638,6 +660,7 @@ const TRANSLATIONS = {
         dumpAckExperience: 'Work experience', dumpAckEducation: 'Education', dumpAckSkills: 'Skills',
         dumpAckNoted: '✓ Noted.',
         rulesModeNote: 'Note: the AI model is not active right now — I am structuring your input more simply. For a better result, ask your trainer to enable the model.',
+        readAloud: 'Read aloud',
         appSubtitle:          'Your professional CV — in any language',
         cvProgressLabel:      'Your CV',
         fieldName: 'Name', fieldAddress: 'Address', fieldPhone: 'Phone', fieldEmail: 'Email',
@@ -2180,6 +2203,15 @@ function applyTranslations() {
 
     // RTL support for Arabic
     document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+    // A11Y: keep <html lang> in sync so screen readers / TTS use the right
+    // pronunciation rules for the selected language.
+    if (lang) { try { document.documentElement.lang = lang; } catch (_) {} }
+    // A11Y: ensure toggle buttons expose a pressed state to assistive tech.
+    document.querySelectorAll('.lang-btn, .path-button').forEach(b => {
+        if (!b.hasAttribute('aria-pressed')) {
+            b.setAttribute('aria-pressed', b.classList.contains('selected') ? 'true' : 'false');
+        }
+    });
 
     // Helper — set text if element exists
     const setText = (id, key) => { const el = document.getElementById(id); if (el) el.textContent = t(key); };
@@ -2635,14 +2667,23 @@ class UIManager {
         );
         if (this.reviewPanel) this.reviewPanel.style.display = 'none';
 
+        let active = null;
         switch (screenName) {
-            case 'welcome':    this.welcomeScreen?.classList.add('screen-active');    break;
-            case 'interview':  this.interviewScreen?.classList.add('screen-active');  break;
-            case 'completion': this.completionScreen?.classList.add('screen-active'); break;
-            case 'review':     if (this.reviewPanel) this.reviewPanel.style.display = 'block'; break;
+            case 'welcome':    active = this.welcomeScreen;    active?.classList.add('screen-active'); break;
+            case 'interview':  active = this.interviewScreen;  active?.classList.add('screen-active'); break;
+            case 'completion': active = this.completionScreen; active?.classList.add('screen-active'); break;
+            case 'review':     active = this.reviewPanel; if (this.reviewPanel) this.reviewPanel.style.display = 'block'; break;
         }
         state.currentScreen = screenName;
 
+        // A11Y: move focus to the new screen's heading so keyboard/screen-reader
+        // users are taken to the new content (and announce it) instead of being
+        // stranded on a now-hidden control.
+        if (active) {
+            const heading = active.querySelector('h1, h2, [role="heading"]') || active;
+            try { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: false }); } catch (_) {}
+            try { window.scrollTo(0, 0); } catch (_) {}
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -4676,8 +4717,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Language selection — must be wired first so translations are ready before other setup
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
+            document.querySelectorAll('.lang-btn').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed', 'false'); });
+            btn.classList.add('selected'); btn.setAttribute('aria-pressed', 'true');
             state.inputLanguage = btn.dataset.lang;
             state.language      = btn.dataset.lang;   // also pass chosen language to the interview engine
             try { localStorage.setItem(LANGUAGE_STORAGE_KEY, btn.dataset.lang); } catch {}
@@ -4694,8 +4735,8 @@ document.addEventListener('DOMContentLoaded', () => {
             state.language = savedLang;
             const activeBtn = document.querySelector(`.lang-btn[data-lang="${savedLang}"]`);
             if (activeBtn) {
-                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected'));
-                activeBtn.classList.add('selected');
+                document.querySelectorAll('.lang-btn').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed', 'false'); });
+                activeBtn.classList.add('selected'); activeBtn.setAttribute('aria-pressed', 'true');
             }
             applyTranslations();
         }
@@ -4704,8 +4745,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Path selection
     document.querySelectorAll('.path-button').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.path-button').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
+            document.querySelectorAll('.path-button').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed', 'false'); });
+            btn.classList.add('selected'); btn.setAttribute('aria-pressed', 'true');
             state.interviewPath = btn.dataset.path;
 
             // Mark step 1 done, highlight step 2
