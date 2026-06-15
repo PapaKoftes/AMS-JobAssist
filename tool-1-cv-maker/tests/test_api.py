@@ -155,6 +155,21 @@ class TestAmsJobSearch:
         assert data.get("suggested_occupation") == "Softwareentwickler/in (Programmierer/in)"
 
 
+class TestDumpInputCap:
+    """R2: the free-form dump must be bounded so a huge paste can't hang a worker."""
+
+    def test_oversized_dump_rejected(self, client):
+        r = client.post("/api/ai/dump-extract", json={
+            "session_id": 1, "text": "x" * 10001, "language": "de"})
+        assert r.status_code == 422
+
+    def test_normal_dump_accepted_size(self, client):
+        # 9000 chars is under the cap (validation passes; may 404/200 on session)
+        r = client.post("/api/ai/dump-extract", json={
+            "session_id": 1, "text": "Ich war Kellner. " * 500, "language": "de"})
+        assert r.status_code != 422
+
+
 class TestLocalGuard:
     """S3: CV PII endpoints are gated to the local machine (_require_local)."""
 

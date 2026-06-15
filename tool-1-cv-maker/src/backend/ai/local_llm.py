@@ -140,6 +140,11 @@ _active_tier = None  # which tier is currently loaded
 import threading as _threading
 
 _download_lock = _threading.Lock()
+# Serialize inference: llama_cpp.Llama is NOT re-entrant on one instance, and
+# FastAPI runs sync endpoints in a threadpool — the background warm-up, two tabs,
+# or overlapping live-preview calls could otherwise call the single _llm
+# concurrently and crash/garble. On CPU you want serialized inference anyway.
+_inference_lock = _threading.Lock()
 _cancel_event = _threading.Event()
 _download_state: Dict = {
     "status": "idle",   # idle | downloading | verifying | done | error | cancelled
@@ -258,14 +263,15 @@ def _run(prompt: str, max_tokens: int = 400, temperature: float = 0.3) -> Option
     if not _load() or _llm is None:
         return None
     try:
-        out = _llm(
-            prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=0.9,
-            stop=["<|im_end|>", "\n\n\n"],
-            echo=False,
-        )
+        with _inference_lock:  # one inference at a time — Llama isn't re-entrant
+            out = _llm(
+                prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=0.9,
+                stop=["<|im_end|>", "\n\n\n"],
+                echo=False,
+            )
         text = out["choices"][0]["text"].strip()
         return text if len(text) > 10 else None
     except Exception as e:

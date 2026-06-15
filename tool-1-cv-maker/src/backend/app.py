@@ -27,7 +27,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pathlib import Path
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -1003,6 +1003,17 @@ class DumpExtractRequest(BaseModel):
     language: str = "de"
     expect: Optional[str] = None  # gap being answered: contact|target_job|experience|education|skills|name
 
+    @field_validator("text")
+    @classmethod
+    def _cap_text(cls, v: str) -> str:
+        # Bound the free-form dump: full-text regex/taxonomy passes run over this,
+        # so an unbounded paste would hang the worker. Mirror SubmitAnswer's cap.
+        if v is None:
+            raise ValueError("text required")
+        if len(v) > 10000:
+            raise ValueError("Text zu lang (max. 10000 Zeichen).")
+        return v
+
 class ModelDownloadRequest(BaseModel):
     confirm: bool = False
     tier: Optional[str] = None  # "light", "medium", or "full"
@@ -1405,8 +1416,16 @@ async def ai_dump_snapshot(session_id: int, request: Request):
 
     has_any = bool(captured["name"] or captured["target_job"] or captured["experiences"]
                    or captured["skills"] or captured["education"] or blob)
+    # Tell the UI whether the AI model actually structured this, so it can warn
+    # when running rules-only (degraded output the user otherwise can't detect).
+    try:
+        from ai.local_llm import is_ready as _ai_ready
+        ai_active = bool(_ai_ready())
+    except Exception:
+        ai_active = False
     return {"status": "success",
-            "data": {"captured": captured, "missing": missing, "has_content": has_any}}
+            "data": {"captured": captured, "missing": missing,
+                     "has_content": has_any, "ai_active": ai_active}}
 
 
 @app.post("/api/ai/interview-prep", tags=["AI"])

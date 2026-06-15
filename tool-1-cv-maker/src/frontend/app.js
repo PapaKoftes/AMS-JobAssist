@@ -351,6 +351,7 @@ const TRANSLATIONS = {
         dumpAckName: 'Name', dumpAckTarget: 'Zielberuf', dumpAckContact: 'Kontakt',
         dumpAckExperience: 'Berufserfahrung', dumpAckEducation: 'Ausbildung', dumpAckSkills: 'Kenntnisse',
         dumpAckNoted: '✓ Notiert.',
+        rulesModeNote: 'Hinweis: Das KI-Modell ist gerade nicht aktiv — ich strukturiere Ihre Angaben einfacher. Für ein besseres Ergebnis fragen Sie Ihren Trainer, das Modell zu aktivieren.',
         askName:              'Wie heißen Sie? (Vor- und Nachname)',
         askContact:           'Wo wohnen Sie, und wie kann man Sie erreichen? (Stadt, Telefon, E-Mail)',
         askTarget:            'Welche Stelle suchen Sie?',
@@ -636,6 +637,7 @@ const TRANSLATIONS = {
         dumpAckName: 'Name', dumpAckTarget: 'Target job', dumpAckContact: 'Contact',
         dumpAckExperience: 'Work experience', dumpAckEducation: 'Education', dumpAckSkills: 'Skills',
         dumpAckNoted: '✓ Noted.',
+        rulesModeNote: 'Note: the AI model is not active right now — I am structuring your input more simply. For a better result, ask your trainer to enable the model.',
         appSubtitle:          'Your professional CV — in any language',
         cvProgressLabel:      'Your CV',
         fieldName: 'Name', fieldAddress: 'Address', fieldPhone: 'Phone', fieldEmail: 'Email',
@@ -3776,6 +3778,12 @@ class InterviewManager {
             const missing = resp?.data?.missing ?? [];
 
             convThinking(false);
+            // One-time gentle notice if the AI model isn't active (rules-only =
+            // weaker structuring, which the user otherwise can't detect).
+            if (resp?.data?.ai_active === false && !state.rulesModeWarned) {
+                state.rulesModeWarned = true;
+                convAddAI(t('rulesModeNote'));
+            }
             this._paintCaptured(cap);
             this._mergeCaptured(cap);
             ui.updateDumpProgress(state.cvCaptured);
