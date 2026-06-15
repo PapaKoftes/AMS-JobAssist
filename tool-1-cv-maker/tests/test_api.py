@@ -155,6 +155,35 @@ class TestAmsJobSearch:
         assert data.get("suggested_occupation") == "Softwareentwickler/in (Programmierer/in)"
 
 
+class TestLocalGuard:
+    """S3: CV PII endpoints are gated to the local machine (_require_local)."""
+
+    def test_require_local_rejects_remote(self):
+        from app import _require_local
+        from fastapi import HTTPException
+
+        class _Client:
+            host = "203.0.113.9"  # public, non-loopback
+
+        class _Req:
+            client = _Client()
+            headers = {}
+        with pytest.raises(HTTPException) as ei:
+            _require_local(_Req())
+        assert ei.value.status_code == 403
+
+    def test_require_local_allows_loopback(self):
+        from app import _require_local
+
+        class _Client:
+            host = "127.0.0.1"
+
+        class _Req:
+            client = _Client()
+            headers = {}
+        assert _require_local(_Req()) is None  # no raise
+
+
 class TestSkillsEditor:
     """Test the /api/cv/skills curation endpoint (remove wrong / add missing)."""
 

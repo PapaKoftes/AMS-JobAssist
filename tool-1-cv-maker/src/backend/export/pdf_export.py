@@ -30,11 +30,23 @@ from reportlab.platypus import (
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 
+from xml.sax.saxutils import escape as _xml_escape
+
 from cv.models import CVData, CVSection
 from cv.language_levels import display_label as _level_display_label
 from export.base import CVExporter
 
 logger = logging.getLogger(__name__)
+
+
+def _esc(value) -> str:
+    """Escape user/AI text before it goes into a reportlab Paragraph.
+
+    reportlab parses a mini-XML markup, so an unescaped '<' or '&' in a name/skill
+    would corrupt the PDF (or fail the build → the user can't export their own CV)
+    and could inject markup. We add our OWN <b>/<font> tags around escaped values.
+    """
+    return _xml_escape(str(value if value is not None else ""))
 
 
 # ---------------------------------------------------------------------------
@@ -208,7 +220,7 @@ class PDFExporter(CVExporter):
                         continue
                     text = s.german if language == "de" else s.english
                     if text:
-                        elems.append(Paragraph(text, styles["normal"]))
+                        elems.append(Paragraph(_esc(text), styles["normal"]))
                         elems.append(Spacer(1, 0.15 * cm))
 
         # 8. Austrian signature block (Ort, Datum + Unterschrift) — customary on AT CVs
@@ -245,18 +257,18 @@ class PDFExporter(CVExporter):
         left_elems = []
 
         # Full name — largest text on page
-        left_elems.append(Paragraph(f"<b>{display_name}</b>", styles["cv_name"]))
+        left_elems.append(Paragraph(f"<b>{_esc(display_name)}</b>", styles["cv_name"]))
         left_elems.append(Spacer(1, 0.15 * cm))
 
         # Contact bullets
         if identity:
             contact_lines = []
             if identity.location:
-                contact_lines.append(f"📍 {identity.location}")
+                contact_lines.append(f"📍 {_esc(identity.location)}")
             if identity.contact_phone:
-                contact_lines.append(f"📞 {identity.contact_phone}")
+                contact_lines.append(f"📞 {_esc(identity.contact_phone)}")
             if identity.contact_email:
-                contact_lines.append(f"✉ {identity.contact_email}")
+                contact_lines.append(f"✉ {_esc(identity.contact_email)}")
             if contact_lines:
                 left_elems.append(
                     Paragraph("  ".join(contact_lines), styles["contact"])
@@ -265,9 +277,9 @@ class PDFExporter(CVExporter):
             # DOB + nationality on their own line
             extra = []
             if identity.date_of_birth:
-                extra.append(f"📅 Geburtsdatum: {identity.date_of_birth}")
+                extra.append(f"📅 Geburtsdatum: {_esc(identity.date_of_birth)}")
             if identity.nationality:
-                extra.append(f"🌍 Staatsangehörigkeit: {identity.nationality}")
+                extra.append(f"🌍 Staatsangehörigkeit: {_esc(identity.nationality)}")
             if extra:
                 left_elems.append(Spacer(1, 0.05 * cm))
                 left_elems.append(Paragraph("  ".join(extra), styles["contact"]))
@@ -464,17 +476,17 @@ class PDFExporter(CVExporter):
         # Build right-column content
         right_paras = []
         if title_str:
-            right_paras.append(Paragraph(f"<b>{title_str}</b>", styles["entry_title"]))
+            right_paras.append(Paragraph(f"<b>{_esc(title_str)}</b>", styles["entry_title"]))
         if employer_str:
-            right_paras.append(Paragraph(employer_str, styles["entry_employer"]))
+            right_paras.append(Paragraph(_esc(employer_str), styles["entry_employer"]))
         for b in bullets:
             bullet_text = b if b.startswith("•") else f"• {b}"
-            right_paras.append(Paragraph(bullet_text, styles["bullet"]))
+            right_paras.append(Paragraph(_esc(bullet_text), styles["bullet"]))
         # If we have neither title nor bullets, render the main text as a paragraph
         if not right_paras and main:
             text = main.german if language == "de" else main.english
             if text:
-                right_paras.append(Paragraph(text, styles["normal"]))
+                right_paras.append(Paragraph(_esc(text), styles["normal"]))
 
         if not right_paras:
             right_paras.append(Paragraph("", styles["normal"]))
@@ -482,7 +494,7 @@ class PDFExporter(CVExporter):
         content_col = self.CONTENT_WIDTH - DATE_COL_WIDTH - 0.3 * cm
 
         tbl = Table(
-            [[Paragraph(dates_str, styles["date_cell"]), right_paras]],
+            [[Paragraph(_esc(dates_str), styles["date_cell"]), right_paras]],
             colWidths=[DATE_COL_WIDTH, content_col],
             style=TableStyle([
                 ("VALIGN",       (0, 0), (-1, -1), "TOP"),
@@ -515,14 +527,14 @@ class PDFExporter(CVExporter):
         lines = []
         if all_skills:
             for skill in all_skills:
-                lines.append(Paragraph(f"• {skill}", styles["bullet"]))
+                lines.append(Paragraph(f"• {_esc(skill)}", styles["bullet"]))
         else:
             for s in skills_sections:
                 if s.hidden:
                     continue
                 text = s.german if language == "de" else s.english
                 if text:
-                    lines.append(Paragraph(f"• {text}", styles["bullet"]))
+                    lines.append(Paragraph(f"• {_esc(text)}", styles["bullet"]))
 
         if not lines:
             lines.append(Paragraph("–", styles["normal"]))
@@ -560,8 +572,8 @@ class PDFExporter(CVExporter):
             lang_name = lang_entry.get("language", "")
             level_label = _level_display_label(lang_entry.get("level", ""))
             rows.append([
-                Paragraph(lang_name, styles["entry_title"]),
-                Paragraph(level_label, styles["normal"]),
+                Paragraph(_esc(lang_name), styles["entry_title"]),
+                Paragraph(_esc(level_label), styles["normal"]),
             ])
 
         if not rows:
@@ -599,10 +611,10 @@ class PDFExporter(CVExporter):
         date_str = datetime.now().strftime("%d.%m.%Y")
         ort_datum = f"{city}, {date_str}" if city else date_str
         return [
-            Paragraph(f"<font size='9'>{ort_datum}</font>", styles["normal"]),
+            Paragraph(f"<font size='9'>{_esc(ort_datum)}</font>", styles["normal"]),
             Spacer(1, 1.0 * cm),  # blank space for the handwritten signature
             Paragraph("<font size='9'>______________________________</font>", styles["normal"]),
-            Paragraph(f"<font size='9'>{name}</font>", styles["normal"]),
+            Paragraph(f"<font size='9'>{_esc(name)}</font>", styles["normal"]),
         ]
 
     def _build_footer(self, cv_data: CVData, language: str, styles: Dict):

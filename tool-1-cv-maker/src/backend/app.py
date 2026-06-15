@@ -397,6 +397,7 @@ async def health_check():
 @app.get("/api/cv/{session_id}", tags=["CV"])
 async def get_cv_metadata(session_id: int, request: Request):
     """Return CV metadata for a completed session."""
+    _require_local(request)
     cv_storage: CVStorage = request.app.state.cv_storage
     cv_data = cv_storage.get_cv_data(session_id)
     if cv_data is None:
@@ -448,6 +449,20 @@ def _require_local_or_key(request: Request) -> None:
         logger.warning(f"admin endpoint refused: non-loopback client={client} without valid key")
         raise HTTPException(status_code=403,
                             detail="Restricted to the local machine or an authenticated request.")
+
+
+def _require_local(request: Request) -> None:
+    """Gate participant CV endpoints to the local machine.
+
+    Tool 1 is a single-user localhost app; these endpoints serve/mutate a CV by
+    raw integer session_id (no per-user auth), so without this a process or page
+    that reaches 127.0.0.1:PORT could read or rewrite any session's PII. Loopback
+    (and the in-process TestClient) only.
+    """
+    if not _is_loopback_client(request):
+        client = request.client.host if request.client else "unknown"
+        logger.warning(f"CV endpoint refused: non-loopback client={client}")
+        raise HTTPException(status_code=403, detail="Restricted to the local machine.")
 
 
 def _authorize_session_owner(db: "DatabaseManager", session_id: int,
@@ -608,7 +623,8 @@ async def erase_my_data(session_id: int, request: Request, user_id: str = "", to
 # ============================================================================
 
 def _get_ready_cv(session_id: int, request: Request, force: bool = False):
-    """Shared helper: fetch CVData or raise HTTP errors."""
+    """Shared helper: fetch CVData or raise HTTP errors. Local-only (serves PII)."""
+    _require_local(request)
     cv_storage: CVStorage = request.app.state.cv_storage
     cv_data = cv_storage.get_cv_data(session_id)
     if cv_data is None:
@@ -801,6 +817,7 @@ async def ats_score(body: ATSScoreRequest, request: Request):
     Score the CV against a job description (or the full ATS bank if no JD provided).
     Returns score, grade, matched/missing keywords, and suggestions.
     """
+    _require_local(request)
     cv_storage: CVStorage = request.app.state.cv_storage
     cv_data = cv_storage.get_cv_data(body.session_id)
     if cv_data is None:
@@ -898,13 +915,15 @@ class SkillsUpdateRequest(BaseModel):
 
 @app.put("/api/cv/skills", tags=["CV"])
 def update_cv_skills(body: SkillsUpdateRequest, request: Request):
-    """Replace the CV's skills with the user's curated list.
+    """Replace the CV's skills with the user's curated list. Local-only (mutates
+    stored PII by session_id).
 
     Skill extraction is best-effort (and the weakest field), so the participant
     must be able to remove a wrong/auto-extracted skill or add a missing one.
     Edits the STORED CVData, so every consumer (PDF/DOCX/Europass export,
     Bewerbungs-Check, job-match) immediately reflects the curated list.
     """
+    _require_local(request)
     cv_storage: CVStorage = request.app.state.cv_storage
     cv_data = cv_storage.get_cv_data(body.session_id)
     if cv_data is None:
@@ -933,6 +952,7 @@ async def cv_check(body: CVCheckRequest, request: Request):
     application systems actually filter on (German level, contact, licence, photo,
     quantified experience, job keywords) and returns concrete, prioritised fixes.
     """
+    _require_local(request)
     cv_storage: CVStorage = request.app.state.cv_storage
     cv_data = cv_storage.get_cv_data(body.session_id)
     if cv_data is None:
@@ -1582,6 +1602,7 @@ def ai_job_match(body: JobMatchRequest, request: Request):
     Tries local LLM first, then Ollama, then falls back to rule-based ATS
     keyword matching.  Never returns 503.
     """
+    _require_local(request)
     if not body.job_description or len(body.job_description.strip()) < 20:
         raise HTTPException(status_code=400, detail="Stellenbeschreibung zu kurz (min. 20 Zeichen).")
 
@@ -1614,6 +1635,7 @@ def jobs_fetch_and_match(body: JobUrlMatchRequest, request: Request):
     timeout + size cap, and identifies itself. robots-disallowed pages (incl.
     jobs.ams.at /public/emps/) are declined; the user can paste the text manually.
     """
+    _require_local(request)
     if not body.consent:
         raise HTTPException(status_code=403,
                             detail="Zustimmung erforderlich, um die Stelle aus dem Internet zu laden.")

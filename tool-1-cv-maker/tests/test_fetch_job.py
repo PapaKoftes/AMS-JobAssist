@@ -1,4 +1,5 @@
 """Tests for the opt-in single-URL job-ad fetcher (robots + SSRF + HTML strip)."""
+import ipaddress
 import sys
 from pathlib import Path
 
@@ -8,6 +9,31 @@ BACKEND = Path(__file__).resolve().parent.parent / "src" / "backend"
 sys.path.insert(0, str(BACKEND))
 
 from jobs import fetch_job as F  # noqa: E402
+
+
+def _public_dns(monkeypatch):
+    """getaddrinfo that resolves IP literals to themselves and names to a public IP
+    — so SSRF guards on redirects to internal IPs are actually exercised."""
+    def fake(host, *a, **k):
+        try:
+            ipaddress.ip_address(host)
+            ip = host
+        except ValueError:
+            ip = "93.184.216.34"  # example.com, public
+        return [(2, 1, 6, "", (ip, 0))]
+    monkeypatch.setattr(F.socket, "getaddrinfo", fake)
+
+
+def _mock_http(monkeypatch, routes):
+    """Patch the single network seam. routes: path -> (status, headers, body)."""
+    def fake_get(scheme, host, ip, family, port, path):
+        # robots default: allow (404) unless a route is given
+        if path == "/robots.txt" and "/robots.txt" not in routes:
+            return (404, {}, None)
+        if path not in routes:
+            return (404, {}, None)
+        return routes[path]
+    monkeypatch.setattr(F, "_http_get", fake_get)
 
 
 # ── HTML → text ──────────────────────────────────────────────────────────────
@@ -31,8 +57,7 @@ def test_non_public_hosts_rejected(host):
 
 
 def test_public_host_accepted(monkeypatch):
-    monkeypatch.setattr(F.socket, "getaddrinfo",
-                        lambda *a, **k: [(2, 1, 6, "", ("93.184.216.34", 0))])
+    _public_dns(monkeypatch)
     assert F._is_public_host("example.com") is True
 
 
@@ -43,69 +68,58 @@ def test_invalid_url_scheme_rejected():
         F.fetch_job_text("not a url")
 
 
-def test_private_host_url_rejected():
+def test_private_host_url_rejected(monkeypatch):
+    _public_dns(monkeypatch)  # resolves 127.0.0.1 -> 127.0.0.1 (non-public)
     with pytest.raises(F.FetchError):
         F.fetch_job_text("http://127.0.0.1:8000/api/jobs")
 
 
 # ── robots.txt ───────────────────────────────────────────────────────────────
 
-def _public(monkeypatch):
-    monkeypatch.setattr(F.socket, "getaddrinfo",
-                        lambda *a, **k: [(2, 1, 6, "", ("93.184.216.34", 0))])
-
-
-class _Robots:
-    def __init__(self, allowed): self._allowed = allowed
-    def set_url(self, u): pass
-    def read(self): pass
-    def can_fetch(self, ua, url): return self._allowed
-
-
 def test_robots_disallowed(monkeypatch):
-    _public(monkeypatch)
-    monkeypatch.setattr(F.urllib.robotparser, "RobotFileParser", lambda: _Robots(False))
+    _public_dns(monkeypatch)
+    robots = b"User-agent: *\nDisallow: /public/emps/\n"
+    _mock_http(monkeypatch, {
+        "/robots.txt": (200, {"content-type": "text/plain"}, robots),
+        "/public/emps/12345": (200, {"content-type": "text/html"}, b"<p>job</p>"),
+    })
     with pytest.raises(F.RobotsDisallowed):
         F.fetch_job_text("https://jobs.ams.at/public/emps/12345")
 
 
-# ── happy path (mocked network) ──────────────────────────────────────────────
-
-class _Resp:
-    def __init__(self, body, ctype="text/html; charset=utf-8", final=None):
-        self._body = body if isinstance(body, bytes) else body.encode("utf-8")
-        self.headers = {"Content-Type": ctype}
-        self._final = final or "https://example.com/job"
-    def geturl(self): return self._final
-    def read(self, n=-1): return self._body
-    def __enter__(self): return self
-    def __exit__(self, *a): return False
-
+# ── happy path ───────────────────────────────────────────────────────────────
 
 def test_happy_path_returns_text(monkeypatch):
-    _public(monkeypatch)
-    monkeypatch.setattr(F.urllib.robotparser, "RobotFileParser", lambda: _Robots(True))
-    html = "<html><body><h1>Lagermitarbeiter</h1><p>Stapler, Schichtarbeit, Wien.</p></body></html>"
-    monkeypatch.setattr(F.urllib.request, "urlopen", lambda req, timeout=0: _Resp(html))
+    _public_dns(monkeypatch)
+    html = b"<html><body><h1>Lagermitarbeiter</h1><p>Stapler, Schichtarbeit, Wien.</p></body></html>"
+    _mock_http(monkeypatch, {"/job": (200, {"content-type": "text/html; charset=utf-8"}, html)})
     text = F.fetch_job_text("https://example.com/job")
     assert "Lagermitarbeiter" in text and "Stapler" in text
 
 
 def test_redirect_to_internal_host_blocked(monkeypatch):
-    _public(monkeypatch)
-    monkeypatch.setattr(F.urllib.robotparser, "RobotFileParser", lambda: _Robots(True))
-    # urlopen "succeeds" but the final URL is an internal host → must be rejected
-    monkeypatch.setattr(F.urllib.request, "urlopen",
-                        lambda req, timeout=0: _Resp("<p>secret</p>", final="http://169.254.169.254/latest"))
+    _public_dns(monkeypatch)
+    _mock_http(monkeypatch, {
+        "/job": (302, {"location": "http://169.254.169.254/latest/meta-data"}, None),
+    })
+    # the redirect target is link-local → re-validation must reject it
     with pytest.raises(F.FetchError):
         F.fetch_job_text("https://example.com/job")
 
 
+def test_redirect_cap(monkeypatch):
+    _public_dns(monkeypatch)
+    # a public host that just keeps redirecting to itself
+    _mock_http(monkeypatch, {
+        "/loop": (302, {"location": "https://example.com/loop"}, None),
+    })
+    with pytest.raises(F.FetchError):
+        F.fetch_job_text("https://example.com/loop")
+
+
 def test_non_html_content_rejected(monkeypatch):
-    _public(monkeypatch)
-    monkeypatch.setattr(F.urllib.robotparser, "RobotFileParser", lambda: _Robots(True))
-    monkeypatch.setattr(F.urllib.request, "urlopen",
-                        lambda req, timeout=0: _Resp(b"%PDF-1.4", ctype="application/pdf"))
+    _public_dns(monkeypatch)
+    _mock_http(monkeypatch, {"/job.pdf": (200, {"content-type": "application/pdf"}, b"%PDF-1.4")})
     with pytest.raises(F.FetchError):
         F.fetch_job_text("https://example.com/job.pdf")
 

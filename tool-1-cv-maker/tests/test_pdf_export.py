@@ -324,5 +324,31 @@ class TestPDFExporter:
             assert b'%%EOF' in end_content or b'endstream' in end_content
 
 
+class TestPDFMarkupSafety:
+    """S2: user text must be XML-escaped before reportlab Paragraph (no injection,
+    no self-DoS when a name/skill contains '<' or '&')."""
+
+    def test_angle_brackets_in_fields_do_not_crash_and_are_escaped(self, tmp_path):
+        from src.backend.export.pdf_export import PDFExporter, _esc
+        from src.backend.cv.models import CVIdentity
+        assert _esc("a<b>c & d") == "a&lt;b&gt;c &amp; d"  # _esc neutralises markup
+
+        cv = CVData(session_id=1, user_id="u", interview_path="unemployed", language_input="de")
+        cv.language_output_primary = "de"
+        cv.identity = CVIdentity(full_name="</b><font color='red'>Eve",
+                                 location="Wien <script>", contact_email="e&v@x.at")
+        cv.experience.append(CVSection(
+            german="Leitete <b>Team</b> & mehr", english="", native="",
+            category=QuestionCategory.EXPERIENCE, question_id="e1",
+            quality_score=0.8, confidence_level="high", detected_skills=["C<>++"]))
+        cv.all_skills = ["C<>++", "Excel & Word"]
+
+        exporter = PDFExporter(output_dir=str(tmp_path))
+        path = exporter.export(cv, language="de")  # must NOT raise on the markup
+        assert path and Path(path).exists()
+        with open(path, "rb") as f:
+            assert f.read(4) == b"%PDF"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
