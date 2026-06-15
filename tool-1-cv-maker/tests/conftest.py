@@ -22,7 +22,26 @@ import os
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'backend'))
 
+import db as _db_module
 from db import DatabaseManager
+
+
+def _clear_leaked_tls_connection():
+    """DatabaseManager caches its SQLite connection in threading.local() keyed by
+    THREAD, not by database path. An earlier test (e.g. an API test that hit the
+    real app DB on this thread) can leave a connection cached, which a fresh
+    temp-DB DatabaseManager would then reuse — silently writing to the real DB.
+    Clear it so each db_manager fixture truly connects to its temp DB."""
+    conn = getattr(_db_module._tls, "connection", None)
+    if conn is not None:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        try:
+            del _db_module._tls.connection
+        except Exception:
+            _db_module._tls.connection = None
 
 
 @pytest.fixture
@@ -35,6 +54,7 @@ def temp_db_path(tmp_path):
 @pytest.fixture
 def db_manager(temp_db_path):
     """Create and initialize database manager with test schema."""
+    _clear_leaked_tls_connection()  # don't inherit a real-DB connection from a prior test
     manager = DatabaseManager(database_path=temp_db_path)
     try:
         manager.initialize()
