@@ -42,6 +42,14 @@ class TestDetectLevel:
         assert detect_level("Deutsch") == ""
         assert detect_level("") == ""
 
+    def test_native_language_proficiency_wording(self):
+        # A migrant stating proficiency in their own language still gets a level.
+        assert detect_level("Deutsch свободно") == "Fließend"      # RU fluent
+        assert detect_level("ألمانية بطلاقة") == "Fließend"        # AR fluent
+        assert detect_level("Almanca iyi") == "Gut"                # TR good
+        assert detect_level("niemiecki podstawowy") == "Grundkenntnisse"  # PL basic
+        assert detect_level("арабский родной") == "native"         # RU native
+
 
 class TestIsCefr:
     def test_bands(self):

@@ -48,6 +48,9 @@ a = Analysis(
         # for it at <bundle-root>/data/knowledge, which is where this lands — so the
         # frozen .exe finds it (without this, AI prompts lose job context).
         (os.path.join(TOOL1_ROOT, "data", "knowledge"), os.path.join("data", "knowledge")),
+        # Bundle the Unicode fonts (DejaVuSans) so PDF/DOCX export can render
+        # non-Latin names (Cyrillic, Latin-extended) instead of tofu boxes.
+        (os.path.join(TOOL1_ROOT, "data", "fonts"), os.path.join("data", "fonts")),
     ],
     hiddenimports=[
         # FastAPI / Starlette / Pydantic core

@@ -247,7 +247,7 @@ body {
     align-items: center;
     gap: var(--spacing-md);
     position: relative;
-    text-align: left;
+    text-align: start;
     width: 100%;
 }
 
@@ -594,7 +594,7 @@ body {
     font-size: 13px;
     color: #595959;
     margin-top: var(--spacing-sm);
-    text-align: right;
+    text-align: end;
 }
 
 .quality-indicator {
@@ -707,7 +707,7 @@ body {
     padding: var(--spacing-lg);
     border-radius: var(--radius-md);
     margin-bottom: var(--spacing-xl);
-    text-align: left;
+    text-align: start;
 }
 
 .completion-summary h3 {
@@ -992,7 +992,7 @@ body {
     border-radius: var(--radius-sm);
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-md);
-    text-align: left;
+    text-align: start;
 }
 
 .consent-label {
@@ -1022,7 +1022,7 @@ body {
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    text-align: left;
+    text-align: start;
 }
 
 .profile-summary-card h3 {
@@ -1072,7 +1072,7 @@ body {
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    text-align: left;
+    text-align: start;
 }
 
 .quality-score-row {
@@ -1123,7 +1123,7 @@ body {
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    text-align: left;
+    text-align: start;
 }
 
 .check-card.check-high  { border-left-color: var(--success); }
@@ -1257,7 +1257,7 @@ body {
     font-size: 14px;
     color: #555;
     margin-bottom: var(--spacing-lg);
-    text-align: left;
+    text-align: start;
 }
 
 .completion-actions {
@@ -1465,7 +1465,7 @@ body {
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    text-align: left;
+    text-align: start;
 }
 
 /* Opt-in: load a job ad from a URL ---------------------------------------- */
@@ -1523,7 +1523,7 @@ body {
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    text-align: left;
+    text-align: start;
 }
 .skills-edit-card h3 {
     font-size: 15px;
@@ -1630,9 +1630,9 @@ body {
     font-size: 0.8rem;
     font-weight: 700;
     color: #6c3483;
-    margin-right: 8px;
+    margin-inline-end: 8px;
 }
-.testmode-feedback { margin-left: 8px; font-size: 0.85rem; color: #2c7a3f; }
+.testmode-feedback { margin-inline-start: 8px; font-size: 0.85rem; color: #2c7a3f; }
 
 /* AMS job-search bridge — transparency notice */
 .ams-jobs-notice {
@@ -1738,7 +1738,7 @@ body {
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    text-align: left;
+    text-align: start;
 }
 
 .cover-letter-section h3 {
@@ -1772,7 +1772,7 @@ body {
     background: rgba(255,255,255,0.15);
     border-radius: 20px;
     color: rgba(255,255,255,0.9);
-    margin-left: var(--spacing-md);
+    margin-inline-start: var(--spacing-md);
 }
 
 .offline-badge::before {
@@ -1886,7 +1886,7 @@ body {
 .chip-continue-hint {
     font-size: 12px;
     opacity: 0.7;
-    margin-left: 2px;
+    margin-inline-start: 2px;
 }
 
 /* ============================================================================
@@ -2032,7 +2032,7 @@ body {
     border-radius: 4px;
     padding: 2px 8px;
     font-size: 0.8rem;
-    margin-left: 6px;
+    margin-inline-start: 6px;
     animation: fadeSlideIn 0.2s ease;
 }
 
@@ -2611,7 +2611,7 @@ body {
     min-height: 1.2em;
     font-size: var(--font-sm);
     color: var(--warning-text);
-    text-align: right;
+    text-align: end;
     margin-top: 4px;
     padding: 0 2px;
 }
@@ -2709,7 +2709,7 @@ body {
 /* ── AI coach tooltip close button (replaces removed auto-dismiss timer) ── */
 .ai-coach-intro-tooltip {
     position: relative;     /* anchor for absolute-positioned close button */
-    padding-right: 32px;    /* room for the × */
+    padding-inline-end: 32px;    /* room for the × */
 }
 .ai-coach-intro-tooltip__close {
     position: absolute;
@@ -2791,7 +2791,7 @@ a:focus-visible,
    no colour-only signaling at the structural level */
 .quality-indicator::before {
     /* icon is injected by JS; this rule guarantees visible whitespace before label */
-    margin-right: 4px;
+    margin-inline-end: 4px;
 }
 
 /* Print stylesheet — strip chrome, show CV cleanly */
@@ -2882,8 +2882,8 @@ a:focus-visible,
 .cv-sheet-body,
 .cv-active-prompt {
     width: min(680px, 92%);
-    margin-left: auto;
-    margin-right: auto;
+    margin-inline-start: auto;
+    margin-inline-end: auto;
     background: #fff;
     box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
 }
@@ -3009,7 +3009,7 @@ a:focus-visible,
 .interview-container .action-buttons .btn-primary { border-radius: 12px; padding: 11px 24px; }
 .interview-container .submit-hint,
 .interview-container .finish-later-row {
-    padding-left: 18px; padding-right: 18px; background: white; margin: 0;
+    padding-inline-start: 18px; padding-inline-end: 18px; background: white; margin: 0;
 }
 .interview-container .finish-later-row { padding-bottom: 12px; }
 
@@ -3270,7 +3270,7 @@ html, body { height: 100%; }
 
 /* Field-based completeness — chips showing which required CV fields remain */
 .cv-missing-fields { margin: 6px 0 2px; font-size: 12px; line-height: 1.9; }
-.cv-missing-lead { color: var(--text-muted, #666); margin-right: 4px; }
+.cv-missing-lead { color: var(--text-muted, #666); margin-inline-end: 4px; }
 .cv-missing-chip {
     display: inline-block; padding: 1px 9px; margin: 0 2px;
     background: #fff3e0; color: #9a5b00; border: 1px solid #ffd9a0;

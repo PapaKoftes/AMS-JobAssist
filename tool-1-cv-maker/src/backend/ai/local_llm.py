@@ -306,6 +306,27 @@ def chat(system: str, user: str, max_tokens: int = 500,
     return _run(prompt, max_tokens=max_tokens, temperature=temperature)
 
 
+def translate_to_german(text: str) -> Optional[str]:
+    """Translate arbitrary-language text to German with the local model.
+
+    The field extractor is German-prompted, so for non-German input (Arabic,
+    Russian, Turkish, Polish…) it collapses (measured core-field F1 ~0 for AR/RU).
+    Translating first lifts those cases toward the German baseline. Names, places,
+    emails and phone numbers are kept verbatim. Returns None if the model isn't
+    ready or the call fails (caller then falls back to the original text).
+    """
+    if not text or not text.strip() or not is_ready():
+        return None
+    system = (
+        "Du bist ein professioneller Übersetzer. Übersetze den folgenden Text "
+        "vollständig ins Deutsche. Gib NUR die deutsche Übersetzung zurück, ohne "
+        "Erklärungen, ohne Anmerkungen. Behalte Eigennamen, Orte, Firmennamen, "
+        "E-Mail-Adressen und Telefonnummern unverändert bei."
+    )
+    out = chat(system, text[:2000], max_tokens=800, temperature=0.0)
+    return out.strip() if out and out.strip() else None
+
+
 # ── Task-specific helpers ────────────────────────────────────────────────────
 
 _LANG_NAMES = {
@@ -594,11 +615,19 @@ def extract_cv_fields(text: str, language: str = "de") -> dict:
     m = _re.search(r"(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)", text)
     if m:
         result["phone"] = m.group(1).strip()
-    # No '.' in the phone char class, so it can't spill into the next sentence
-    # ("…7778899. 12 Jahre…" no longer captures the "12").
-    m = _re.search(r"(?<!\w)(\+?\d[\d\s/()\-]{6,}\d)", text)
-    if m:
-        result["phone"] = m.group(1).strip()
+
+    # ---- translate-first for non-German input ---------------------------------
+    # email/phone above came from the ORIGINAL (language-agnostic). The German-
+    # prompted name/target/experience extraction below collapses on non-German
+    # input, so translate the dump to German first (in-process 3B path). de/en are
+    # left as-is; on translation failure we keep the original (graceful).
+    if language not in ("de", "en"):
+        try:
+            _trans = translate_to_german(text)
+            if _trans:
+                text = _trans
+        except Exception as _te:
+            logger.warning(f"translate-first failed, using original text: {_te}")
 
     # ---- name (regex, trimmed to first+last, stops at connector words) --------
     _STOP = {"aus", "ich", "und", "der", "die", "das", "ist", "bin", "habe", "hab",

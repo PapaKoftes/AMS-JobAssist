@@ -50,6 +50,53 @@ def _esc(value) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Unicode fonts — register DejaVuSans so non-Latin names (Cyrillic, Latin-extended)
+# render instead of tofu boxes. Falls back to Helvetica if the TTFs aren't present.
+# ---------------------------------------------------------------------------
+FONT_REGULAR = "Helvetica"
+FONT_BOLD = "Helvetica-Bold"
+FONT_ITALIC = "Helvetica-Oblique"
+_fonts_registered = False
+
+
+def _fonts_dir() -> Path:
+    import sys as _sys
+    if getattr(_sys, "frozen", False):
+        base = Path(getattr(_sys, "_MEIPASS", Path(_sys.executable).resolve().parent))
+        d = base / "data" / "fonts"
+        if (d / "DejaVuSans.ttf").exists():
+            return d
+        return Path(_sys.executable).resolve().parent / "data" / "fonts"
+    return Path(__file__).resolve().parents[3] / "data" / "fonts"
+
+
+def _ensure_fonts() -> None:
+    """Register DejaVuSans once. Idempotent; no-op (keeps Helvetica) on failure."""
+    global _fonts_registered, FONT_REGULAR, FONT_BOLD, FONT_ITALIC
+    if _fonts_registered:
+        return
+    _fonts_registered = True
+    try:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        d = _fonts_dir()
+        reg, bold = d / "DejaVuSans.ttf", d / "DejaVuSans-Bold.ttf"
+        if reg.exists():
+            pdfmetrics.registerFont(TTFont("CVSans", str(reg)))
+            pdfmetrics.registerFont(TTFont("CVSans-Bold", str(bold if bold.exists() else reg)))
+            pdfmetrics.registerFontFamily("CVSans", normal="CVSans", bold="CVSans-Bold",
+                                          italic="CVSans", boldItalic="CVSans-Bold")
+            FONT_REGULAR = "CVSans"
+            FONT_BOLD = "CVSans-Bold"
+            FONT_ITALIC = "CVSans"  # DejaVu oblique not bundled; regular is fine
+            logger.info("PDF export using bundled DejaVuSans (Unicode-capable).")
+        else:
+            logger.warning(f"DejaVuSans not found in {d}; non-Latin names may not render.")
+    except Exception as exc:
+        logger.warning(f"Unicode font registration failed ({exc}); using Helvetica.")
+
+
+# ---------------------------------------------------------------------------
 # Section-heading translations
 # ---------------------------------------------------------------------------
 _LABELS_DE = {
@@ -705,6 +752,7 @@ class PDFExporter(CVExporter):
 
     def _make_styles(self) -> Dict:
         """Build and return all custom Platypus ParagraphStyles."""
+        _ensure_fonts()  # register DejaVuSans (Unicode) before styles read FONT_*
         base = getSampleStyleSheet()
 
         def _ps(name, parent="BodyText", **kwargs):
@@ -714,7 +762,7 @@ class PDFExporter(CVExporter):
             "cv_name": _ps(
                 "cv_name",
                 parent="Heading1",
-                fontName="Helvetica-Bold",
+                fontName=FONT_BOLD,
                 fontSize=20,
                 leading=24,
                 textColor=self.COLOR_NAME,
@@ -723,7 +771,7 @@ class PDFExporter(CVExporter):
             ),
             "contact": _ps(
                 "contact",
-                fontName="Helvetica",
+                fontName=FONT_REGULAR,
                 fontSize=9,
                 leading=13,
                 textColor=self.COLOR_MUTED,
@@ -732,7 +780,7 @@ class PDFExporter(CVExporter):
             "section_heading": _ps(
                 "section_heading",
                 parent="Heading2",
-                fontName="Helvetica-Bold",
+                fontName=FONT_BOLD,
                 fontSize=10,
                 leading=14,
                 textColor=self.COLOR_SECTION,
@@ -742,7 +790,7 @@ class PDFExporter(CVExporter):
             ),
             "date_cell": _ps(
                 "date_cell",
-                fontName="Helvetica",
+                fontName=FONT_REGULAR,
                 fontSize=9,
                 leading=13,
                 textColor=self.COLOR_MUTED,
@@ -750,7 +798,7 @@ class PDFExporter(CVExporter):
             ),
             "entry_title": _ps(
                 "entry_title",
-                fontName="Helvetica-Bold",
+                fontName=FONT_BOLD,
                 fontSize=10,
                 leading=13,
                 textColor=self.COLOR_TEXT,
@@ -758,7 +806,7 @@ class PDFExporter(CVExporter):
             ),
             "entry_employer": _ps(
                 "entry_employer",
-                fontName="Helvetica-Oblique",
+                fontName=FONT_ITALIC,
                 fontSize=9,
                 leading=12,
                 textColor=self.COLOR_MUTED,
@@ -766,7 +814,7 @@ class PDFExporter(CVExporter):
             ),
             "bullet": _ps(
                 "bullet",
-                fontName="Helvetica",
+                fontName=FONT_REGULAR,
                 fontSize=9,
                 leading=12,
                 textColor=self.COLOR_TEXT,
@@ -775,7 +823,7 @@ class PDFExporter(CVExporter):
             ),
             "normal": _ps(
                 "normal",
-                fontName="Helvetica",
+                fontName=FONT_REGULAR,
                 fontSize=9,
                 leading=13,
                 textColor=self.COLOR_TEXT,

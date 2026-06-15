@@ -1,0 +1,4 @@
+DejaVu fonts (DejaVuSans, DejaVuSans-Bold) are under the DejaVu Fonts License
+(Bitstream Vera derivative; permissive, redistribution allowed). Bundled so the
+PDF/DOCX export can render non-Latin names (Cyrillic, Latin-extended). See
+https://dejavu-fonts.github.io/License.html

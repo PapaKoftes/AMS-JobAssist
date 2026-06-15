@@ -81,23 +81,30 @@ def detect_level(text: str) -> str:
     if m:
         return m.group(1).upper()
 
-    # 2) Native speaker.
-    if re.search(r"muttersprache|muttersprachlich|native|mother\s*tongue|maternelle?", low):
+    # 2) Native speaker (DE/EN/FR + AR/RU/TR/PL/UK native wording).
+    if re.search(r"muttersprache|muttersprachlich|native|mother\s*tongue|maternelle?|"
+                 r"اللغة الأم|لغة أم|родной|рідна|ana dil|język ojczysty|jezyk ojczysty|"
+                 r"materní", low):
         return "native"
 
     # 3) Negated proficiency ("nicht so gut", "kaum", "kein…") — do NOT claim a
     #    positive level; record basic knowledge at most.
-    if re.search(r"\b(nicht|kein|keine|kaum|schlecht)\b", low):
+    if re.search(r"\b(nicht|kein|keine|kaum|schlecht)\b|لا أتحدث|плохо|kötü|słabo", low):
         return "Grundkenntnisse"
 
     # 4) Positive wording → DESCRIPTIVE level (verbatim intent), never a CEFR band.
-    if re.search(r"fließend|fliessend|fluent|verhandlungssicher", low):
+    #    Includes AR/RU/TR/PL/UK equivalents so a migrant stating level in their own
+    #    language still gets a level on the CV (which AT employers filter on).
+    if re.search(r"fließend|fliessend|fluent|verhandlungssicher|بطلاقة|свободно|вільно|"
+                 r"akıcı|akici|biegle|płynnie|plynnie", low):
         return "Fließend"
-    if re.search(r"sehr\s+gut|excellent|ausgezeichnet|hervorragend", low):
+    if re.search(r"sehr\s+gut|excellent|ausgezeichnet|hervorragend|ممتاز|отлично|çok iyi|"
+                 r"bardzo dobrze", low):
         return "Sehr gut"
-    if re.search(r"\bgut\b|good|advanced|fortgeschritten", low):
+    if re.search(r"\bgut\b|good|advanced|fortgeschritten|جيد|хорошо|добре|\biyi\b|dobrze", low):
         return "Gut"
-    if re.search(r"grundkenntnisse|basic|basis|anfänger|anfaenger|beginner|\bwenig\b", low):
+    if re.search(r"grundkenntnisse|basic|basis|anfänger|anfaenger|beginner|\bwenig\b|"
+                 r"أساسي|مبتدئ|базов|початков|temel|podstaw", low):
         return "Grundkenntnisse"
 
     return ""
