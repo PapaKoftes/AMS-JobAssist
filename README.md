@@ -132,7 +132,10 @@ AMS-JobAssist/
 | Application email generator | ✅ | Ready-to-send German Bewerbungs-E-Mail (subject + body, data prefilled); mailto: open + copy. Closes the "now actually apply" step |
 | Guided step-by-step interview | ✅ | "📋 Lieber Schritt für Schritt?" switches the free conversation to one-question-at-a-time (and back); both modes feed the same CV + progress chips |
 | Path-aware openings | ✅ | The chosen situation (arbeitslos / Umstieg / Studium / Pause) changes the conversation's opening question |
-| AMS job-search bridge | ✅ | "🔎 Passende Jobs beim AMS finden" opens jobs.ams.at pre-filled with the target job (transparency notice; the app itself transmits nothing) |
+| AMS job-search bridge | ✅ | "🔎 Passende Jobs beim AMS finden" opens jobs.ams.at pre-filled with the target job (transparency notice; the app itself transmits nothing). Shows a non-destructive "also search as <canonical Beruf>" hint from a 53-occupation taxonomy |
+| Check a specific job from a URL | ✅ (opt-in) | Off by default. With explicit per-action consent, fetches ONE pasted job-ad URL (sends no personal data), honours robots.txt + SSRF guards, strips to text, runs the fit-check. robots-disallowed pages (incl. jobs.ams.at /public/emps/) fall back to manual paste |
+| Bewerbungs-Check (hire-readiness) | ✅ | Weighted checklist of what Austrian recruiters/systems filter on (contact, German level, licence, photo, quantified experience, job keywords) with a score + prioritised concrete fixes; auto-runs on completion |
+| Editable skills | ✅ | Skill extraction is best-effort (the weakest field, ~0.40 F1) — the completion screen lets the user remove a wrong auto-detected skill or add a missing one; edits persist to the CV (exports + checks) |
 | ATS / job match (optional) | ⚠️ | Rough keyword heuristic. NOTE: most AMS-target roles (trades/care/retail/gastro) are filled by SMEs via email/eJob-Room and read by humans — ATS optimisation is low-value for this clientele; keep as an optional check, not a headline |
 | AI chat coach | ✅ (optional) | Knows your CV; falls back to rule-based if no model |
 | Interview prep generator | ✅ (optional) | Practise questions for the actual job interview |
