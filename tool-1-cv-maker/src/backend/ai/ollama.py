@@ -153,13 +153,8 @@ def polish_with_ollama(raw_text: str, category: str = "experience",
     return cleaned if cleaned else None
 
 
-# Human-readable language names for the AI prompt
-_LANG_NAMES = {
-    "de": "Deutsch", "en": "Englisch", "tr": "Türkisch", "ar": "Arabisch",
-    "bs": "Bosnisch", "hr": "Kroatisch", "sr": "Serbisch", "pl": "Polnisch",
-    "uk": "Ukrainisch", "ru": "Russisch", "ro": "Rumänisch", "sk": "Slowakisch",
-    "cs": "Tschechisch", "hu": "Ungarisch", "it": "Italienisch", "fr": "Französisch",
-}
+# Language names + category context live in ai.lang_labels (single source of truth).
+from ai.lang_labels import LANG_NAMES as _LANG_NAMES, CATEGORY_CONTEXT as _CATEGORY_CONTEXT
 
 
 def _build_prompt(raw_text: str, category: str, language: str = "de") -> str:
@@ -169,15 +164,7 @@ def _build_prompt(raw_text: str, category: str, language: str = "de") -> str:
     For German input: keep original and improve phrasing.
     For all other languages: understand the content and rewrite in German.
     """
-    category_context = {
-        "experience": "Berufserfahrung oder Arbeitstätigkeit",
-        "skills":     "Fähigkeiten und Kenntnisse",
-        "background": "Ausbildung und Hintergrund",
-        "motivation": "Motivation und Karriereziele",
-        "training":   "Weiterbildung und Kurse",
-        "projects":   "Projekte und Leistungen",
-        "identity":   "Persönliche Angaben",
-    }.get(category, "Lebenslaufinformation")
+    category_context = _CATEGORY_CONTEXT.get(category, "Lebenslaufinformation")
 
     lang_name = _LANG_NAMES.get(language, language.upper())
 

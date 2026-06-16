@@ -59,6 +59,15 @@ def _is_loopback(host) -> bool:
     return False
 
 
+# Public alias — the single source of truth for "is this host local?", used by
+# both tools' config + request-gate checks (previously hand-rolled in ~6 places
+# with drift, e.g. some copies omitted Starlette's "testclient" peer name).
+def is_loopback_host(host) -> bool:
+    """True if `host` is loopback/localhost (incl. Starlette's TestClient peer)."""
+    h = "" if host is None else str(host).strip().lower()
+    return h == "testclient" or _is_loopback(h)
+
+
 class NetworkBlocker:
     """Enforces offline mode — external network blocked, loopback allowed."""
 

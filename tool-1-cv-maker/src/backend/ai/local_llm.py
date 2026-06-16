@@ -323,21 +323,8 @@ def translate_to_german(text: str) -> Optional[str]:
 
 # ── Task-specific helpers ────────────────────────────────────────────────────
 
-_LANG_NAMES = {
-    "de": "Deutsch", "en": "Englisch", "tr": "Türkisch", "ar": "Arabisch",
-    "bs": "Bosnisch", "hr": "Kroatisch", "sr": "Serbisch", "pl": "Polnisch",
-    "uk": "Ukrainisch", "ru": "Russisch", "ro": "Rumänisch", "sk": "Slowakisch",
-}
-
-_CATEGORY_CONTEXT = {
-    "experience": "Berufserfahrung",
-    "skills":     "Fähigkeiten und Kenntnisse",
-    "background": "Ausbildung / Hintergrund",
-    "motivation": "Motivation und Berufsziel",
-    "training":   "Weiterbildung",
-    "projects":   "Projekte",
-    "identity":   "Persönliche Angaben",
-}
+# Language names + category context live in ai.lang_labels (single source of truth).
+from ai.lang_labels import LANG_NAMES as _LANG_NAMES, CATEGORY_CONTEXT as _CATEGORY_CONTEXT  # noqa: E402
 
 
 def polish_answer(raw_text: str, category: str = "experience",

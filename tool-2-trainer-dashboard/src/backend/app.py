@@ -79,11 +79,10 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # machine) and refuses remote callers. This removes the "default-open to
         # the LAN" posture for a tool holding aggregated participant PII.
         if not AUTH_ENABLED:
-            client = (request.client.host if request.client else "") or ""
-            # "testclient" is Starlette's in-process TestClient host — it can only
-            # appear for same-process calls, never a real remote socket, so it is
-            # safe to treat as local.
-            if client.startswith("127.") or client in ("::1", "localhost", "", "testclient"):
+            # is_loopback_host (shared, single source) also treats Starlette's
+            # in-process "testclient" peer as local — it can never be a real socket.
+            from shared.utils.network_block import is_loopback_host
+            if is_loopback_host(request.client.host if request.client else ""):
                 return await call_next(request)
             return JSONResponse(
                 status_code=403,

@@ -791,8 +791,8 @@ def _require_local_or_key(request: Request) -> None:
     X-API-Key. A remote caller without the key is refused. Kept self-contained
     here to avoid a circular import from app.py.
     """
-    host = (request.client.host if request.client else "") or ""
-    if host.startswith("127.") or host in ("::1", "localhost", "", "testclient"):
+    from shared.utils.network_block import is_loopback_host  # canonical, single source
+    if is_loopback_host(request.client.host if request.client else ""):
         return
     import secrets as _secrets
     try:

@@ -1540,8 +1540,8 @@ def _import_single_cv(db: Session, cohort_id: str, cv_dict: dict,
 # =====================================================
 
 def _is_loopback_client(request: Request) -> bool:
-    host = (request.client.host if request.client else "") or ""
-    return host.startswith("127.") or host in ("::1", "localhost", "")
+    from shared.utils.network_block import is_loopback_host  # canonical, single source
+    return is_loopback_host(request.client.host if request.client else "")
 
 
 @router.get("/admin/backup", tags=["Admin"])
