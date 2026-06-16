@@ -124,12 +124,6 @@ def _get_model_config() -> dict:
     return MODEL_TIERS[_get_active_tier()]
 
 
-# Legacy aliases for backward compatibility
-_MODEL_NAME = MODEL_TIERS[DEFAULT_TIER]["filename"]
-_MODEL_PATH = _MODEL_DIR / _MODEL_NAME
-MODEL_URL = MODEL_TIERS[DEFAULT_TIER]["url"]
-MODEL_SHA256 = MODEL_TIERS[DEFAULT_TIER]["sha256"]
-
 _llm = None          # cached Llama instance
 _llm_ready = None    # True / False / None (not yet checked)
 _active_tier = None  # which tier is currently loaded
@@ -926,27 +920,6 @@ def _sha256_of(path: Path, chunk_size: int = 1024 * 1024) -> str:
         for chunk in iter(lambda: f.read(chunk_size), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def verify_model_hash() -> bool:
-    """
-    Verify the on-disk model matches the pinned SHA-256. Returns True if OK
-    or if the pin is the placeholder (allows first-run setup without bricking
-    the install).
-    """
-    if not _MODEL_PATH.exists():
-        return False
-    if not MODEL_SHA256:
-        logger.warning("MODEL_SHA256 is empty — skipping verification.")
-        return True
-    actual = _sha256_of(_MODEL_PATH)
-    ok = actual.lower() == MODEL_SHA256.lower()
-    if not ok:
-        logger.error(
-            "Model SHA-256 mismatch: expected %s, got %s. Refusing to load.",
-            MODEL_SHA256, actual,
-        )
-    return ok
 
 
 def download_model(progress_callback=None, tier: str = None) -> bool:

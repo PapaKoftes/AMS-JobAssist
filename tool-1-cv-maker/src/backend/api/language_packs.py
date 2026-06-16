@@ -211,23 +211,3 @@ async def check_language_available(language_code: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# === Integration Helper ===
-
-def init_language_packs(app):
-    """
-    Initialize language packs on app startup.
-
-    Args:
-        app: FastAPI application instance
-    """
-    try:
-        manager = get_language_pack_manager()
-        stats = manager.get_language_stats()
-        logger.info(
-            f"✓ Language pack manager initialized: "
-            f"{stats['core_languages']} core languages, "
-            f"{stats['available_languages']} total available, "
-            f"{stats['core_size_mb']:.1f}MB core size"
-        )
-    except Exception as e:
-        logger.error(f"Error initializing language packs: {e}")
