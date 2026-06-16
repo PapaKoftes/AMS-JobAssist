@@ -28,7 +28,7 @@ INCLUDE = [
     "launcher.py",
     "AMS-Start.bat",
     "requirements.txt",
-    "FOR_MARKO.md",
+    "HANDOFF_MARKO.md",
     "README.md",
 ]
 
