@@ -1,6 +1,11 @@
 # Screenshot capture checklist
 
-Run the tool yourself (see [DEMO_GUIDE.md](../../DEMO_GUIDE.md)) and capture these screenshots so the documentation has real-app evidence instead of placeholders.
+> **Note:** `02_welcome.png`, `03_interview.png`, and `05_completion.png` are
+> already captured (real screenshots of the running app with the AI model active)
+> and are embedded in `README.md` / `HANDOFF_MARKO.md`. The rest of the list below
+> is **optional polish** — capture them if you want fuller visual coverage.
+
+Run the tool yourself (see [DEMO_GUIDE.md](../../DEMO_GUIDE.md)) and capture these screenshots for real-app evidence.
 
 Save them in **this folder** (`docs/screenshots/`) with the exact filenames below. They are referenced from `DEMO_GUIDE.md`, `README.md`, and `docs/AMS_INSTRUCTOR_GUIDE.md`.
 

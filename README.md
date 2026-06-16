@@ -8,12 +8,31 @@
 Built for AMS Wien classroom use — currently a polished demonstrator awaiting pilot validation. Runs entirely on the trainer's laptop. No cloud, no data leaves the device.
 
 ![Status](https://img.shields.io/badge/Status-Demo--ready-brightgreen)
-![Tests](https://img.shields.io/badge/Tests-856%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-922%20passing-brightgreen)
 ![Build](https://img.shields.io/badge/Windows%20.exe-3%20artifacts-blue)
 ![Languages](https://img.shields.io/badge/UI-12%20languages-blue)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Privacy](https://img.shields.io/badge/Privacy-DSGVO%20compliant-brightgreen)
 ![Offline](https://img.shields.io/badge/Network-100%25%20offline-orange)
+
+---
+
+## 🚀 Quick install (5 minutes — no Python, no setup)
+
+For a non-technical reviewer or trainer who just wants to **run it**:
+
+1. **Download** the `AMS-JobAssist` ZIP you were sent (~2.2 GB) and **unzip it** anywhere — e.g. your Desktop. You'll get a folder with a few files in it.
+2. Open the folder and **double-click `AMS-JobAssist-Launcher.exe`**.
+3. Windows may show a blue **"Windows protected your PC"** box (the app isn't code-signed yet). Click **More info → Run anyway** — this is normal for a tool that isn't from the Microsoft Store.
+4. A black window opens, then your **web browser opens automatically** at **http://localhost:8000**. (If it doesn't, type that address yourself. The trainer dashboard is **http://localhost:8001**.)
+
+> 💡 **First launch:** the offline AI model takes **30–60 seconds** to load. When the badge at the top-right shows **"KI aktiv (Qwen2.5-3B)"** ✅ you're ready to go. Keep the black window open while you use the app — closing it stops the app.
+
+<p align="center">
+  <img src="docs/screenshots/02_welcome.png" alt="Welcome screen — 12-language picker and the five situation paths" width="100%">
+</p>
+
+➡️ **No ZIP, just the source?** See [other ways to run it](#other-ways-to-run-it) — one-click `START.bat`, run from Python, or build the installer. **Reviewing it for AMS / Marko?** Start with **[HANDOFF_MARKO.md](HANDOFF_MARKO.md)**.
 
 ---
 
@@ -27,7 +46,25 @@ A participant who has never written a CV in their life sits down for 15 minutes,
 
 ---
 
-## Quick start
+## What it looks like
+
+**The interview** — the participant talks or types in any language. The CV builds up live on the left, and every answer is shown *raw → polished* so they can see the improvement:
+
+<p align="center">
+  <img src="docs/screenshots/03_interview.png" alt="Interview screen — the live CV building up while the assistant asks follow-up questions" width="100%">
+</p>
+
+**The finished CV** — a plain-language quality summary, the **Bewerbungs-Check** (hire-readiness checklist with concrete fixes), editable skills, and one-click PDF / DOCX export:
+
+<p align="center">
+  <img src="docs/screenshots/05_completion.png" alt="Completion screen — quality summary, Bewerbungs-Check, editable skills, download buttons" width="100%">
+</p>
+
+> Real screenshots of the running app with the AI model active (`KI aktiv`), captured by driving the actual interview flow end-to-end. More captures: [docs/screenshots/](docs/screenshots/).
+
+---
+
+## Other ways to run it
 
 ### Double-click `START.bat`
 
@@ -260,7 +297,7 @@ Honest about what this is and isn't:
 - **Tool 1 (CV Maker):** ✅ Production-ready
 - **Tool 2 (Trainer Dashboard):** ✅ All spec features wired with audit/auth; import is now lossless (languages + target job preserved)
 - **Windows .exe build:** ✅ Reproducible — 3 artifacts from `build_all.bat` (now also bundles `data/fonts`)
-- **Tests:** ✅ 922 (852 Tool 1 + 57 Tool 2 + 13 packaging), 0 failures
+- **Tests:** ✅ 922 passing (852 Tool 1 + 57 Tool 2 + 13 packaging), 0 failures, 1 skipped
 - **Security:** ✅ Audited & remediated — SSRF-hardened opt-in fetch, PDF injection-escaped, CV endpoints loopback-gated, inference serialized, input capped
 - **Accessibility:** ✅ Read-aloud, focus management, AA contrast, ARIA states, RTL — automated WCAG scan + screen-reader audit still pending
 - **AMS trainer sign-off:** ⏳ Pending — see [TRAINER_DECISIONS_CHECKLIST.md](docs/TRAINER_DECISIONS_CHECKLIST.md)

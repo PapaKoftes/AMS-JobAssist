@@ -31,6 +31,24 @@ you'll see a small status:
 
 ---
 
+## What you'll see
+
+**The start screen** — pick a language, choose the situation, type a first name,
+tick the "stays on this computer" box, and start:
+
+<p align="center">
+  <img src="docs/screenshots/02_welcome.png" alt="Start screen" width="100%">
+</p>
+
+**The end** — a quality summary, the **Bewerbungs-Check** (hire-readiness checklist
+with concrete fixes), editable skills, and one-click PDF download:
+
+<p align="center">
+  <img src="docs/screenshots/05_completion.png" alt="Completion screen with Bewerbungs-Check" width="100%">
+</p>
+
+---
+
 ## What I'd love you to try
 
 Run through it **as if you were a participant** — ideally a tricky one, because
