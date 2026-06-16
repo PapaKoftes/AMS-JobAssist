@@ -1,0 +1,345 @@
+{
+  "tag": "qwen3b_translatefirst",
+  "n_cases": 20,
+  "elapsed_s": 2295.7,
+  "overall": {
+    "precision": 0.812,
+    "recall": 0.832,
+    "macro_f1": 0.808,
+    "fields": 9
+  },
+  "per_field": {
+    "name": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "n": 20
+    },
+    "city": {
+      "precision": 0.895,
+      "recall": 0.895,
+      "f1": 0.895,
+      "n": 19
+    },
+    "phone": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "n": 18
+    },
+    "email": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "n": 20
+    },
+    "target_job": {
+      "precision": 0.9,
+      "recall": 0.9,
+      "f1": 0.9,
+      "n": 20
+    },
+    "experiences": {
+      "precision": 0.8,
+      "recall": 0.717,
+      "f1": 0.747,
+      "n": 20
+    },
+    "education": {
+      "precision": 0.8,
+      "recall": 0.75,
+      "f1": 0.767,
+      "n": 10
+    },
+    "skills": {
+      "precision": 0.332,
+      "recall": 0.524,
+      "f1": 0.359,
+      "n": 14
+    },
+    "languages": {
+      "precision": 0.578,
+      "recall": 0.7,
+      "f1": 0.603,
+      "n": 15
+    }
+  },
+  "per_case": [
+    {
+      "id": "de-retail-01",
+      "seconds": 19.3,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "skills": 0.0,
+        "languages": 0.83
+      }
+    },
+    {
+      "id": "de-care-02",
+      "seconds": 150.6,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 0.0,
+        "languages": 0.75
+      }
+    },
+    {
+      "id": "de-trade-03",
+      "seconds": 156.1,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "skills": 1.0
+      }
+    },
+    {
+      "id": "de-gastro-04",
+      "seconds": 141.5,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 0.8,
+        "languages": 0.86
+      }
+    },
+    {
+      "id": "tr-construction-05",
+      "seconds": 494.4,
+      "f1": {
+        "name": 1.0,
+        "city": 0.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 0.0,
+        "experiences": 0.0,
+        "languages": 0.0
+      }
+    },
+    {
+      "id": "en-office-06",
+      "seconds": 54.6,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "skills": 0.6,
+        "languages": 0.73
+      }
+    },
+    {
+      "id": "de-cleaning-07",
+      "seconds": 38.0,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "languages": 0.67
+      }
+    },
+    {
+      "id": "de-driver-08",
+      "seconds": 33.5,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 0.0,
+        "education": 0.0,
+        "skills": 0.4,
+        "languages": 0.33
+      }
+    },
+    {
+      "id": "de-electric-09",
+      "seconds": 30.0,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 0.67,
+        "education": 1.0,
+        "skills": 0.86
+      }
+    },
+    {
+      "id": "de-it-10",
+      "seconds": 27.3,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "skills": 0.0,
+        "languages": 1.0
+      }
+    },
+    {
+      "id": "de-hair-11",
+      "seconds": 33.4,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "skills": 0.5
+      }
+    },
+    {
+      "id": "ar-nurse-12",
+      "seconds": 97.6,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 0.8,
+        "languages": 0.67
+      }
+    },
+    {
+      "id": "de-garden-13",
+      "seconds": 47.1,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "skills": 0.0,
+        "languages": 0.8
+      }
+    },
+    {
+      "id": "de-cook-14",
+      "seconds": 86.0,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "skills": 0.5,
+        "languages": 0.4
+      }
+    },
+    {
+      "id": "pl-warehouse-15",
+      "seconds": 318.5,
+      "f1": {
+        "name": 1.0,
+        "city": 0.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 0.0,
+        "experiences": 0.0,
+        "skills": 0.0,
+        "languages": 0.0
+      }
+    },
+    {
+      "id": "de-sales-16",
+      "seconds": 83.2,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "skills": 0.8
+      }
+    },
+    {
+      "id": "de-short-17",
+      "seconds": 35.3,
+      "f1": {
+        "name": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0
+      }
+    },
+    {
+      "id": "ru-office-18",
+      "seconds": 281.0,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 0.67,
+        "skills": 0.36,
+        "languages": 0.62
+      }
+    },
+    {
+      "id": "de-care2-19",
+      "seconds": 118.0,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 0.0,
+        "education": 0.67,
+        "skills": 0.0,
+        "languages": 0.4
+      }
+    },
+    {
+      "id": "en-tech-20",
+      "seconds": 50.4,
+      "f1": {
+        "name": 1.0,
+        "city": 1.0,
+        "phone": 1.0,
+        "email": 1.0,
+        "target_job": 1.0,
+        "experiences": 1.0,
+        "education": 1.0,
+        "skills": 0.0,
+        "languages": 1.0
+      }
+    }
+  ]
+}
