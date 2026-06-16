@@ -1,8 +1,26 @@
 # AMS JobAssist — Progress & Milestones
 
-**Last Updated**: 2026-05-12
-**Current Phase**: AMS pilot prep (Phase 6)
-**Test Suite**: 778 tests passing (730 Tool 1 + 48 Tool 2)
+**Last Updated**: 2026-06-16
+**Current Phase**: Hardening & verification (audit-driven)
+**Test Suite**: 922 passing, 0 failures (852 Tool 1 + 57 Tool 2 + 13 packaging)
+
+---
+
+## Phase 7 — Audit-driven hardening & verification ✅ (2026-06)
+
+Two adversarial audit passes (accuracy, security, robustness, accessibility,
+multilingual, cross-tool) and full remediation. Each item unit-tested + committed.
+
+| Area | What changed | Status |
+|------|--------------|--------|
+| Accuracy | Stopped fabricating CEFR levels (H1); fixed merge resume-brick + data-loss (H3); licence/quantified regex false-positives (M1/M2); regex junk-skill filter | ✅ |
+| Hiring | Bewerbungs-Check (weighted hire-readiness + concrete fixes); editable skills; occupation taxonomy 25→53 + Programmierer→CNC misfire fixed + fuzzy match | ✅ |
+| Jobs | Opt-in single-URL job fit-check (robots + SSRF guarded); AMS deep-link occupation suggestion | ✅ |
+| Multilingual | Translate-first for non-German input; bundled Unicode PDF font (Cyrillic/Latin-ext); native-language CEFR wording; RTL logical CSS | ✅ (Arabic font + 10-lang UI strings pending) |
+| Security | SSRF fix (IP-pinning + redirect re-validation); PDF XML-escaping; loopback-gate on all CV PII endpoints; serialized LLM inference; dump input cap | ✅ |
+| Accessibility | Offline read-aloud; focus management; AA contrast; aria-pressed + html lang | ✅ |
+| Cross-tool | Tool 2 import no longer drops languages/target_job; ready_for_export fails closed | ✅ |
+| Verification | Module-level E2E (CV/exports/cover-letter/AMS) + Tool 2 round-trip live-verified; full regression green | ✅ |
 
 ---
 
