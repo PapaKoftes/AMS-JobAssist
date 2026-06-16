@@ -218,8 +218,9 @@ cd .. && python -m pytest packaging/ -q
 
 | Document | Audience | Purpose |
 |---|---|---|
-| [FOR_MARKO.md](FOR_MARKO.md) | External reviewer | 5-min install + what to try + feedback questions |
+| [HANDOFF_MARKO.md](HANDOFF_MARKO.md) | External reviewer (Marko) | 5-min standalone install + what to try + feedback questions |
 | [DEMO_GUIDE.md](DEMO_GUIDE.md) | You, running the demo | Step-by-step script for showing the tool |
+| [PHILOSOPHY.md](PHILOSOPHY.md) | Anyone | Why it's built this way (offline, rules-first, trainer-centric) |
 | [PITCH.md](PITCH.md) | AMS leadership | One-page case for adoption |
 | [docs/AMS_INSTRUCTOR_GUIDE.md](docs/AMS_INSTRUCTOR_GUIDE.md) | AMS trainers | What it does for them, plain-language |
 | [docs/ADMINISTRATOR_GUIDE.md](docs/ADMINISTRATOR_GUIDE.md) | AMS IT | Install, configure, data paths |

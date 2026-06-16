@@ -66,3 +66,24 @@ participants. That's the heart of this — so:
 4. **Would you use this in a real session?** What would have to be true for that?
 
 No rush — have a play with it first, then we can talk.
+
+---
+
+## Optional: quick notes template
+
+If it helps, jot a line per test case (copy the block as many times as you like).
+Rating per field: ✅ ok · ⚠️ half-right · ❌ wrong/missing.
+
+```
+Case __
+- Input language:        (de / tr / bks / ar / ru / …)
+- What you typed (gist):
+- Name / contact:        ✅ ⚠️ ❌
+- Target job:            ✅ ⚠️ ❌
+- Experience:            ✅ ⚠️ ❌
+- Skills:                ✅ ⚠️ ❌
+- German quality of CV:  ✅ ⚠️ ❌
+- Would you send it?     yes / no — why:
+- Anything confusing / broken:
+```
+
