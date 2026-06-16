@@ -801,7 +801,8 @@ def _require_local_or_key(request: Request) -> None:
         API_KEY = ""
     supplied = request.headers.get("X-API-Key", "")
     if not API_KEY or not _secrets.compare_digest(supplied, API_KEY):
-        logger.warning(f"admin endpoint refused: non-loopback client={host} without valid key")
+        _client = request.client.host if request.client else "unknown"
+        logger.warning(f"admin endpoint refused: non-loopback client={_client} without valid key")
         raise HTTPException(status_code=403,
                             detail="Restricted to the local machine or an authenticated request.")
 
