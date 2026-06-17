@@ -83,11 +83,14 @@ MODEL_TIERS: Dict[str, dict] = {
     "full": {
         "name": "Qwen2.5-3B-Instruct Q4_K_M",
         "filename": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        # Pinned to the GitHub Release asset (immutable). HuggingFace's
+        # /resolve/main/ URL re-quantizes the GGUF in place, which changes the
+        # bytes and breaks the SHA-256 verification below; the Release asset is
+        # the exact file this hash was computed from.
         "url": (
-            "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF"
-            "/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
+            "https://github.com/PapaKoftes/AMS-JobAssist/releases/download/"
+            "v1.0.0/qwen2.5-3b-instruct-q4_k_m.gguf"
         ),
-        # Pinned: this is the SHIPPED default model (bundled in the installer).
         "sha256": "5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6",
         "n_ctx": 4096,
         "size_mb": 2000,

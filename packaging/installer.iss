@@ -169,8 +169,11 @@ begin
   if (CurPageID = wpReady) and WizardIsTaskSelected('downloadmodel') then
   begin
     DownloadPage.Clear;
+    // Pinned to the GitHub Release asset (immutable) rather than HuggingFace's
+    // mutable /resolve/main/ URL — HF re-quantizes in place, which breaks the
+    // SHA-256 verification. This file's hash matches the pin below exactly.
     DownloadPage.Add(
-      'https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf',
+      'https://github.com/PapaKoftes/AMS-JobAssist/releases/download/v1.0.0/qwen2.5-3b-instruct-q4_k_m.gguf',
       'qwen2.5-3b-instruct-q4_k_m.gguf',
       '5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6');
     DownloadPage.Show;
