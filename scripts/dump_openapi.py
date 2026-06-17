@@ -24,6 +24,14 @@ import os
 import sys
 from pathlib import Path
 
+# Windows consoles default to cp1252 and raise UnicodeEncodeError on the non-ASCII
+# characters printed below (e.g. the "→" arrow), which crashed the script after it
+# had already written its output files. Force UTF-8 so it runs everywhere.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 REPO = Path(__file__).resolve().parents[1]
 DOCS = REPO / "docs"
 DOCS.mkdir(exist_ok=True)

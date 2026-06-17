@@ -4,7 +4,7 @@
 > authoritative route list; the prose in `API_DOCUMENTATION.md` is
 > a guide that can drift.
 
-## tool1 (45 endpoints)
+## tool1 (49 endpoints)
 
 | Method | Path | Summary |
 |---|---|---|
@@ -26,6 +26,8 @@
 | GET | `/api/ai/model-tiers` | Ai Model Tiers |
 | POST | `/api/ai/profile-summary` | Ai Profile Summary |
 | POST | `/api/ats/score` | Ats Score |
+| POST | `/api/cv/check` | Cv Check |
+| PUT | `/api/cv/skills` | Update Cv Skills |
 | GET | `/api/cv/{session_id}` | Get Cv Metadata |
 | DELETE | `/api/cv/{session_id}/erase` | Erase My Data |
 | GET | `/api/cv/{session_id}/my-data` | Download My Data |
@@ -47,6 +49,8 @@
 | POST | `/api/interview/start` | Start Interview |
 | GET | `/api/interview/status/{session_id}` | Get Interview Status |
 | POST | `/api/interview/submit-answer` | Submit Answer |
+| GET | `/api/jobs/ams-search` | Jobs Ams Search |
+| POST | `/api/jobs/fetch-and-match` | Jobs Fetch And Match |
 | GET | `/api/language-packs/available` | Get Available Languages |
 | GET | `/api/language-packs/check/{language_code}` | Check Language Available |
 | GET | `/api/language-packs/core` | Get Core Languages |
@@ -54,13 +58,14 @@
 | GET | `/api/language-packs/stats` | Get Language Stats |
 | GET | `/health` | Health Check |
 
-## tool2 (14 endpoints)
+## tool2 (15 endpoints)
 
 | Method | Path | Summary |
 |---|---|---|
 | GET | `/api/admin/backup` | Admin Backup |
 | POST | `/api/bulk-export` | Bulk Export |
 | GET | `/api/cohorts/{cohort_id}/metrics` | Get Cohort Metrics |
+| GET | `/api/cohorts/{cohort_id}/skills` | Get Cohort Skills |
 | GET | `/api/export-all` | Export All Participants |
 | POST | `/api/import-cvs` | Import Cvs |
 | GET | `/api/participants` | List Participants |

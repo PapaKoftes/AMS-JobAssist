@@ -597,6 +597,47 @@
         }
       }
     },
+    "/api/cohorts/{cohort_id}/skills": {
+      "get": {
+        "tags": [
+          "Trainer Dashboard"
+        ],
+        "summary": "Get Cohort Skills",
+        "description": "Aggregate the canonical (AMS-normalized) skills across a cohort.\n\nCounts how many participants have each normalized skill (from their latest CV),\nso a trainer can see \"12 of 20 → Kassenführung\" for targeted course planning.\nUses the canonical labels Tool 1 wrote into the CV (normalized_skills); older\nCVs imported before normalization simply contribute nothing.",
+        "operationId": "get_cohort_skills_api_cohorts__cohort_id__skills_get",
+        "parameters": [
+          {
+            "name": "cohort_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cohort Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/bulk-export": {
       "post": {
         "tags": [

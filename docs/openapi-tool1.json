@@ -1120,6 +1120,86 @@
         }
       }
     },
+    "/api/cv/skills": {
+      "put": {
+        "tags": [
+          "CV"
+        ],
+        "summary": "Update Cv Skills",
+        "description": "Replace the CV's skills with the user's curated list. Local-only (mutates\nstored PII by session_id).\n\nSkill extraction is best-effort (and the weakest field), so the participant\nmust be able to remove a wrong/auto-extracted skill or add a missing one.\nEdits the STORED CVData, so every consumer (PDF/DOCX/Europass export,\nBewerbungs-Check, job-match) immediately reflects the curated list.",
+        "operationId": "update_cv_skills_api_cv_skills_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillsUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cv/check": {
+      "post": {
+        "tags": [
+          "ATS"
+        ],
+        "summary": "Cv Check",
+        "description": "Bewerbungs-Check: weighted hire-readiness analysis of the finished CV.\n\nGoes beyond the keyword ATS score — checks the things Austrian recruiters and\napplication systems actually filter on (German level, contact, licence, photo,\nquantified experience, job keywords) and returns concrete, prioritised fixes.",
+        "operationId": "cv_check_api_cv_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CVCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/export/europass": {
       "post": {
         "tags": [
@@ -1361,6 +1441,58 @@
         }
       }
     },
+    "/api/jobs/ams-search": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Jobs Ams Search",
+        "description": "Build a pre-filled AMS job-board (jobs.ams.at) search link from the user's\ntarget job + location.\n\nOFFLINE & PRIVACY-SAFE: this endpoint makes NO network call and transmits\nNOTHING — it only assembles a URL string. The participant's own browser opens\nthat link and performs the search, exactly as if they typed it on ams.at. No\nname, contact, or CV leaves the machine; only the (user-chosen) search term is\nin the URL the user themselves opens. A transparency notice is shown in the UI.",
+        "operationId": "jobs_ams_search_api_jobs_ams_search_get",
+        "parameters": [
+          {
+            "name": "target_job",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Target Job"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Location"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ai/job-match": {
       "post": {
         "tags": [
@@ -1374,6 +1506,46 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/JobMatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/fetch-and-match": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Jobs Fetch And Match",
+        "description": "OPT-IN: fetch ONE job-ad URL the user pasted and run the fit-check against it.\n\nThis is the only participant-facing outbound request in Tool 1 and runs ONLY\non explicit per-action consent. It sends NO CV/personal data — it GETs exactly\nthe one URL, honours the site's robots.txt, makes a single request with a short\ntimeout + size cap, and identifies itself. robots-disallowed pages (incl.\njobs.ams.at /public/emps/) are declined; the user can paste the text manually.",
+        "operationId": "jobs_fetch_and_match_api_jobs_fetch_and_match_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobUrlMatchRequest"
               }
             }
           },
@@ -1712,6 +1884,24 @@
         "title": "AvailableLanguages",
         "description": "List of available languages."
       },
+      "CVCheckRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "job_description": {
+            "type": "string",
+            "title": "Job Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "CVCheckRequest"
+      },
       "ChatRequest": {
         "properties": {
           "session_id": {
@@ -1978,6 +2168,29 @@
         ],
         "title": "JobMatchRequest"
       },
+      "JobUrlMatchRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "consent": {
+            "type": "boolean",
+            "title": "Consent",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "url"
+        ],
+        "title": "JobUrlMatchRequest"
+      },
       "LanguageInfo": {
         "properties": {
           "code": {
@@ -2144,6 +2357,27 @@
         ],
         "title": "ResumeInterviewRequest",
         "description": "Request to resume an interview."
+      },
+      "SkillsUpdateRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skills"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "skills"
+        ],
+        "title": "SkillsUpdateRequest"
       },
       "SkipQuestionRequest": {
         "properties": {

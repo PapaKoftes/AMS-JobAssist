@@ -155,12 +155,28 @@ def normalise(raw: dict[str, Any]) -> dict[str, Any]:
 # rebuilds a faithful CVData-shaped dict so bulk PDF/DOCX export renders the
 # full CV.
 
-def _sec(category: str, entry: dict) -> dict:
+def _sec(category: str, entry: dict, idx: int = 0) -> dict:
+    # Carry the structured experience/education fields that the Tool 1 exporters
+    # render (title, employer, period, bullets). Dropping them here silently lost
+    # every job title, employer, date range, and achievement bullet from bulk
+    # PDF/DOCX exports of canonical CVs. Education entries name these
+    # degree/institution in the canonical schema, so fold those into title/employer.
+    title = entry.get("title", "") or entry.get("degree", "") or ""
+    employer = entry.get("employer", "") or entry.get("institution", "") or ""
+    # Give every section a UNIQUE question_id. Tool 1's exporter groups
+    # experience/education blocks by question_id; canonical entries have none, so
+    # without this every entry collapsed onto the empty-string key and only the
+    # last job/education survived in the rendered PDF/DOCX.
     return {
         "category": category,
+        "question_id": f"{category}.{idx}",
         "german": entry.get("german", "") or "",
         "english": entry.get("english", "") or "",
         "native": entry.get("native", "") or "",
+        "title": title,
+        "employer": employer,
+        "period": entry.get("period") or None,
+        "bullets": entry.get("bullets", []) or [],
         "detected_skills": entry.get("detected_skills", []) or [],
         "quality_score": entry.get("quality_score", 0.0) or 0.0,
     }
@@ -174,25 +190,25 @@ def canonical_to_cvdata_dict(canon: dict) -> dict:
 
     basics = canon.get("basics") or {}
 
-    experience = [_sec("experience", e) for e in (canon.get("experience") or []) if not e.get("hidden")]
+    experience = [_sec("experience", e, i) for i, e in enumerate(canon.get("experience") or []) if not e.get("hidden")]
     # Canonical folds background + training into education; route them to background.
-    background = [_sec("background", e) for e in (canon.get("education") or []) if not e.get("hidden")]
+    background = [_sec("background", e, i) for i, e in enumerate(canon.get("education") or []) if not e.get("hidden")]
     # Canonical custom_sections carry a heading ("Motivation"/"Projekte"/…). Split
     # them back into the right CVData buckets instead of collapsing everything into
     # motivation (which lost the projects/training distinction on the trainer side).
     motivation: list[dict] = []
     projects: list[dict] = []
     training: list[dict] = []
-    for e in (canon.get("custom_sections") or []):
+    for i, e in enumerate(canon.get("custom_sections") or []):
         if e.get("hidden"):
             continue
         heading = (e.get("heading") or "").lower()
         if "projekt" in heading or "project" in heading:
-            projects.append(_sec("projects", e))
+            projects.append(_sec("projects", e, i))
         elif "weiterbild" in heading or "training" in heading or "kurs" in heading or "course" in heading:
-            training.append(_sec("training", e))
+            training.append(_sec("training", e, i))
         else:
-            motivation.append(_sec("motivation", e))
+            motivation.append(_sec("motivation", e, i))
 
     # Skills: canonical SkillGroups, else synthesise one section from all_skills.
     skills: list[dict] = []

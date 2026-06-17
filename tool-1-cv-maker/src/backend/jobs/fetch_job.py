@@ -166,7 +166,11 @@ def _split(url: str):
     p = urllib.parse.urlparse(url)
     if p.scheme not in ("http", "https") or not p.netloc or not p.hostname:
         raise FetchError("invalid_url")
-    port = p.port or (443 if p.scheme == "https" else 80)
+    try:
+        explicit_port = p.port  # raises ValueError on a malformed/out-of-range port
+    except ValueError as exc:
+        raise FetchError("invalid_url") from exc
+    port = explicit_port or (443 if p.scheme == "https" else 80)
     path = p.path or "/"
     if p.query:
         path += "?" + p.query

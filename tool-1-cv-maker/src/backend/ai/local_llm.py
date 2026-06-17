@@ -976,6 +976,11 @@ def download_model(progress_callback=None, tier: str = None) -> bool:
         if have:
             req.add_header("Range", f"bytes={have}-")
         with urllib.request.urlopen(req, timeout=60) as resp:
+            # If we asked to resume (Range) but the server ignored it and sent the
+            # full body (200, not 206 Partial Content), appending would corrupt the
+            # .part file. Restart from byte 0 in that case.
+            if have and getattr(resp, "status", None) != 206:
+                have = 0
             total = int(resp.headers.get("Content-Length", 0)) + have
             _set_download_state(downloaded=have, total=total)
             mode = "ab" if have else "wb"

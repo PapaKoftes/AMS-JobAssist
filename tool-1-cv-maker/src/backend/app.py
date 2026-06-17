@@ -1037,6 +1037,7 @@ def ai_chat(body: ChatRequest, request: Request):
     Knows the user's CV if session_id is provided.
     Falls back to a helpful message if model not available.
     """
+    _require_local(request)
     try:
         from ai.local_llm import coach_chat, is_ready
     except ImportError:
@@ -1208,6 +1209,7 @@ def ai_dump_extract(body: DumpExtractRequest, request: Request):
     captured and what's still missing — so the assistant can ask only about the
     gaps. Rules-first with AI assist; never fails the request.
     """
+    _require_local(request)
     from ai.local_llm import extract_cv_fields
     db: DatabaseManager = request.app.state.db_manager
     sid = body.session_id
@@ -1355,6 +1357,7 @@ async def ai_dump_snapshot(session_id: int, request: Request):
     can pick up at the right gap, instead of dropping the participant into the
     legacy per-question flow with an empty CV.
     """
+    _require_local(request)
     import re as _re
     db: DatabaseManager = request.app.state.db_manager
     try:
@@ -1435,6 +1438,7 @@ def ai_interview_prep(body: InterviewPrepRequest, request: Request):
     Tries local LLM first, then Ollama, then falls back to a path-aware
     rule-based question bank.  Never returns 503 — always gives useful content.
     """
+    _require_local(request)
     cv_data = None
     try:
         cv_storage: CVStorage = request.app.state.cv_storage
@@ -1874,6 +1878,7 @@ def ai_profile_summary(body: ProfileSummaryRequest, request: Request):
     Helps participants understand their own strengths and what makes them stand out.
     Returns a rule-based fallback summary when AI is not available.
     """
+    _require_local(request)
     cv_storage: CVStorage = request.app.state.cv_storage
     cv_data = cv_storage.get_cv_data(body.session_id)
     if not cv_data:
