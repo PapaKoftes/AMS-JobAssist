@@ -77,7 +77,6 @@ demo-data/
 # build/run debris
 buildlog.txt
 LAST_ERROR.txt
-AMS-JobAssist-Tester.zip
 
 # Build intermediates / large regenerable artifacts (defense-in-depth)
 build_work/

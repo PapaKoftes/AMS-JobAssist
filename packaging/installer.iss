@@ -11,6 +11,8 @@
 ;
 ;  The installer:
 ;    - Copies the 3 .exe files to {autopf}\AMS JobAssist
+;    - Downloads + SHA-256-verifies the ~1.9 GB AI model during setup (optional
+;      task, ticked by default) so the installer itself stays small (~250 MB)
 ;    - Creates Start Menu entries (Launcher + Uninstall)
 ;    - Creates a Desktop shortcut (optional)
 ;    - Creates a data directory at {userappdata}\AMS-JobAssist
@@ -19,7 +21,7 @@
 ; ============================================================================
 
 #define MyAppName      "AMS JobAssist"
-#define MyAppVersion   "1.0"
+#define MyAppVersion   "1.0.0"
 #define MyAppPublisher "Mina Mikail"
 #define MyAppURL       "https://github.com/PapaKoftes/AMS-JobAssist"
 #define MyAppExeName   "AMS-JobAssist-Launcher.exe"
@@ -41,7 +43,10 @@ OutputDir=output
 OutputBaseFilename=AMS-JobAssist-Setup
 SetupIconFile=icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
-Compression=lzma2/ultra64
+; The bundled GGUF model (~1.9 GB) is already quantized/incompressible, so heavy
+; LZMA (ultra64) costs many minutes of build time for ~0 size gain. 'normal' keeps
+; the exes well-compressed without the pointless churn on the model.
+Compression=lzma2/normal
 SolidCompression=yes
 WizardStyle=modern
 ; Require 64-bit Windows
@@ -72,9 +77,20 @@ german.DataDirInfo=Daten werden gespeichert in: %1
 english.DataDirInfo=Data will be stored in: %1
 german.DeleteDataPrompt=Moechten Sie auch alle gespeicherten Lebenslaeufe und Daten loeschen?%nDieser Schritt kann NICHT rueckgaengig gemacht werden.
 english.DeleteDataPrompt=Do you also want to delete all saved CVs and data?%nThis action CANNOT be undone.
+german.DownloadModelGroup=KI-Modell (lokale Offline-KI):
+english.DownloadModelGroup=AI model (local offline AI):
+german.DownloadModelTask=KI-Modell jetzt herunterladen (~1,9 GB, Internetverbindung erforderlich)
+english.DownloadModelTask=Download the AI model now (~1.9 GB, internet connection required)
+german.DownloadModelTitle=KI-Modell wird heruntergeladen
+english.DownloadModelTitle=Downloading the AI model
+german.DownloadModelDesc=Das Offline-KI-Modell (~1,9 GB) wird einmalig von HuggingFace geladen und per SHA-256 geprueft. Danach laeuft die App vollstaendig offline.
+english.DownloadModelDesc=The offline AI model (~1.9 GB) is fetched once from HuggingFace and verified by SHA-256. After that the app runs fully offline.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+; Download the ~1.9 GB AI model during setup (ticked by default; untick to run
+; rule-based only and fetch the model later). Keeps the installer itself small.
+Name: "downloadmodel"; Description: "{cm:DownloadModelTask}"; GroupDescription: "{cm:DownloadModelGroup}"
 
 [Files]
 ; Main executables from dist\
@@ -83,11 +99,13 @@ Source: "..\dist\AMS-JobAssist-Tool1.exe";    DestDir: "{app}"; Flags: ignorever
 Source: "..\dist\AMS-JobAssist-Tool2.exe";    DestDir: "{app}"; Flags: ignoreversion
 ; Icon
 Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
-; Bundled AI model — must sit beside the .exe at {app}\data\models, where the
-; frozen app looks for it (local_llm.py _MODEL_DIR frozen branch). Without this
-; the app silently drops to rules-only. 'external'+'skipifsourcedoesntexist' so
-; the build still produces an installer if the model wasn't pre-seeded.
-Source: "..\dist\data\models\*.gguf"; DestDir: "{app}\data\models"; Flags: ignoreversion skipifsourcedoesntexist
+; AI model — NOT bundled, so the installer stays small (~250 MB, GitHub-friendly).
+; It is downloaded from HuggingFace during setup (see [Code]) into {tmp}, verified
+; by SHA-256, then placed beside the .exe at {app}\data\models where the frozen app
+; looks for it (local_llm.py _MODEL_DIR frozen branch). 'external' = the source is
+; the file fetched to {tmp}; 'skipifsourcedoesntexist' so the install still
+; completes (rule-based only) if the user unticked the download task.
+Source: "{tmp}\qwen2.5-3b-instruct-q4_k_m.gguf"; DestDir: "{app}\data\models"; Flags: external ignoreversion skipifsourcedoesntexist
 
 [Dirs]
 ; Create a data directory with user-writable permissions
@@ -117,6 +135,14 @@ Type: filesandordirs; Name: "{app}\__pycache__"
 Type: filesandordirs; Name: "{app}\*.log"
 
 [Code]
+var
+  DownloadPage: TDownloadWizardPage;
+
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage(CustomMessage('DownloadModelTitle'), CustomMessage('DownloadModelDesc'), nil);
+end;
+
 // Ask whether to delete user data on uninstall
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
@@ -135,8 +161,32 @@ begin
   end;
 end;
 
-// Show data directory path during install
+// Download (and SHA-256-verify) the AI model during setup, unless the user
+// unticked the "download model" task. On the Ready page we fetch it to {tmp};
+// the [Files] 'external' entry then installs it into {app}\data\models.
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
-  Result := True;
+  if (CurPageID = wpReady) and WizardIsTaskSelected('downloadmodel') then
+  begin
+    DownloadPage.Clear;
+    DownloadPage.Add(
+      'https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf',
+      'qwen2.5-3b-instruct-q4_k_m.gguf',
+      '5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6');
+    DownloadPage.Show;
+    try
+      try
+        DownloadPage.Download;
+        Result := True;
+      except
+        if not DownloadPage.AbortedByUser then
+          SuppressibleMsgBox(AddPeriod(GetExceptionMessage), mbCriticalError, MB_OK, IDOK);
+        Result := False;
+      end;
+    finally
+      DownloadPage.Hide;
+    end;
+  end
+  else
+    Result := True;
 end;

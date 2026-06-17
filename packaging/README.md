@@ -65,10 +65,14 @@ to the `hiddenimports` list in the relevant spec.
 
 ## AI model
 
-The Qwen2.5-1.5B GGUF model (~1.1 GB) is **not** bundled in the .exe — it is
-downloaded on demand via the in-app `/api/ai/download-model` endpoint, or can
-be placed manually at `<data-dir>/models/qwen2.5-1.5b-instruct-q4_k_m.gguf`.
-For air-gapped centers, ship the model file alongside the .exe.
+The Qwen2.5-3B-Instruct GGUF model (Q4_K_M, ~1.9 GB) is **shipped with the
+installer and auto-installed into `data/models` beside the .exe** — it is *not*
+embedded inside the .exe itself. `build_all.bat` pre-seeds `dist\data\models\`
+from `tool-1-cv-maker\data\models\qwen2.5-3b-instruct-q4_k_m.gguf`, and
+`installer.iss` bundles that file into `{app}\data\models`. The frozen app loads
+it from there, so the local AI runs **fully offline out of the box — nothing is
+downloaded at runtime**. If the model is missing, Tool 1 silently drops to the
+rule-based fallback.
 
 ## Testing the build
 

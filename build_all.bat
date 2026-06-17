@@ -89,40 +89,30 @@ copy /Y "packaging\uninstall_template.bat" "dist\uninstall_template.bat" >nul
 copy /Y "packaging\icon.ico" "dist\icon.ico" >nul 2>&1
 echo [OK] Installer files copied to dist\.
 
-REM ---- Pre-seed the AI model so the app is FULLY OFFLINE (no runtime download) -
-REM The frozen exe looks for the GGUF in <exe-dir>\data\models (see local_llm.py
-REM _MODEL_DIR frozen branch). Ship ONLY the 3B (the shipped default, "full" tier);
-REM the 1.5B is redundant once 3B is present (3B auto-wins, similar speed) and would
-REM just add ~1.1 GB of dead weight.
-set "MODEL_3B=qwen2.5-3b-instruct-q4_k_m.gguf"
-echo.
-echo [4b/4] Pre-seeding 3B AI model into dist\data\models\ ...
-if exist "tool-1-cv-maker\data\models\%MODEL_3B%" (
-    if not exist "dist\data\models" mkdir "dist\data\models"
-    copy /Y "tool-1-cv-maker\data\models\%MODEL_3B%" "dist\data\models\" >nul
-    echo [OK] 3B model pre-seeded — the build is fully offline with good-quality AI.
-) else (
-    echo [!!] %MODEL_3B% not found in tool-1-cv-maker\data\models\ — the build will
-    echo      have NO bundled model and would try to download at first run. Run
-    echo      download_3b_model.bat first, or accept rules-only mode.
-)
+REM ---- AI model: NOT bundled --------------------------------------------------
+REM The model is downloaded (and SHA-256-verified) by the installer during setup
+REM (see packaging\installer.iss), which keeps Setup.exe small (~250 MB). So there
+REM is no model pre-seed step here. For a from-source dev run, fetch it once with
+REM download_3b_model.bat into tool-1-cv-maker\data\models\.
 
-REM ---- Optionally build Inno Setup installer ---------------------------------
-where iscc >nul 2>&1
-if not errorlevel 1 (
-    echo.
-    echo [BONUS] Inno Setup found — building Setup.exe...
-    iscc packaging\installer.iss
-    if not errorlevel 1 (
-        echo [OK] AMS-JobAssist-Setup.exe built in packaging\output\.
-    ) else (
-        echo [!!] Inno Setup build failed — the .exe files are still usable without it.
-    )
+REM ---- Build the one-file Setup.exe (Inno Setup) if the compiler is present ----
+echo.
+echo [5/5] Building one-file installer (Inno Setup)...
+set "ISCC="
+where iscc >nul 2>&1 && set "ISCC=iscc"
+if "%ISCC%"=="" if exist "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" set "ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
+if "%ISCC%"=="" if exist "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
+if "%ISCC%"=="" (
+    echo [INFO] Inno Setup not found - skipping Setup.exe. Install it from
+    echo        https://jrsoftware.org/isinfo.php to enable the one-file installer.
+    echo        ^(The dist\ folder + install.bat already work without it.^)
 ) else (
-    echo.
-    echo [INFO] Inno Setup not found — skipping Setup.exe build.
-    echo        Install Inno Setup from https://jrsoftware.org/isinfo.php
-    echo        to build a proper Windows installer.
+    call "%ISCC%" "packaging\installer.iss"
+    if errorlevel 1 (
+        echo [!!] Inno Setup compile failed - see output above.
+    ) else (
+        echo [OK] One-file installer built: packaging\output\AMS-JobAssist-Setup.exe
+    )
 )
 
 REM ---- Done ------------------------------------------------------------------
@@ -138,9 +128,11 @@ echo   - AMS-JobAssist-Launcher.exe    starts both, opens browser
 echo   - install.bat                   batch installer (no Inno Setup needed)
 echo.
 echo Install options:
-echo   1. Quick:    dist\AMS-JobAssist-Launcher.exe   (run directly, no install)
-echo   2. Batch:    dist\install.bat                   (Start Menu + Add/Remove Programs)
-echo   3. Pro:      packaging\output\AMS-JobAssist-Setup.exe   (if Inno Setup was available)
+echo   1. Setup.exe: packaging\output\AMS-JobAssist-Setup.exe  (RECOMMENDED - wizard,
+echo                 downloads the AI model during install; this is the GitHub upload)
+echo   2. Batch:     dist\install.bat   (Start Menu + Add/Remove; rules-only unless a
+echo                 model is placed in dist\data\models first)
+echo   3. Quick:     dist\AMS-JobAssist-Launcher.exe   (run directly, no install)
 echo.
 echo To run without installing:  dist\AMS-JobAssist-Launcher.exe
 echo.
