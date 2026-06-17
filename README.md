@@ -17,22 +17,22 @@ Built for AMS Wien classroom use — currently a polished demonstrator awaiting 
 
 ---
 
-## 🚀 Quick install (5 minutes — no Python, no setup)
+## 🚀 Quick install (one file — no Python, no setup)
 
 For a non-technical reviewer or trainer who just wants to **run it**:
 
-1. **Download** the `AMS-JobAssist` ZIP you were sent (~2.2 GB) and **unzip it** anywhere — e.g. your Desktop. You'll get a folder with a few files in it.
-2. Open the folder and **double-click `AMS-JobAssist-Launcher.exe`**.
-3. Windows may show a blue **"Windows protected your PC"** box (the app isn't code-signed yet). Click **More info → Run anyway** — this is normal for a tool that isn't from the Microsoft Store.
-4. A black window opens, then your **web browser opens automatically** at **http://localhost:8000**. (If it doesn't, type that address yourself. The trainer dashboard is **http://localhost:8001**.)
+1. **Download** **`AMS-JobAssist-Setup.exe`** (~280 MB) from the [Releases](https://github.com/PapaKoftes/AMS-JobAssist/releases) page.
+2. **Double-click it.** If Windows shows a blue **"Windows protected your PC"** box (the app isn't code-signed yet), click **More info → Run anyway** — normal for a tool that isn't from the Microsoft Store.
+3. Click through the short wizard (keep the defaults). During setup it **downloads the AI model (~1.9 GB) once and verifies it** — so you need an internet connection the first time; after that the app runs **fully offline**. (You can untick that step to run rule-based only and add the model later.) It adds a **Start Menu** shortcut (+ optional desktop icon) and registers in **Apps & features** for a clean uninstall. **No admin rights needed.**
+4. Launch **AMS JobAssist** from the Start Menu → a console window opens and your **browser opens automatically** at **http://localhost:8000** (trainer dashboard: **http://localhost:8001**).
 
-> 💡 **First launch:** the offline AI model takes **30–60 seconds** to load. When the badge at the top-right shows **"KI aktiv (Qwen2.5-3B)"** ✅ you're ready to go. Keep the black window open while you use the app — closing it stops the app.
+> 💡 **First launch:** the AI model takes **30–60 seconds** to load. When the top-right badge shows **"KI aktiv (Qwen2.5-3B)"** ✅ you're ready. Keep the console window open while you use the app — closing it stops the app.
 
 <p align="center">
   <img src="docs/screenshots/02_welcome.png" alt="Welcome screen — 12-language picker and the five situation paths" width="100%">
 </p>
 
-➡️ **No ZIP, just the source?** See [other ways to run it](#other-ways-to-run-it) — one-click `START.bat`, run from Python, or build the installer. **Reviewing it for AMS / Marko?** Start with **[HANDOFF_MARKO.md](HANDOFF_MARKO.md)**.
+➡️ **Working from the source instead?** See [other ways to run it](#other-ways-to-run-it) — one-click `START.bat`, run from Python, or build the installer yourself. **Reviewing it for AMS / Marko?** Start with **[HANDOFF_MARKO.md](HANDOFF_MARKO.md)**.
 
 ---
 
@@ -91,14 +91,15 @@ python launcher.py
 build_all.bat
 ```
 
-Produces standalone executables in `dist/` (no Python needed on target machine):
+Produces standalone executables in `dist/` (no Python needed on target machine), and — if [Inno Setup](https://jrsoftware.org/isinfo.php) is installed — the one-file installer in `packaging/output/`:
 
 | File | Size | What it does |
 |---|---|---|
-| `AMS-JobAssist-Launcher.exe` | 8 MB | Starts both tools, opens browser |
-| `AMS-JobAssist-Tool1.exe` | 375 MB | Participant CV maker (includes optional LLM runtime) |
-| `AMS-JobAssist-Tool2.exe` | 46 MB | Trainer dashboard |
-| `install.bat` | 8 KB | Batch installer — Start Menu + Add/Remove Programs |
+| `dist/AMS-JobAssist-Launcher.exe` | 8 MB | Starts both tools, opens browser |
+| `dist/AMS-JobAssist-Tool1.exe` | 220 MB | Participant CV maker (includes the local LLM runtime) |
+| `dist/AMS-JobAssist-Tool2.exe` | 46 MB | Trainer dashboard |
+| `dist/install.bat` | 8 KB | Batch installer — Start Menu + Add/Remove Programs (no Inno Setup needed) |
+| `packaging/output/AMS-JobAssist-Setup.exe` | ~280 MB | **One-file installer** (wizard, German UI, clean uninstall) — **downloads + SHA-256-verifies the ~1.9 GB AI model during setup**. The recommended thing to hand someone / upload to a GitHub Release |
 
 ### Install / uninstall options
 

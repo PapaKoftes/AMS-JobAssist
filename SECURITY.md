@@ -82,11 +82,15 @@ is available. Typical window: 90 days from acknowledgement.
 - Tool 2's API-key auth is enforced only when `AMS_TRAINER_API_KEY` is set in
   the environment. The startup warning tells the trainer this; we do not
   treat "trainer didn't set the env var" as a vulnerability.
-- The Qwen GGUF model is downloaded over HTTPS from HuggingFace and verified
-  against a pinned SHA-256 in `ai/local_llm.py`. If you can produce a model
-  artifact whose hash matches and that contains malicious behaviour, that is
-  in scope. If the pin is the placeholder, that is a known issue (see the
-  ADMINISTRATOR_GUIDE).
+- The Qwen2.5-3B GGUF model is **downloaded by the installer during setup** — it
+  fetches the GGUF over HTTPS from HuggingFace and verifies it against the SHA-256
+  pinned in `ai/local_llm.py`, then stores it in `data/models/` beside the app
+  (this step can be skipped, leaving the app in rule-based mode). The same pinned-
+  hash verification guards the in-app "download a different tier" path, which
+  refuses any tier with no pin unless `AMS_ALLOW_UNPINNED_MODEL=1` is set (the
+  `light`/0.5B tier is currently unpinned). **At runtime the app itself downloads
+  nothing.** If you can produce a model artifact whose hash matches and that
+  contains malicious behaviour, that is in scope.
 
 ## Hall of fame
 

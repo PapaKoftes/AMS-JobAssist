@@ -77,7 +77,7 @@ Language is a tool, not a measure of worth.
 
 ## On AI's Role
 
-The AI is an enhancer, not a gatekeeper. It runs entirely offline — bundled with the app, no internet, no account, no subscription.
+The AI is an enhancer, not a gatekeeper. It is downloaded once by the installer and then runs entirely offline — no internet at runtime, no account, no subscription.
 
 - If the model isn't loaded → the interview still works
 - If the model isn't loaded → the CV still exports
@@ -89,7 +89,7 @@ AI is never used to: invent experience, exaggerate skills, or replace what the u
 
 ### The Model
 
-We use **Qwen2.5-1.5B-Instruct** (Q4 quantized, ~1.1 GB), chosen because it was trained natively on German, Turkish, Arabic, and Bosnian — not translated from English. A participant who writes in Turkish gets a coherent German sentence back, not a literal translation of Turkish structure.
+We use **Qwen2.5-3B-Instruct (Q4_K_M, ~1.9 GB), downloaded once by the installer (SHA-256-verified) and then run fully offline**, chosen because it was trained natively on German, Turkish, Arabic, and Bosnian — not translated from English. A participant who writes in Turkish gets a coherent German sentence back, not a literal translation of Turkish structure.
 
 It runs on a basic Windows laptop CPU. No GPU. No cloud.
 

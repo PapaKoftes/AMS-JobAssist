@@ -18,7 +18,7 @@ pip install -r requirements.txt
 
 That installs Tool 1, Tool 2, the shared schema package, dev dependencies, and PyInstaller in one shot.
 
-> **Optional (for the AI demo):** download the Qwen2.5-1.5B GGUF model (~1.1 GB) and place it at `tool-1-cv-maker/data/models/qwen2.5-1.5b-instruct-q4_k_m.gguf`. Without the model, every AI feature falls back to rule-based logic — the tool keeps working, just without LLM-quality output. For a first demo, skip this.
+> **AI model:** the Qwen2.5-3B-Instruct GGUF model (Q4_K_M, ~1.9 GB) is downloaded once by the installer (SHA-256-verified) and then runs fully offline — nothing is downloaded at runtime after that one-time install fetch. For a from-source dev run it lives at `tool-1-cv-maker/data/models/qwen2.5-3b-instruct-q4_k_m.gguf`. If the model is missing, every AI feature falls back to rule-based logic — the tool keeps working, just without LLM-quality output.
 
 ---
 
@@ -168,8 +168,8 @@ Double-click `AMS-JobAssist-Launcher.exe` and watch the same two-tool environmen
 | Question you may get | Answer |
 |---|---|
 | "Where does the data go?" | Stays on the trainer's laptop. SQLite file, no network. Loopback-only enforcement at the socket layer — set `AMS_ENFORCE_OFFLINE=0` to disable if you ever want to. |
-| "Does it need internet?" | No. Optional model download is one-time and explicit. After that, never. |
-| "How is the CV improved?" | Rule-based polish (verb enforcement, skill normalization, structure validation) plus an *optional* local Qwen LLM. Same input always produces the same output for the same engine — auditable. |
+| "Does it need internet?" | Only once, during install: the installer downloads the AI model (SHA-256-verified). After that it runs locally and fully offline — nothing is downloaded at runtime. |
+| "How is the CV improved?" | Rule-based polish (verb enforcement, skill normalization, structure validation) plus a local Qwen LLM downloaded once during install, then run fully offline (rule-based fallback if the model is missing). Same input always produces the same output for the same engine — auditable. |
 | "Can we edit the polished CV?" | Trainer edits inline, with audit trail. Lock the CV to freeze it from further participant edits. |
 | "DSGVO?" | Consent screen, Article 20 download endpoint, Article 17 deletion endpoint, retention cleanup, audit log, no PII in logs (regex redaction filter). |
 | "Languages?" | UI: 12 (de, en, bs, hr, sr, tr, pl, ro, uk, ru, ar, sk). Polish output: 14. Detection: automatic. |

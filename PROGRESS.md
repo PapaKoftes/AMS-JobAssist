@@ -93,13 +93,13 @@ Goal: Professional outputs in every format AMS asks for, plus AI helpers that gr
 | Europass XML export | ✅ Done | Validated against Europass schema |
 | ATS keyword scoring | ✅ Done | Paste job ad → match % + missing skills |
 | Cover letter generator | ✅ Done | Company + role → draft letter |
-| Local LLM engine | ✅ Done | Qwen2.5-1.5B-Instruct Q4_K_M, llama-cpp-python, CPU-only |
+| Local LLM engine | ✅ Done | Qwen2.5-3B-Instruct Q4_K_M (~1.9 GB, downloaded once at install, then offline), llama-cpp-python, CPU-only |
 | Ollama fallback | ✅ Done | Used automatically if local model absent and Ollama running |
 | Rule-based fallback | ✅ Done | Always-works tier — core loop never breaks |
 | AI chat coach | ✅ Done | Knows user's CV, answers specific questions |
 | Interview prep generator | ✅ Done | 5 tailored questions from CV + target job |
 | Job-match analyser | ✅ Done | ✅ matches / ⚠️ gaps / 💡 one concrete fix |
-| Model status + in-app download | ✅ Done | UI shows active tier; one-click 1.1 GB pull |
+| Model status + in-app download | ✅ Done | 3B downloaded once at install by default; UI shows active tier; optional one-click pull for other tiers |
 
 ---
 
@@ -154,12 +154,13 @@ Concrete stability wins from the recent pass — everything below landed since 2
 
 ## Test Suite
 
-**Total: 778 passing** — run from each tool's directory with `python -m pytest tests/ -q`.
+**Total: 922 passing** — run from each tool's directory with `python -m pytest tests/ -q`.
 
 | Tool | Tests | Test files |
 |------|-------|-----------|
-| Tool 1 (CV maker) | 730 | 22 files — interview, polish, language (×3), CV, exports (×4), AI, ATS, privacy, e2e (×2), API |
-| Tool 2 (Trainer dashboard) | 42 | 2 files — `test_cv_mapper.py`, `test_integration.py` |
+| Tool 1 (CV maker) | 852 | 22 files — interview, polish, language (×3), CV, exports (×4), AI, ATS, privacy, e2e (×2), API |
+| Tool 2 (Trainer dashboard) | 57 | 2 files — `test_cv_mapper.py`, `test_integration.py` |
+| Packaging | 13 | build/installer checks |
 
 ---
 

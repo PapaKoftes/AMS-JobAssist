@@ -7,19 +7,26 @@ internet, and no ChatGPT account is needed.**
 
 ---
 
-## Install (5 minutes, no Python, no setup)
+## Install (2 minutes — one file, no Python, no setup)
 
-1. **Download** the file I sent you (`AMS-JobAssist.zip`, ~2.2 GB) and **unzip it**
-   to anywhere — e.g. your Desktop. You'll get a folder with a few files in it.
-2. Open the folder and **double-click `AMS-JobAssist-Launcher.exe`**.
-3. Windows may show a blue **"Windows protected your PC"** box (because the app
-   isn't code-signed yet). Click **"More info" → "Run anyway"**. This is normal
-   for a tool that isn't from the Microsoft Store.
-4. A black window opens and then your **web browser opens automatically** with the
-   app. (If the browser doesn't open, go to **http://127.0.0.1:8000** yourself.)
+1. **Download** the one file I sent you: **`AMS-JobAssist-Setup.exe`** (~280 MB).
+2. **Double-click it.** Windows may show a blue **"Windows protected your PC"** box
+   (the app isn't code-signed yet) — click **"More info" → "Run anyway"**. This is
+   normal for a tool that isn't from the Microsoft Store.
+3. Click through the short setup wizard — you can keep every default. **During setup
+   it downloads the AI model (~1.9 GB) once**, so you'll need internet the first
+   time (it shows a progress bar and verifies the file); after that the app runs
+   **fully offline**. It adds a **Start Menu** shortcut (and a desktop icon if you
+   tick the box) and needs **no admin rights**.
+   *(If you have no internet right now, you can untick that step — the app still
+   works in a simpler rule-based mode and you can add the AI later.)*
+4. Launch **AMS JobAssist** from the Start Menu. A small black window opens and your
+   **web browser opens automatically** with the app. (If it doesn't, go to
+   **http://127.0.0.1:8000**.)
 
 > Keep the black window open while you use the app — closing it stops the app.
-> To stop, just close the black window.
+> To remove it later: Start Menu → **"AMS JobAssist deinstallieren"**, or Windows
+> Settings → Apps. Your saved data is kept unless you choose to delete it.
 
 ### First launch: wait for the AI
 On the **first** start, the AI model takes **about 30–60 seconds** to load. Top-right

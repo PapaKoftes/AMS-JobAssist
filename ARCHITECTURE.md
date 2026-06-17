@@ -2,9 +2,9 @@
 
 **Audience**: Developers, code reviewers
 **Last Updated**: 2026-05-14
-**Tool 1 status**: Production-ready — 507 tests passing
-**Tool 2 status**: Production-ready — 42 tests passing
-**Test suite total**: 549 passing
+**Tool 1 status**: Production-ready — 852 tests passing
+**Tool 2 status**: Production-ready — 57 tests passing
+**Test suite total**: 922 passing
 
 ![AMS JobAssist architecture diagram](docs/img/architecture.png)
 
@@ -256,17 +256,17 @@ Users choose the best model for their hardware:
 | Tier | Model | Size | RAM | Speed | Best for |
 |------|-------|------|-----|-------|----------|
 | `light` | Qwen2.5-0.5B Q4_K_M | ~400 MB | 4 GB | ~8-12 tok/s | Older laptops |
-| `medium` | Qwen2.5-1.5B Q4_K_M | ~1.1 GB | 8 GB | ~3-5 tok/s | **Recommended** |
-| `full` | Qwen2.5-3B Q4_K_M | ~2 GB | 16 GB | ~1-3 tok/s | Best quality |
+| `medium` | Qwen2.5-1.5B Q4_K_M | ~1.1 GB | 8 GB | ~3-5 tok/s | Lower-RAM machines |
+| `full` | Qwen2.5-3B Q4_K_M | ~1.9 GB | 16 GB | ~1-3 tok/s | **Bundled default — best quality** |
 
-Set `AMS_MODEL_TIER=light|medium|full` or use the in-app download button. The system auto-detects the best model on disk (full > medium > light).
+Set `AMS_MODEL_TIER=light|medium|full`. The 3B (`full`) tier is downloaded once by the installer (SHA-256-verified) into `data/models/` and then run fully offline; the system auto-detects the best model on disk (full > medium > light).
 
 **Why rules first**:
 - Deterministic, fast, zero dependencies — the core loop never breaks
 - Expanded verb/skill database (428 skills, 117 DE verbs) produces professional output without any model
 - Knowledge base injects job-specific verbs, skills, and example phrases from real Austrian job data
 - **LLM enhancement optional**: local Qwen GGUF or Ollama adds fluency and stylistic polish on top of already-correct text
-- Downloads once via in-app button to `data/models/`
+- The 3B GGUF model is downloaded once by the installer (SHA-256-verified) into `data/models/`, then run fully offline — nothing is fetched at runtime
 - **Ollama**: developer convenience and trainer power-user path — if they already have a stronger model running
 
 ---
@@ -313,7 +313,7 @@ Set `AMS_MODEL_TIER=light|medium|full` or use the in-app download button. The sy
 | `POST` | `/api/ai/interview-prep` | Generate 5 interview questions from CV |
 | `POST` | `/api/ai/job-match` | Compare CV to a job description |
 | `GET` | `/api/ai/model-status` | Which AI engine is active |
-| `POST` | `/api/ai/download-model` | Trigger model download (~1.1 GB) |
+| `POST` | `/api/ai/download-model` | Re-fetch GGUF model if missing (3B ~1.9 GB; normally bundled) |
 | `GET` | `/api/ai/knowledge/status` | Knowledge base stats (jobs, verbs, skills counts) |
 | `GET` | `/api/ai/knowledge/jobs` | List all 25 jobs (id, title_de, title_en, category) |
 | `GET` | `/api/ai/knowledge/search?q=text` | Search for matching job by text |
@@ -425,7 +425,7 @@ Run `build_all.bat` from the repo root. This produces three artifacts in `dist/`
 | `AMS-JobAssist-Tool1.exe` | ~375 MB | CV maker (bundles reportlab, python-docx, llama-cpp-python wheels) |
 | `AMS-JobAssist-Tool2.exe` | ~46 MB | Trainer dashboard |
 
-The Qwen2.5-1.5B model is **not** bundled — first run shows an in-app button that downloads it from HuggingFace (~1.1 GB) into the user's `data/` folder. The app remains fully functional without the model via the rule-based fallback.
+The Qwen2.5-3B model (Q4_K_M, ~1.9 GB) **is** downloaded once by the installer (SHA-256-verified) and placed in `data/models/` beside the executables, so the app then runs fully offline and fetches nothing at runtime. The install download can be skipped (and the model added later); the app also remains fully functional without the model via the rule-based fallback.
 
 All three PyInstaller specs live in `packaging/` and are now relocatable (repo-relative paths) with a complete `hiddenimports` list (reportlab fonts, python-docx XML, llama-cpp internals, ssl certs).
 
@@ -433,14 +433,14 @@ All three PyInstaller specs live in `packaging/` and are now relocatable (repo-r
 
 ## Test Suite
 
-**Total: 549 tests passing.**
+**Total: 922 tests passing.**
 
 ```bash
 # Tool 1
-cd tool-1-cv-maker && python -m pytest tests/ -q   # 507 passing
+cd tool-1-cv-maker && python -m pytest tests/ -q   # 852 passing
 
 # Tool 2
-cd tool-2-trainer-dashboard && python -m pytest tests/ -q   # 42 passing
+cd tool-2-trainer-dashboard && python -m pytest tests/ -q   # 57 passing
 ```
 
 | Tool 1 test file | Coverage |

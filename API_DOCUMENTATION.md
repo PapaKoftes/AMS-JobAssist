@@ -7,10 +7,6 @@
 > ⚠️ **CORRECTION NOTICE — This document predates security hardening (2026-06).**
 > Several sections are now inaccurate. Read these corrections first:
 >
-> **Endpoints that do NOT exist (will return 404, not 501):**
-> - `POST /api/interview/conversational/start`
-> - `POST /api/interview/conversational/turn`
->
 > **New required fields — calls without them will fail:**
 > - `POST /api/interview/start` now requires `"consent_given": true` in the
 >   request body → 403 without it.
@@ -118,7 +114,7 @@ response header.
 | 413 | Upload too large (Tool 2 imports) |
 | 422 | Pydantic validation failed (`code: VALIDATION_ERROR`) |
 | 500 | Unhandled server error |
-| 501 | Feature is a known WIP skeleton (conversational interview, missing Tool 1 backend for PDF/DOCX bulk export) |
+| 501 | Tool 1 PDF/DOCX exporter backend not importable from Tool 2 (bulk export / export-all) |
 | 503 | Subsystem not initialised |
 
 ---
@@ -364,20 +360,6 @@ Errors: `400` if no answers in the session; `404` session not found.
 
 ---
 
-### Conversational interview (WIP)
-
-| Endpoint | Status |
-|---|---|
-| `POST /api/interview/conversational/start` | `501` — placeholder skeleton |
-| `POST /api/interview/conversational/turn` | `501` — placeholder skeleton |
-
-Both endpoints reject every call with `501 Not Implemented`. The standard
-guided interview at `/api/interview/start` is the only working entry point.
-They exist so the frontend can display a "coming soon" banner without
-404-ing.
-
----
-
 ## CV / Export
 
 ### `GET /api/cv/{session_id}`
@@ -614,7 +596,7 @@ Encouraging plain-language profile summary for the participant.
   "status": "success",
   "data": {
     "active_engine": "local",
-    "local": { "local_model_available": true, "model_name": "Qwen2.5-1.5B-Instruct", "model_exists_on_disk": true },
+    "local": { "local_model_available": true, "model_name": "Qwen2.5-3B-Instruct Q4_K_M", "model_exists_on_disk": true },
     "ollama": { "ollama_available": false }
   }
 }
@@ -626,10 +608,13 @@ Encouraging plain-language profile summary for the participant.
 
 ### `POST /api/ai/download-model`
 
-Trigger an async download of the local model.
+Fetch a non-default model tier on demand. The shipped product already bundles
+the `full` (3B) model offline, so this is only needed to add another tier
+(`light` ~400 MB, `medium` ~1.1 GB, `full` ~2 GB). Defaults to `medium` when
+`tier` is omitted.
 
 ```json
-{ "confirm": true }
+{ "confirm": true, "tier": "medium" }
 ```
 
 - `confirm: false` → returns `{"status":"confirm_required","data":{"message":"Download Qwen2.5-1.5B-Instruct (~1.1 GB)?","url":"..."}}`
@@ -1023,8 +1008,6 @@ endpoints, pin them to the bundle version you tested with.
 | 1 | POST | `/api/interview/preview` |
 | 1 | POST | `/api/interview/follow-up` |
 | 1 | POST | `/api/interview/complete/{session_id}` |
-| 1 | POST | `/api/interview/conversational/start` (501) |
-| 1 | POST | `/api/interview/conversational/turn` (501) |
 | 1 | GET | `/api/interview/ai/status` |
 | 1 | POST | `/api/interview/ai/refresh` |
 | 1 | POST | `/api/interview/admin/cleanup-sessions` |

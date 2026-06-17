@@ -34,7 +34,7 @@ It runs entirely on the trainer's laptop. There is no cloud, no account, no serv
 - Software: **€0** (MIT open-source)
 - Cloud: **€0** (there is no cloud)
 - Training: **~30 minutes** for a trainer to learn the dashboard
-- Hardware: one laptop with Windows 10 and 4 GB RAM. Optional 2 GB extra disk for the local AI model.
+- Hardware: one laptop with Windows 10 and 4 GB RAM. ~2 GB extra disk for the local AI model (downloaded once at install).
 
 ## What we are asking for
 
@@ -47,7 +47,7 @@ After both items, we propose a **single-classroom pilot of 8 participants** to m
 
 ## What we have already delivered
 
-- **778 automated tests** across both tools — all passing
+- **922 automated tests** across both tools — all passing
 - **3 standalone Windows .exe artifacts** in the build pipeline, reproducible from `build_all.bat`
 - **12-language UI**, 14-language CV polish
 - **5 interview paths** with example answers, quick-fill chips, helper tips per question
@@ -55,7 +55,7 @@ After both items, we propose a **single-classroom pilot of 8 participants** to m
 - **Trainer dashboard** with side-by-side compare, inline edit with audit, bulk approve, bulk export, lock/unlock, cohort filters, API-key auth, CSRF middleware
 - **DSGVO endpoints** for data portability and deletion
 - **Network-layer offline enforcement** (loopback allowlist; external sockets refused)
-- **Optional local AI** (Qwen2.5-1.5B GGUF) for chat coach, interview prep, and job-match — works fully offline; rule-based fallback when no model present
+- **Local AI** (Qwen2.5-3B-Instruct Q4_K_M, ~1.9 GB GGUF — downloaded once by the installer, SHA-256-verified, then run fully offline) for chat coach, interview prep, and job-match — works fully offline; rule-based fallback when no model present
 
 ## What we have not yet delivered
 

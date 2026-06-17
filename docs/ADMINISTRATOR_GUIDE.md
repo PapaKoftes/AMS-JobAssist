@@ -29,7 +29,7 @@ AMS JobAssist v1.0 ships as three reproducible Windows executables, built end-to
 | Artifact | Approx. size | Purpose |
 |----------|--------------|---------|
 | `dist\AMS-JobAssist-Launcher.exe` | ~8 MB | Tray launcher; starts/stops both tools, German menu |
-| `dist\AMS-JobAssist-Tool1.exe` | ~375 MB | Participant CV maker (FastAPI server, optional local AI) |
+| `dist\AMS-JobAssist-Tool1.exe` | ~220 MB | Participant CV maker (FastAPI server, local AI downloaded once at install) |
 | `dist\AMS-JobAssist-Tool2.exe` | ~46 MB | Trainer dashboard (FastAPI server) |
 
 All three PyInstaller specs use `SPECPATH` so the build is relocatable; the `hiddenimports` list is complete and reviewed.
@@ -44,8 +44,8 @@ For non-developer classroom installs we also ship `ams_jobassist.bat`, a German-
 |----------|---------|-------------|
 | OS | Windows 10 (64-bit) | Windows 11 |
 | CPU | Any x64 from 2015+ | 4+ cores |
-| RAM | 4 GB | 8 GB (16 GB if optional GGUF AI is loaded) |
-| Disk | 1 GB free | 2 GB free + ~1.1 GB for optional GGUF |
+| RAM | 4 GB | 8 GB (16 GB recommended when the bundled GGUF AI is loaded) |
+| Disk | 1 GB free | 4 GB free (includes the bundled ~1.9 GB GGUF) |
 | Display | 1024x768 | 1366x768 or higher |
 | Browser | Edge / Chrome / Firefox (current) | Edge or Chrome |
 | Network | None required | None required (offline by default) |
@@ -134,7 +134,7 @@ All configuration is driven by environment variables. Set them in the shell that
 | `AMS_DATA_DIR` | per-tool `data/` | Override DB + exports root |
 | `AMS_TRAINER_API_KEY` | _(unset)_ | If set, Tool 2 requires this header |
 | `AMS_DATA_RETENTION_DAYS` | _(unset)_ | If set, records older than N days are purged on startup |
-| `AMS_MODEL_TIER` | _(auto-detect)_ | AI model tier: `light` (~400 MB), `medium` (~1.1 GB), `full` (~2 GB) |
+| `AMS_MODEL_TIER` | `full` (3B, bundled) | AI model tier: `light` (0.5B, ~400 MB), `medium` (1.5B, ~1.1 GB), `full` (3B, ~1.9 GB — the bundled default) |
 | `AMS_ENFORCE_OFFLINE` | `1` | Block outbound network at socket layer (loopback allowlisted) |
 
 If a port is occupied the launcher auto-advances to the next free port and prints the actual URL in the console — do not assume 8000/8001.
@@ -149,7 +149,7 @@ AMS-JobAssist/
 |   +-- data/
 |       +-- ams_jobassist.db        # sessions, answers, polish output
 |       +-- exports/                # generated PDF / DOCX bundles
-|       +-- models/                 # optional Qwen2.5-1.5B GGUF (~1.1 GB)
+|       +-- models/                 # Qwen2.5-3B-Instruct GGUF (Q4_K_M, ~1.9 GB), downloaded once at install
 |       +-- knowledge/              # Austrian job knowledge base (berufe.json)
 +-- tool-2-trainer-dashboard/
 |   +-- data/
@@ -350,7 +350,7 @@ taskkill /PID <pid> /F
 
 ### Missing GGUF model file
 
-If `tool-1-cv-maker/data/models/` is empty or the file is the wrong shape, Tool 1 logs a warning and runs the **rule-based polish + knowledge base** pipeline. All features still work — verb enforcement, skill normalization, ATS optimization, and Austrian job knowledge are all rule-based. The LLM only adds natural phrasing on top. To enable AI: drop the Qwen2.5-1.5B-Instruct GGUF (~1.1 GB) into that folder and restart.
+If `tool-1-cv-maker/data/models/` is empty or the file is the wrong shape, Tool 1 logs a warning and runs the **rule-based polish + knowledge base** pipeline. All features still work — verb enforcement, skill normalization, ATS optimization, and Austrian job knowledge are all rule-based. The LLM only adds natural phrasing on top. The model is normally downloaded into this folder once by the installer; if it is missing, restore the Qwen2.5-3B-Instruct GGUF (Q4_K_M, ~1.9 GB) at `data/models/qwen2.5-3b-instruct-q4_k_m.gguf` and restart.
 
 ### `pip install` fails on `llama-cpp-python`
 
@@ -421,12 +421,12 @@ Before opening a support ticket, gather:
 **v1.0** (2026-05-12)
 - 3 reproducible Windows `.exe` artifacts (`build_all.bat` verified end-to-end)
 - Offline mode default-on with loopback allowlist
-- 549-test suite (507 Tool 1 + 42 Tool 2)
+- 922-test suite (852 Tool 1 + 57 Tool 2 + 13 packaging)
 - 12 UI languages incl. RTL Arabic; polish pipeline detects 14+ input languages
-- Tiered AI models: light (~400 MB), medium (~1.1 GB), full (~2 GB) — local LLM primary engine
+- Tiered AI models: light (0.5B, ~400 MB), medium (1.5B, ~1.1 GB), full (3B, ~1.9 GB — bundled default) — local LLM primary engine
 - DSGVO Art. 17 / Art. 20 endpoints and retention env var
 - Full `export_logs` audit trail in `ams_trainer.db`
-- Optional Qwen2.5-1.5B local AI with rule-based fallback
+- Qwen2.5-3B-Instruct local AI downloaded once by the installer, then run fully offline, with rule-based fallback
 
 ---
 

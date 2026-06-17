@@ -73,7 +73,7 @@ AMS participants often use basic Windows computers with default fonts and screen
 
 ## AI Engine
 
-The local AI runs entirely on-device via `llama-cpp-python` (CPU-only, no GPU required). The model is **Qwen2.5-1.5B-Instruct Q4_K_M** (~1.1 GB), chosen because it was natively trained on German, Turkish, Arabic, and Bosnian — languages real AMS participants write in.
+The local AI runs entirely on-device via `llama-cpp-python` (CPU-only, no GPU required). The model is **Qwen2.5-3B-Instruct (Q4_K_M, ~1.9 GB), downloaded once by the installer (SHA-256-verified) and then run fully offline**, chosen because it was natively trained on German, Turkish, Arabic, and Bosnian — languages real AMS participants write in.
 
 Key module: `tool-1-cv-maker/src/backend/ai/local_llm.py`
 

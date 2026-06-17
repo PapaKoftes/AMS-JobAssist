@@ -76,9 +76,9 @@ Custom question editing is on the v1.1 roadmap.
 |------|-------|------|------------|
 | Light | Qwen2.5-0.5B | ~400 MB | 4 GB |
 | Medium | Qwen2.5-1.5B | ~1.1 GB | 8 GB |
-| Full | Qwen2.5-3B | ~2 GB | 16 GB |
+| Full (bundled default) | Qwen2.5-3B | ~1.9 GB | 16 GB |
 
-Download via the in-app button or set `AMS_MODEL_TIER=light|medium|full`. Without any model, rule-based polish + knowledge base still produce professional CVs — the LLM adds natural phrasing on top.
+The 3B (Full) model is downloaded once by the installer (SHA-256-verified) into `data/models/` and then runs fully offline — no further download at runtime. To pick a different tier set `AMS_MODEL_TIER=light|medium|full`. Without any model, rule-based polish + knowledge base still produce professional CVs — the LLM adds natural phrasing on top.
 
 ### Q: What if my language isn't in the UI list?
 **A**: Use the closest available language. Participant answers can still be typed in any language — the polish/translation pipeline handles input language detection. New UI languages are added based on demand.
@@ -261,7 +261,7 @@ Batch exports come as a single ZIP.
 All three PyInstaller specs are relocatable via `SPECPATH` and include the full set of `hiddenimports`. No Python install is required on target machines.
 
 ### Q: How big is the test suite?
-**A**: **549 tests** total — 507 covering Tool 1, 42 covering Tool 2. They run via `pytest` from each tool's directory and cover the polish layer, interview engine, exports, DSGVO endpoints, audit logging, and bulk operations.
+**A**: **922 tests** total — 852 covering Tool 1, 57 covering Tool 2, plus 13 packaging tests. They run via `pytest` from each tool's directory and cover the polish layer, interview engine, exports, DSGVO endpoints, audit logging, and bulk operations.
 
 ### Q: What are the minimum system requirements?
 **A**:
@@ -270,7 +270,7 @@ All three PyInstaller specs are relocatable via `SPECPATH` and include the full 
 |----------|---------|-------------|
 | OS | Windows 10 | Windows 11 |
 | RAM | 4 GB | 8 GB (16 GB if local AI is enabled) |
-| Disk | 1 GB | 2 GB (plus ~1.1 GB if GGUF model is loaded) |
+| Disk | 1 GB | 4 GB (includes bundled ~1.9 GB GGUF model) |
 | Screen | 1024x768 | 1366x768 or higher |
 | Browser | Edge / Chrome / Firefox | Edge or Chrome |
 
@@ -335,21 +335,21 @@ without the AI extra. The rule-based polish layer covers all functionality; only
 ## Version History
 
 **v1.1** (2026-05-14)
-- Tiered AI models: light (0.5B, ~400MB), medium (1.5B, ~1.1GB), full (3B, ~2GB) — users choose per hardware
+- Tiered AI models: light (0.5B, ~400MB), medium (1.5B, ~1.1GB), full (3B, ~1.9GB, bundled default) — users choose per hardware
 - Local LLM is now the primary engine (not optional); falls back to Ollama, then rule-based
 - 12 UI languages restored; polish pipeline detects 14+ input languages
 - Experience block gating (yes/no before optional 2nd/3rd work entries)
 - Name auto-fill from welcome screen (skips redundant first question)
 - Demo mode (`start_demo.bat`) seeds 5 sample participants for trainer demos
-- 549 tests passing (507 Tool 1 + 42 Tool 2)
+- 922 tests passing (852 Tool 1 + 57 Tool 2 + 13 packaging)
 
 **v1.0** (2026-05-12)
-- 725 tests passing (683 Tool 1 + 42 Tool 2)
+- 922 tests passing (852 Tool 1 + 57 Tool 2 + 13 packaging)
 - Offline mode on by default with loopback allowlist
 - 3 reproducible `.exe` artifacts via `build_all.bat`
 - 12 UI languages including RTL Arabic
 - DSGVO Art. 17 / Art. 20 endpoints
-- Optional Qwen2.5-1.5B local AI with rule-based fallback
+- Qwen2.5-3B local AI downloaded once by the installer, then run fully offline, with rule-based fallback
 - Full accessibility pass (focus, touch, RTL, reduced-motion, print)
 
 ---

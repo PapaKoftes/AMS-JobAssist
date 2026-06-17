@@ -129,13 +129,17 @@ used for:
 ### 2.3 The AI / polish layer
 
 The "polish" step uses a local rule-based engine
-(`tool-1-cv-maker/src/backend/polish/`) plus an optional local LLM
-(Qwen2.5-1.5B). The LLM weights are downloaded once from HuggingFace at
-install time over a temporary network window; thereafter the model file lives
-on the laptop and is loaded entirely in-process. **No participant data ever
-reaches HuggingFace, OpenAI, Anthropic, or any other remote service.** Network
-egress is enforced by the four-layer block documented in
-`PRIVACY_ENFORCEMENT.md` §3.
+(`tool-1-cv-maker/src/backend/polish/`) plus a local LLM
+(Qwen2.5-3B-Instruct, Q4_K_M, ~1.9 GB). The LLM weights are **downloaded once
+during installation** — the installer fetches the GGUF from HuggingFace over
+HTTPS and verifies it by SHA-256, then stores it in `data/models` beside the
+executable. This is a **one-time, install-time download performed by the
+installer**; **at runtime the model is loaded entirely in-process and the app
+fetches nothing.** No participant data ever reaches HuggingFace, OpenAI,
+Anthropic, or any other remote service — the only model-related network event is
+that one install-time weight download, and the running app performs **no network
+egress for the model.** Runtime network egress is enforced by the four-layer
+block documented in `PRIVACY_ENFORCEMENT.md` §3.
 
 If the LLM is unavailable, the rule-based engine produces the same shape of
 output (deterministic substitution tables for verbs and skills). This is the
@@ -261,7 +265,7 @@ installation — see `RETENTION_POLICY.md`.
 | Tool 1 database                      | `tool-1-cv-maker/src/backend/data/ams_jobassist.db` (SQLite) |
 | Tool 2 database                      | `tool-2-trainer-dashboard/src/backend/data/trainer.db`       |
 | Generated exports (PDF / DOCX / JSON) | folder chosen by the trainer per export                     |
-| Optional LLM weights                  | `~/.cache/huggingface/` (no personal data)                  |
+| LLM weights                           | `data/models/` beside the executable (no personal data; downloaded once by the installer, never fetched at runtime) |
 | Logs                                 | stderr / stdout of the local process; no log file by default |
 
 Both databases use explicit child-row deletes (NOT `ON DELETE CASCADE` —
@@ -342,9 +346,11 @@ laptops are not shared between participants without logout.
   manually attaches the finished PDF to an email or upload form outside
   AMS JobAssist.
 
-If AMS chooses to enable the optional HuggingFace LLM download at install
-time, that single download fetches model weights only — it transmits no
-participant data. This is documented in `DPA_TEMPLATE.md` §
+The local LLM weights are downloaded once by the installer at install time (from
+HuggingFace over HTTPS, SHA-256-verified); **at runtime the shipped product
+downloads nothing**, so there is no runtime model download channel and no
+transmission of any data — participant or otherwise —
+to HuggingFace or any other host. This is documented in `DPA_TEMPLATE.md` §
 Sub-Auftragsverarbeitung.
 
 ---

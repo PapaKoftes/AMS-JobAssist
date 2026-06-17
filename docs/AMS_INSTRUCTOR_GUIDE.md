@@ -229,7 +229,7 @@ Three small programs, each a single `.exe` built from `build_all.bat`:
 - **Tool 2** — your trainer dashboard
 - **Launcher** — opens both with one click
 
-549 automated tests run before every release (507 for Tool 1, 42 for Tool 2). Accessibility built in: skip links, focus rings, 44-pixel touch targets, Arabic right-to-left support, `prefers-reduced-motion`, `prefers-contrast`, print stylesheet.
+922 automated tests run before every release (852 for Tool 1, 57 for Tool 2, 13 packaging). Accessibility built in: skip links, focus rings, 44-pixel touch targets, Arabic right-to-left support, `prefers-reduced-motion`, `prefers-contrast`, print stylesheet.
 
 ---
 

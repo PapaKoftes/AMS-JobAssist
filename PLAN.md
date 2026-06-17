@@ -91,7 +91,7 @@ Checkboxes are the only workflow signal. A box is checked when the work is done 
 
 ## INTERVIEW ENGINE
 
-- [ ] Conversational follow-up via AI — after each answer, local model asks one specific targeted follow-up (skeleton in `conversational.py`, gated 501)
+- [ ] Conversational follow-up via AI — after each answer, local model asks one specific targeted follow-up (not started; the earlier 501 skeleton was removed)
 - [ ] Context-aware follow-ups — AI reads last 3 answers before generating follow-up
 - [ ] Smart quick-fill — change from pre-filled answers to sentence starters Maria completes
 - [ ] ATS target job in question 2 — tailor every subsequent follow-up toward that job's keywords
