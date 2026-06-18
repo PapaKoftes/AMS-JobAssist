@@ -106,12 +106,15 @@ You see every participant in your cohort with:
 | Column | What it tells you |
 |---|---|
 | Name | Participant's chosen display name |
-| Status | Draft / In review / Approved / Locked |
-| Progress | 0–100% — how far through the interview |
-| Last activity | When they last saved |
-| Cohort | Which course group they belong to |
+| Pfad | Interview path (e.g. unemployed, career-switch) |
+| Status | Pending / In review / Approved / Rejected |
+| Qualität | Overall CV quality score, shown as a percentage |
+| Zuletzt aktualisiert | When the submission was last updated |
+| Aktionen | Per-row actions (view, approve, lock/unlock) |
 
-You can **filter** by cohort, status, or name, and you can **search** by free text. A red dot marks CVs that need your attention.
+(There is also a leading checkbox column for selecting rows in bulk.)
+
+You can **filter** by cohort, status, or name, and you can **search** by free text.
 
 ### Side-by-side review and inline edit
 
@@ -144,7 +147,7 @@ When you are happy, click **Approve**. The CV is now locked and ready for export
 | Does any participant data go to the internet? | No. The program binds only to `127.0.0.1` and refuses outbound connections at the network layer. |
 | Does the AI coach call ChatGPT or any cloud? | No. The primary engine is a rule-based system with an Austrian job knowledge base (25 Berufe). A local AI model (3 sizes for different hardware) optionally enhances the output. Everything runs on the laptop. |
 | Where are the CVs stored? | In a single SQLite file on your laptop, in the `data/` folder next to the program. |
-| How long are they kept? | Configurable via `AMS_DATA_RETENTION_DAYS`. Default is 90 days, then auto-deleted. |
+| How long are they kept? | Configurable via `AMS_DATA_RETENTION_DAYS`. Default is 365 days for the CV Maker (Tool 1) and 90 days for the Trainer Dashboard (Tool 2); older records are auto-deleted by the daily cleanup. |
 | Can a participant download their own data? | Yes — DSGVO Article 20 endpoint built in. |
 | Can a participant request deletion? | Yes — DSGVO Article 17. One click, gone. |
 | Is there an audit log? | Yes — every export and every trainer edit is recorded in the `ExportLog` and `TrainerFeedback` tables. |

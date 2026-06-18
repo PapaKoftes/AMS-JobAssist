@@ -31,7 +31,7 @@ giving a finite storage-limitation guarantee. Abandoned drafts are purged sooner
 
 ### 2.1 The config knob — `config.py`
 
-`tool-1-cv-maker/src/backend/config.py` (line 27):
+`tool-1-cv-maker/src/backend/config.py`:
 
 ```python
 DATA_RETENTION_DAYS = int(os.environ.get("AMS_DATA_RETENTION_DAYS", "365"))
@@ -40,6 +40,11 @@ DATA_RETENTION_DAYS = int(os.environ.get("AMS_DATA_RETENTION_DAYS", "365"))
 A value of `0` disables automatic retention (not recommended).
 Positive integer N sets the hard ceiling to N days; drafts are swept after
 `min(30, N)` days.
+
+> **Tool 2 (trainer dashboard)** reads the *same* `AMS_DATA_RETENTION_DAYS`
+> variable but defaults to **`90`** (`tool-2-trainer-dashboard/src/backend/config.py`).
+> When you set the variable explicitly it applies to both tools; the
+> difference is only in the unset default.
 
 ### 2.2 The daily loop — `app.py`
 

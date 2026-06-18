@@ -41,8 +41,8 @@ AMS-JobAssist/
 | Tool 1 DB | `tool-1-cv-maker/src/backend/db.py` + `schema.sql` | SQLite wrapper + DDL |
 | Interview state machine | `tool-1-cv-maker/src/backend/interview/engine.py` | Session state, autosave, resume |
 | Interview paths | `tool-1-cv-maker/src/backend/interview/paths.py` | 5 hardcoded path definitions |
-| Conversational follow-ups | `tool-1-cv-maker/src/backend/interview/conversational.py` | LLM-driven targeted probes |
 | Autosave | `tool-1-cv-maker/src/backend/interview/autosave.py` | Transaction-based persistence |
+| Interview translations | `tool-1-cv-maker/src/backend/interview/translations.py` | UI string translations (14 languages) |
 | AI local LLM | `tool-1-cv-maker/src/backend/ai/local_llm.py` | Qwen GGUF (3 tiers) via llama-cpp-python — enhancement engine |
 | AI Ollama fallback | `tool-1-cv-maker/src/backend/ai/ollama.py` | Used if local model absent and Ollama running |
 | AI Knowledge Base | `tool-1-cv-maker/src/backend/ai/knowledge.py` | RAG retrieval over 25 Austrian jobs (berufe.json) |
@@ -58,7 +58,7 @@ AMS-JobAssist/
 | API routes (Tool 1) | `tool-1-cv-maker/src/backend/api/interview.py` | All Tool 1 REST endpoints |
 | Privacy enforcement | `tool-1-cv-maker/src/backend/privacy/network_block.py` | Loopback allowlist on `socket` |
 | **Tool 2 entrypoint** | `tool-2-trainer-dashboard/src/backend/app.py` | FastAPI app factory + lifespan |
-| Tool 2 models | `tool-2-trainer-dashboard/src/backend/models.py` | `CVSubmission`, `Cohort`, `TrainerNote`, `ExportLog`, `CohortMetrics` |
+| Tool 2 models | `tool-2-trainer-dashboard/src/backend/models.py` | `Participant`, `CVSubmission`, `TrainerFeedback`, `ExportLog`, `CohortMetrics` |
 | Tool 2 CV mapper | `tool-2-trainer-dashboard/src/backend/services/cv_mapper.py` | Normalises Tool 1 JSON shapes |
 | Tool 2 API routes | `tool-2-trainer-dashboard/src/backend/api/routes.py` | All Tool 2 REST endpoints |
 | **Packaging** | `packaging/launcher.spec` / `build_tool1.spec` / `build_tool2.spec` | Relocatable PyInstaller specs |
@@ -84,7 +84,6 @@ tool-1-cv-maker/src/backend/
 ├── interview/
 │   ├── engine.py           InterviewEngine — session state machine
 │   ├── paths.py            Question definitions for all 5 paths
-│   ├── conversational.py   LLM-driven follow-up question generator
 │   ├── autosave.py         AutosaveManager — transaction-based persistence
 │   └── translations.py     UI string translations (14 languages)
 │
@@ -131,7 +130,7 @@ tool-2-trainer-dashboard/src/backend/
 ├── app.py                  FastAPI app factory + lifespan (path fix for frozen .exe)
 ├── config.py               BaseSettings (pydantic-settings), paths, auth key
 ├── db.py                   DatabaseManager — SQLite via SQLAlchemy
-├── models.py               CVSubmission, Cohort, TrainerNote, ExportLog, CohortMetrics
+├── models.py               Participant, CVSubmission, TrainerFeedback, ExportLog, CohortMetrics
 │
 ├── api/
 │   └── routes.py           All REST endpoints (participants, import, export, analytics)
@@ -189,10 +188,10 @@ sequenceDiagram
     loop review each participant
         TR->>T2: edit / approve / lock
         T2->>DB2: UPDATE CVSubmission
-        T2->>DB2: INSERT TrainerNote
+        T2->>DB2: INSERT TrainerFeedback
     end
 
-    TR->>T2: GET /api/export/batch
+    TR->>T2: POST /api/bulk-export
     T2->>DB2: SELECT approved CVs
     T2->>DB2: INSERT ExportLog (audit trail)
     T2-->>TR: streaming ZIP of PDFs/DOCXs
@@ -285,11 +284,11 @@ Set `AMS_MODEL_TIER=light|medium|full`. The 3B (`full`) tier is downloaded once 
 
 | Table | Purpose |
 |-------|---------|
-| `CVSubmission` | Imported CV — links to `Cohort`, stores canonical CVData JSON + status (`pending` / `approved` / `locked`) |
-| `Cohort` | Group of participants — used for filtering and analytics |
-| `TrainerNote` | Free-text note attached to a CVSubmission |
-| `ExportLog` | Audit trail — every PDF/DOCX/ZIP export logged with `request_id`, trainer, timestamp |
-| `CohortMetrics` | Materialised aggregate stats per cohort (completion %, avg quality) |
+| `participants` (`Participant`) | A trainer's participant — `user_id`, `cohort_id`, `name`, `email`, `status` (`pending` / `in_review` / `approved` / `rejected`) |
+| `cv_submissions` (`CVSubmission`) | Imported CV — stores canonical CVData JSON, quality, approval status, lock flag, version |
+| `trainer_feedback` (`TrainerFeedback`) | Per-section trainer feedback — also serves as the review audit trail |
+| `export_logs` (`ExportLog`) | Audit trail — every PDF/DOCX/JSON export logged with trainer, timestamp, file path/size |
+| `cohort_metrics` (`CohortMetrics`) | Materialised aggregate stats per cohort (counts, avg/min/max quality) |
 
 ---
 
@@ -324,13 +323,23 @@ Set `AMS_MODEL_TIER=light|medium|full`. The 3B (`full`) tier is downloaded once 
 |--------|------|---------|
 | `GET` | `/api/participants` | List all participants (filter by cohort, status) |
 | `GET` | `/api/participants/{id}` | Single participant + CV data |
+| `GET` | `/api/participants/{id}/status` | Participant CV status (lock/approval) |
 | `POST` | `/api/import-cvs` | Multipart upload of Tool 1 JSON export |
 | `POST` | `/api/participants/{id}/approve` | Approve CV |
+| `POST` | `/api/participants/bulk-approve` | Approve multiple CVs in one call |
+| `PATCH` | `/api/participants/{id}/cv-section` | Edit a CV section inline |
 | `POST` | `/api/participants/{id}/lock` | Lock CV (prevent participant edits) |
-| `POST` | `/api/participants/{id}/notes` | Save trainer notes |
-| `GET` | `/api/export/pdf/{id}` | Export single CV as PDF |
-| `GET` | `/api/export/batch` | Streaming ZIP of all approved CVs |
-| `GET` | `/api/analytics/cohort/{id}` | Cohort completion + quality metrics |
+| `POST` | `/api/participants/{id}/unlock` | Unlock a previously locked CV |
+| `POST` | `/api/bulk-export` | Streaming ZIP of selected/approved CVs |
+| `GET` | `/api/export-all` | Export all participants (data dump) |
+| `GET` | `/api/cohorts/{cohort_id}/metrics` | Cohort completion + quality metrics |
+| `GET` | `/api/cohorts/{cohort_id}/skills` | Aggregated skills across a cohort |
+| `GET` | `/api/admin/backup` | Download a DB backup (admin) |
+
+> The full authoritative route list (both tools) is
+> [`docs/API_ENDPOINTS.generated.md`](docs/API_ENDPOINTS.generated.md),
+> regenerated from the live OpenAPI schema. The tables above are a
+> hand-maintained guide and may lag; trust the generated file on conflict.
 
 Every response on both tools carries a `request_id` header. Errors use a structured `{error, code, request_id}` JSON envelope so trainers can quote a single ID for support.
 

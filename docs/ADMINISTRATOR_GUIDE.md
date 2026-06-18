@@ -133,7 +133,7 @@ All configuration is driven by environment variables. Set them in the shell that
 | `AMS_TOOL2_PORT` | `8001` | Bind port for Tool 2 (dashboard) |
 | `AMS_DATA_DIR` | per-tool `data/` | Override DB + exports root |
 | `AMS_TRAINER_API_KEY` | _(unset)_ | If set, Tool 2 requires this header |
-| `AMS_DATA_RETENTION_DAYS` | _(unset)_ | If set, records older than N days are purged on startup |
+| `AMS_DATA_RETENTION_DAYS` | `365` (Tool 1), `90` (Tool 2) | Records older than N days are purged by the daily cleanup loop; `0` disables purging |
 | `AMS_MODEL_TIER` | `full` (3B, bundled) | AI model tier: `light` (0.5B, ~400 MB), `medium` (1.5B, ~1.1 GB), `full` (3B, ~1.9 GB — the bundled default) |
 | `AMS_ENFORCE_OFFLINE` | `1` | Block outbound network at socket layer (loopback allowlisted) |
 

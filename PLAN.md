@@ -53,7 +53,7 @@ Checkboxes are the only workflow signal. A box is checked when the work is done 
 - [x] `network_block.py` — rewritten 2026-05-12 to allowlist loopback (127.0.0.1, ::1, localhost) so the server keeps working while external network is blocked. Offline mode is now **on by default** (set `AMS_ENFORCE_OFFLINE=0` to disable for development).
 - [ ] CSRF token — add FastAPI CSRF middleware to Tool 1 (low priority — Tool 1 is 127.0.0.1 only, no auth)
 - [x] Consent screen — checkbox in HTML at `consentBlock`, blocks start button until ticked
-- [x] Data retention — `AMS_DATA_RETENTION_DAYS` env var triggers daily cleanup of incomplete/un-approved sessions; default 0 (keep forever)
+- [x] Data retention — `AMS_DATA_RETENTION_DAYS` env var triggers daily cleanup of old sessions (drafts after 30d, all sessions after the ceiling); default 365 in Tool 1 / 90 in Tool 2 (set `0` to keep forever)
 - [x] Participant data download — `GET /api/cv/{session_id}/my-data` exposes DSGVO Art. 20 portability; wired to `#myDataBtn`
 - [ ] Document data retention policy in trainer guide
 

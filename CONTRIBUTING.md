@@ -101,11 +101,22 @@ AI always degrades gracefully: local model → Ollama (if running) → rule-base
 
 ## Code Style
 
-- **Python**: Black formatter, ruff linter. Run both before committing.
+- **Python**: Black formatter + ruff linter are *recommended* — run them locally before committing to keep diffs clean. Note: lint/format are **not currently gated in CI**, so a PR won't be rejected for style alone (see below).
 - **Frontend**: Vanilla JavaScript. No frameworks. The people maintaining this long-term may not know React.
 - **Comments**: Only write a comment when the *why* is non-obvious — a hidden constraint, a workaround, a subtle invariant. Not what the code does.
 - **Variable names**: Clear enough to read without explanation. `session_language` not `sl`.
 - **Tests**: If you add a new API endpoint or path, add a test. The test suite runs in CI.
+
+### What CI actually checks
+
+`.github/workflows/ci.yml` gates merges on (Python 3.11 + 3.12):
+
+- `compileall` over all backend sources (syntax check)
+- the full Tool 1 and Tool 2 pytest suites (LLM-correctness tests self-skip without the model)
+- regenerating the OpenAPI route dump (`scripts/dump_openapi.py`) so API docs can't drift
+- `pip-audit` dependency scan — **non-blocking** (runs with `|| true`)
+
+There is **no Black or ruff step in CI** — formatting/linting is left to contributors locally.
 
 ---
 

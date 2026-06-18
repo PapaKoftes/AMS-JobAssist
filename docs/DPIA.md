@@ -244,15 +244,16 @@ sufficient.
 | Quality scores are not stored             | derived at request time in `interview/engine.py`, never persisted           |
 | Photo is optional                         | the photo upload field has a "skip" button on every step                    |
 | Approximate dates are accepted            | the date field accepts `"~2015"` or `"keine Angabe"`                        |
-| Default retention is bounded              | `AMS_DATA_RETENTION_DAYS=365` (config.py line 27); drafts purged after 30d  |
+| Default retention is bounded              | `AMS_DATA_RETENTION_DAYS` default `365` in Tool 1 (`config.py`), `90` in Tool 2; abandoned drafts purged after 30d, all sessions after the ceiling |
 | No tracking, telemetry, or analytics      | network is blocked at the socket layer (`privacy/network_block.py`)         |
 | No analytics IDs, cookies, or fingerprint | the frontend uses session-scoped IDs only; no third-party JS is loaded      |
 | No backup of polished CVs to cloud        | export goes to a local folder chosen by the user; cloud sync is out of band |
 
-The 365-day default gives a hard ceiling covering the course cycle plus a
-reasonable trainer-review and appeal window; abandoned drafts are purged
-sooner (30 days). Both ceilings are configurable per
-installation — see `RETENTION_POLICY.md`.
+Tool 1's 365-day default gives a hard ceiling covering the course cycle plus a
+reasonable trainer-review and appeal window; abandoned drafts are purged sooner
+(30 days), and every session (incomplete, completed, or locked) is purged once
+past the ceiling. Tool 2 (trainer dashboard) defaults to a shorter 90-day
+ceiling. All are configurable per installation — see `RETENTION_POLICY.md`.
 
 ---
 
@@ -263,7 +264,7 @@ installation — see `RETENTION_POLICY.md`.
 | Asset                                | Location                                                    |
 | ------------------------------------ | ----------------------------------------------------------- |
 | Tool 1 database                      | `tool-1-cv-maker/src/backend/data/ams_jobassist.db` (SQLite) |
-| Tool 2 database                      | `tool-2-trainer-dashboard/src/backend/data/trainer.db`       |
+| Tool 2 database                      | `tool-2-trainer-dashboard/data/ams_trainer.db`              |
 | Generated exports (PDF / DOCX / JSON) | folder chosen by the trainer per export                     |
 | LLM weights                           | `data/models/` beside the executable (no personal data; downloaded once by the installer, never fetched at runtime) |
 | Logs                                 | stderr / stdout of the local process; no log file by default |

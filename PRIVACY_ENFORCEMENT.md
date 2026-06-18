@@ -465,7 +465,7 @@ that share is itself encrypted.
 
 ---
 
-## 11. Privacy-filtered logging — `privacy/logging_rules.py`
+## 12. Privacy-filtered logging — `privacy/logging_rules.py`
 
 *(Note: the spec previously referred to this file as
 `privacy_filter.py`; the actual filename on disk is `logging_rules.py`.
@@ -513,7 +513,7 @@ codebase.
 
 ---
 
-## 12. Compliance checker — `privacy/compliance.py`
+## 13. Compliance checker — `privacy/compliance.py`
 
 `ComplianceChecker` ties the above pieces together. It accepts a
 `db_manager`, a `network_blocker`, and a `privacy_filter`, and exposes:
@@ -547,7 +547,7 @@ in a compliant state; it never tries to "fix" anything autonomously.
 
 ---
 
-## 13. Test coverage — `tests/test_privacy.py`
+## 14. Test coverage — `tests/test_privacy.py`
 
 The privacy machinery is covered by **28 unit tests** in
 `tool-1-cv-maker/tests/test_privacy.py`, split across four test classes:
@@ -594,7 +594,7 @@ defect.
 
 ---
 
-## 14. Summary table
+## 15. Summary table
 
 | Guarantee                                | Implementation                              | Verified by                                  |
 | ---------------------------------------- | ------------------------------------------- | -------------------------------------------- |
@@ -609,7 +609,7 @@ defect.
 
 ---
 
-## 15. Things that are NOT yet verified
+## 16. Things that are NOT yet verified
 
 For the avoidance of doubt:
 
