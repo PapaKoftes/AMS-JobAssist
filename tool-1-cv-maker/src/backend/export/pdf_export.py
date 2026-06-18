@@ -14,6 +14,7 @@ employment standard layout:
 import base64
 import io
 import logging
+import re
 import tempfile
 import os
 from typing import Optional, Dict, Any, List
@@ -305,31 +306,43 @@ class PDFExporter(CVExporter):
 
         # Full name — largest text on page
         left_elems.append(Paragraph(f"<b>{_esc(display_name)}</b>", styles["cv_name"]))
+
+        # Target job / Berufsziel — shown under the name when present
+        target_job = (getattr(cv_data, "target_job", "") or "").strip()
+        if target_job:
+            label = "Berufsziel" if language == "de" else "Career objective"
+            left_elems.append(
+                Paragraph(f"{label}: {_esc(target_job)}", styles["target_job"])
+            )
         left_elems.append(Spacer(1, 0.15 * cm))
 
-        # Contact bullets
+        # Contact line — plain German labels, no emoji (ATS-safe, recruiter-friendly).
+        # Rendered as a single linear paragraph so parsers read it correctly.
         if identity:
             contact_lines = []
             if identity.location:
-                contact_lines.append(f"📍 {_esc(identity.location)}")
+                contact_lines.append(f"Adresse: {_esc(identity.location)}")
             if identity.contact_phone:
-                contact_lines.append(f"📞 {_esc(identity.contact_phone)}")
+                phone = _esc(identity.contact_phone)
+                tel = re.sub(r"[^\d+]", "", str(identity.contact_phone))
+                contact_lines.append(f'Tel.: <a href="tel:{tel}">{phone}</a>')
             if identity.contact_email:
-                contact_lines.append(f"✉ {_esc(identity.contact_email)}")
+                email = _esc(identity.contact_email)
+                contact_lines.append(f'E-Mail: <a href="mailto:{email}">{email}</a>')
             if contact_lines:
                 left_elems.append(
-                    Paragraph("  ".join(contact_lines), styles["contact"])
+                    Paragraph(" | ".join(contact_lines), styles["contact"])
                 )
 
             # DOB + nationality on their own line
             extra = []
             if identity.date_of_birth:
-                extra.append(f"📅 Geburtsdatum: {_esc(identity.date_of_birth)}")
+                extra.append(f"Geburtsdatum: {_esc(identity.date_of_birth)}")
             if identity.nationality:
-                extra.append(f"🌍 Staatsangehörigkeit: {_esc(identity.nationality)}")
+                extra.append(f"Staatsangehörigkeit: {_esc(identity.nationality)}")
             if extra:
                 left_elems.append(Spacer(1, 0.05 * cm))
-                left_elems.append(Paragraph("  ".join(extra), styles["contact"]))
+                left_elems.append(Paragraph(" | ".join(extra), styles["contact"]))
 
         # ---- right: photo (or empty cell) ----------------------------
         photo_element = self._build_photo_element(identity)
@@ -718,9 +731,9 @@ class PDFExporter(CVExporter):
         start = self._format_month(period.get("start"))
         end   = self._format_month(period.get("end"))
         if start and end:
-            return f"{start} –\n{end}"
+            return f"{start} – {end}"
         if start:
-            return f"{start} –\nheute"
+            return f"{start} – heute"
         return ""
 
     @staticmethod
@@ -776,6 +789,15 @@ class PDFExporter(CVExporter):
                 leading=13,
                 textColor=self.COLOR_MUTED,
                 spaceAfter=2,
+            ),
+            "target_job": _ps(
+                "target_job",
+                fontName=FONT_REGULAR,
+                fontSize=11,
+                leading=14,
+                textColor=self.COLOR_ACCENT,
+                spaceAfter=2,
+                spaceBefore=0,
             ),
             "section_heading": _ps(
                 "section_heading",

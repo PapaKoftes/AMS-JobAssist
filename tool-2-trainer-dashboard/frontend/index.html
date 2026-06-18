@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMS JobAssist - Trainer-Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
     <div id="app">
@@ -103,6 +103,7 @@
                         <input type="checkbox" id="select-all-participants">
                         Alle auswählen
                     </label>
+                    <span id="selection-count" class="selection-count"></span>
                     <div class="bulk-actions">
                         <button class="btn btn-small" id="bulk-approve-btn" disabled title="Erst Teilnehmer auswählen">✅ Ausgewählte freigeben</button>
                         <button class="btn btn-small" id="bulk-export-btn" disabled title="Erst Teilnehmer auswählen">📤 Ausgewählte exportieren</button>
@@ -141,6 +142,7 @@
                         <button class="btn btn-small" id="detail-next-btn">Nächste →</button>
                     </div>
                     <div class="view-actions">
+                        <button class="btn btn-secondary" id="detail-lock-btn" title="Bearbeitung durch Teilnehmer sperren">🔒 Sperren</button>
                         <button class="btn btn-secondary" id="detail-refresh-btn">🔄 Aktualisieren</button>
                     </div>
                 </div>
@@ -268,6 +270,11 @@
                             <label>Name:</label>
                             <input type="text" id="setting-name" placeholder="Ihr Name">
                         </div>
+                        <div class="form-group">
+                            <label>API-Schlüssel:</label>
+                            <input type="password" id="setting-api-key" placeholder="Nur falls vom Server verlangt" autocomplete="off">
+                            <small>Wird nur lokal in diesem Browser gespeichert und bei jeder Anfrage mitgesendet.</small>
+                        </div>
                     </div>
 
                     <div class="settings-section">
@@ -301,9 +308,9 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/api.js?v=3"></script>
+    <script src="js/api.js?v=4"></script>
     <script src="js/components.js?v=3"></script>
     <script src="js/state.js?v=3"></script>
-    <script src="js/app.js?v=4"></script>
+    <script src="js/app.js?v=5"></script>
 </body>
 </html>

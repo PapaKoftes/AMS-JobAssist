@@ -54,14 +54,25 @@ ATS_KEYWORD_BANK: dict[str, list[str]] = {
 
 @dataclass
 class ATSResult:
-    """Result of an ATS compatibility analysis."""
-    score: float                        # 0.0–1.0
+    """Result of an ATS compatibility analysis.
+
+    ``score`` is a 0.0–1.0 fraction when a meaningful comparison was possible
+    (i.e. a real job description was provided). It may be ``None`` for the
+    no-job-description case, where a percentage against the generic IT-skewed
+    keyword bank would be misleading rather than informative (see
+    ``score_no_job_description``). Consumers should treat ``score is None`` as
+    "qualitative feedback only — no numeric match available".
+    """
+    score: Optional[float]              # 0.0–1.0, or None when not applicable
     matched_keywords: list[str] = field(default_factory=list)
     missing_keywords: list[str] = field(default_factory=list)
     suggestions: list[str] = field(default_factory=list)
 
     @property
     def grade(self) -> str:
+        if self.score is None:
+            # No numeric score (no job description) — qualitative-only result.
+            return "Keine Bewertung"
         if self.score >= 0.80:
             return "Sehr gut"
         if self.score >= 0.60:
@@ -72,7 +83,7 @@ class ATSResult:
 
     def to_dict(self) -> dict:
         return {
-            "score": round(self.score, 3),
+            "score": round(self.score, 3) if self.score is not None else None,
             "grade": self.grade,
             "matched_keywords": self.matched_keywords,
             "missing_keywords": self.missing_keywords,
@@ -280,5 +291,48 @@ def score_against_bank(cv_text: str) -> ATSResult:
         score=score,
         matched_keywords=matched,
         missing_keywords=missing,
+        suggestions=suggestions,
+    )
+
+
+def score_no_job_description(cv_text: str) -> ATSResult:
+    """
+    Honest, encouraging ATS feedback when NO job description is available.
+
+    The generic keyword bank is small (~14 seed terms, expanded to ~51) and
+    IT-skewed. Dividing matched keywords by the WHOLE bank gives a solid
+    trades/care/retail CV a demoralising ~10–15 % — a meaningless number for
+    the AMS clientele, who mostly apply by human-read SME email rather than
+    through an automated ATS.
+
+    So instead of a misleading percentage, this returns ``score=None`` plus the
+    keywords we *did* recognise and qualitative, encouraging guidance. Use
+    ``score_against_job`` whenever a real job ad is pasted — that path still
+    produces a meaningful keyword-match percentage.
+    """
+    matched = extract_keywords(cv_text)
+
+    suggestions: list[str] = []
+    if matched:
+        joined = ", ".join(matched)
+        suggestions.append(
+            f"Gut erkannte Schlüsselbegriffe in Ihrem Lebenslauf: {joined}."
+        )
+    else:
+        suggestions.append(
+            "Nennen Sie konkrete Tätigkeiten, Werkzeuge und Programme, mit "
+            "denen Sie arbeiten — das macht Ihren Lebenslauf greifbarer."
+        )
+    suggestions.append(
+        "Für eine gezielte Auswertung fügen Sie eine konkrete Stellenanzeige "
+        "ein. Dann vergleichen wir Ihren Lebenslauf direkt mit den dort "
+        "geforderten Begriffen."
+    )
+
+    # score=None → no misleading percentage; grade resolves to "Keine Bewertung".
+    return ATSResult(
+        score=None,
+        matched_keywords=matched,
+        missing_keywords=[],
         suggestions=suggestions,
     )

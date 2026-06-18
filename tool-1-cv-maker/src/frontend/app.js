@@ -177,6 +177,26 @@ function cvDocSetPrompt(question, opts = {}) {
     }
     const prompt = document.getElementById('cvActivePrompt');
     if (prompt) prompt.classList.toggle('cv-prompt-reask', !!opts.reask);
+
+    // Read-aloud for the active question (parity with convAddAI bubbles). For
+    // low-literacy users this is a major unlock. `opts.speakLang` lets dump mode
+    // force 'de' when the spoken text is the German fallback, so a non-German
+    // voice doesn't mangle German words.
+    const speakBtn = document.getElementById('advisorSpeakBtn');
+    if (speakBtn) {
+        const txt  = question.text ?? '';
+        const hint = question.hint ?? '';
+        if (_canSpeak && txt) {
+            const full = hint ? `${txt}. ${hint}` : txt;
+            const lang = opts.speakLang || state.inputLanguage;
+            speakBtn.style.display = '';
+            speakBtn.title = t('readAloud');
+            speakBtn.setAttribute('aria-label', t('readAloud'));
+            speakBtn.onclick = () => speakText(full, lang);
+        } else {
+            speakBtn.style.display = 'none';
+        }
+    }
     _scrollSheetToActive();
 }
 
@@ -2197,6 +2217,14 @@ function dumpPromptForPath() {
     return t('dumpPrompt');
 }
 
+// The dump prompt/hint are only translated for DE and EN; the other 10 languages
+// fall back to German. Speaking German words with a non-German voice produces
+// garbled phonemes, so read the fallback aloud as German.
+function dumpSpeakLang() {
+    const lang = state?.inputLanguage || 'de';
+    return (lang === 'de' || lang === 'en') ? lang : 'de';
+}
+
 /**
  * Push all translated strings into the DOM.
  * Called whenever the user switches language.
@@ -2335,6 +2363,9 @@ function applyTranslations() {
     setPlaceholder('clPositionInput', 'clPositionPlaceholder');
     setText('generateCLBtnLabel',     'generateCLBtn');
     setText('cancelCLBtnLabel',       'cancelCLBtn');
+
+    // --- Free-form dump mode ---
+    setText('dumpFinishLabel',      'dumpFinishLabel');
 
     // --- Photo upload ---
     setText('photoUploadLabelText', 'photoUploadLabel');
@@ -2515,6 +2546,12 @@ class APIClient {
             throw new Error(err.detail || `Export failed (${response.status})`);
         }
         return response;
+    }
+
+    // Persist the chosen application photo so it lands in the exported PDF.
+    // Body: { photo: "<dataURL>" }. Endpoint added by the backend agent.
+    savePhoto(sessionId, photoDataUrl) {
+        return this._request(`/api/cv/${sessionId}/photo`, 'PUT', { photo: photoDataUrl });
     }
 
     // §5 ATS scoring — reuses existing backend endpoint
@@ -3649,7 +3686,7 @@ class InterviewManager {
             state.followUpsShown       = 0;   // reset gentle-probe counter per interview
             state.totalQuestions       = data.progress.total;
             state.currentQuestion      = data.question;
-            state.dumpMode             = true;   // start in free-form "dump" mode
+            state.dumpMode             = false;  // start in guided step-by-step mode
             state.currentGap           = null;   // first message is the big dump
             state.lastJob              = '';
             state.dumpHasContent       = false;
@@ -3667,18 +3704,17 @@ class InterviewManager {
             if (state.sessionToken) localStorage.setItem(TOKEN_STORAGE_KEY, state.sessionToken);
 
             ui.showScreen('interview');
-            // Free-form start: invite the participant to dump everything; the AI
-            // structures it onto the CV, then we converse about any gaps. The
-            // opening is flavoured by the chosen path (unemployed/student/…).
-            cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} });
-            ui.updateDumpProgress({});
-            document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
+            // Guided start: ask one fully-translated question at a time. Free-form
+            // "dump" mode is untranslated for the 10 non-DE/EN languages, so a new
+            // interview begins guided; the participant can switch via modeSwitchBtn.
+            ui.displayQuestion(state.currentQuestion);
+            ui.updateProgress(data.progress.current, data.progress.total);
+            document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'none');
+            document.getElementById('skipBtn')?.style.setProperty('display', 'inline-flex');
             this.updateModeSwitchBtn();
-            if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
-            // Dump mode: no "skip", and the send button just sends.
-            document.getElementById('skipBtn')?.style.setProperty('display', 'none');
+            if (ui.answerInput) ui.answerInput.placeholder = t('answerPlaceholder');
             const sb = document.getElementById('submitBtn');
-            if (sb) sb.textContent = t('dumpSend') || 'Senden →';
+            if (sb) sb.textContent = t('submitBtn') || 'Weiter →';
             ui.updateSubmitButton();
             ui.updateSaveStatus(t('statusReady'));
         } catch (err) {
@@ -4365,7 +4401,7 @@ class InterviewManager {
             // → free: back to the (path-flavoured) dump conversation.
             state.dumpMode = true;
             convAddAI(t('freeSwitchMsg'));
-            cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} });
+            cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} }, { speakLang: dumpSpeakLang() });
             document.getElementById('dumpFinishBtn')?.style.setProperty('display', 'inline-flex');
             document.getElementById('skipBtn')?.style.setProperty('display', 'none');
             if (ui.answerInput) ui.answerInput.placeholder = t('dumpPlaceholder') || t('answerPlaceholder');
@@ -4543,7 +4579,12 @@ class InterviewManager {
             const missingRow = document.getElementById('atsMissingRow');
             const suggestsUl = document.getElementById('atsSuggestions');
 
-            if (scoreBadge) scoreBadge.textContent = `${Math.round((d.score ?? 0) * 100)}%`;
+            // score may be null (no job description) — show a dash, not a
+            // misleading 0%, since a percentage against the generic bank is
+            // meaningless without a real job ad to compare against.
+            if (scoreBadge) scoreBadge.textContent = (d.score == null)
+                ? '—'
+                : `${Math.round(d.score * 100)}%`;
             if (gradeEl)    gradeEl.textContent    = d.grade ?? '';
 
             if (d.matched_keywords?.length) {
@@ -4805,7 +4846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dump mode: build the CV from what's been gathered so far.
     document.getElementById('dumpFinishBtn')?.addEventListener('click', () => {
         if (state.dumpHasContent) interview.showCompletion();
-        else cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} });
+        else cvDocSetPrompt({ text: dumpPromptForPath(), hint: t('dumpHint'), examples: {} }, { speakLang: dumpSpeakLang() });
     });
 
     // Completion screen
@@ -4891,6 +4932,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const headerPlus = document.getElementById('cvPhotoPlus');
             if (headerImg) { headerImg.src = dataUrl; headerImg.style.display = 'block'; }
             if (headerPlus) headerPlus.style.display = 'none';
+            // Persist to the backend so the photo reaches the exported PDF.
+            // Resilient: a failure here must not block the interview.
+            if (state.sessionId) {
+                api.savePhoto(state.sessionId, dataUrl).catch(err =>
+                    console.warn('Photo upload failed (will still export via fallback):', err));
+            }
             // Enable submit
             ui.updateSubmitButton();
         };

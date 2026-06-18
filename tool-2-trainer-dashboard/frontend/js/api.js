@@ -198,6 +198,38 @@ class TrainerAPI {
     }
 
     /**
+     * Get approval + lock status for a participant's latest CV.
+     */
+    async getParticipantStatus(participantId) {
+        if (!participantId || participantId <= 0) throw new Error('Invalid participant ID');
+        return this.request(`/participants/${participantId}/status`);
+    }
+
+    /**
+     * Lock a participant's CV (prevents further participant edits).
+     */
+    async lockParticipant(participantId, lockedBy) {
+        if (!participantId || participantId <= 0) throw new Error('Invalid participant ID');
+        if (!lockedBy) throw new Error('Missing locked_by');
+        return this.request(`/participants/${participantId}/lock`, {
+            method: 'POST',
+            body: JSON.stringify({ locked_by: lockedBy })
+        });
+    }
+
+    /**
+     * Unlock a previously locked CV.
+     */
+    async unlockParticipant(participantId, lockedBy) {
+        if (!participantId || participantId <= 0) throw new Error('Invalid participant ID');
+        if (!lockedBy) throw new Error('Missing locked_by');
+        return this.request(`/participants/${participantId}/unlock`, {
+            method: 'POST',
+            body: JSON.stringify({ locked_by: lockedBy })
+        });
+    }
+
+    /**
      * Set API key for authentication
      */
     setApiKey(key) {

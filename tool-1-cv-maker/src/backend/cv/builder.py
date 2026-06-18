@@ -579,12 +579,43 @@ class CVBuilder:
                 phone = text
             elif qid == "id_email":
                 email = text
+
+        # Carry over a previously-persisted photo / Geburtsdatum. These are NOT
+        # captured by interview questions — they are set out-of-band via
+        # PUT /api/cv/{id}/photo, which writes them onto the stored CVData.
+        # complete_interview rebuilds the CV (this method runs again) and
+        # re-saves, so without this a re-completion would silently wipe the
+        # participant's uploaded Bewerbungsfoto and DOB.
+        prev_photo, prev_dob = self._get_persisted_photo_dob(session_id)
+
         return CVIdentity(
             full_name=full_name,
             location=location,
             contact_phone=phone or None,
             contact_email=email or None,
+            photo=prev_photo,
+            date_of_birth=prev_dob,
         )
+
+    def _get_persisted_photo_dob(self, session_id: int):
+        """Read photo / date_of_birth from a previously stored CVData, if any.
+
+        Returns (photo, date_of_birth), both Optional[str]. Best-effort and never
+        raises: a missing/legacy/un-parseable row simply yields (None, None).
+        """
+        import json as _json
+        try:
+            rows = self.db.execute_query(
+                "SELECT polished_output FROM cv_data WHERE session_id = ?",
+                (session_id,)
+            )
+            if not rows:
+                return None, None
+            ident = (_json.loads(rows[0]["polished_output"]) or {}).get("identity") or {}
+            return ident.get("photo"), ident.get("date_of_birth")
+        except Exception as _exc:
+            logger.debug(f"Could not read persisted photo/DOB (non-fatal): {_exc}")
+            return None, None
 
     def calculate_category_quality(self, sections: List[CVSection]) -> float:
         """

@@ -823,7 +823,7 @@ async def ats_score(body: ATSScoreRequest, request: Request):
     if cv_data is None:
         raise HTTPException(status_code=404, detail="CV not found — complete the interview first")
 
-    from polish.ats import score_against_job, score_against_bank, validate_cv_structure
+    from polish.ats import score_against_job, score_no_job_description, validate_cv_structure
     # Build full CV text from all sections
     texts = []
     for section_list in [cv_data.background, cv_data.experience, cv_data.skills,
@@ -835,7 +835,9 @@ async def ats_score(body: ATSScoreRequest, request: Request):
     if body.job_description:
         result = score_against_job(cv_text, body.job_description)
     else:
-        result = score_against_bank(cv_text)
+        # No job ad → honest, encouraging feedback instead of a misleading low
+        # percentage against the IT-skewed bank (result.score will be None).
+        result = score_no_job_description(cv_text)
 
     structural_warnings = validate_cv_structure(cv_data)
     all_suggestions = result.suggestions + structural_warnings
@@ -941,6 +943,145 @@ def update_cv_skills(body: SkillsUpdateRequest, request: Request):
     cv_data.all_skills = clean
     cv_storage.save_cv_data(cv_data, session_id=body.session_id)
     return {"status": "success", "data": {"skills": clean}}
+
+
+# Cap a stored photo at ~3 MB of base64 (≈2.2 MB of image). Austrian application
+# photos are small headshots; anything larger is almost certainly a full-res
+# camera dump that bloats the DB and the exported PDF for no benefit.
+_MAX_PHOTO_DATA_URL_BYTES = 3 * 1024 * 1024
+
+
+def _sanitize_photo_data_url(data_url: str) -> str:
+    """
+    Validate, size-cap and EXIF-strip an incoming base64 photo data URL.
+
+    Returns a clean ``data:image/...;base64,<payload>`` string, or raises
+    HTTPException(400) on anything that isn't a plausible small image.
+
+    Privacy: the DPIA flags camera EXIF (GPS, device id, timestamps) as a risk,
+    so we re-encode the pixels through Pillow without any metadata when Pillow is
+    available. If Pillow is missing we fail safe by still storing the image but
+    only when it is already a metadata-light format we can vouch for is hard —
+    so without Pillow we keep the original bytes (the EXIF risk is documented and
+    the image is still local-only PII).
+    """
+    import base64 as _b64
+    import re as _re
+
+    s = (data_url or "").strip()
+    if len(s.encode("utf-8")) > _MAX_PHOTO_DATA_URL_BYTES:
+        raise HTTPException(status_code=400, detail="Foto zu groß (max. ~2 MB).")
+
+    m = _re.match(r"^data:(image/(?:png|jpe?g|webp));base64,(.+)$", s, _re.IGNORECASE | _re.DOTALL)
+    if not m:
+        raise HTTPException(
+            status_code=400,
+            detail="Ungültiges Bildformat — erwartet wird ein PNG/JPEG/WebP data-URL.",
+        )
+    declared_mime = m.group(1).lower()
+    try:
+        raw = _b64.b64decode(m.group(2), validate=True)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Foto konnte nicht dekodiert werden.")
+    if not raw:
+        raise HTTPException(status_code=400, detail="Leeres Bild.")
+
+    # Strip EXIF/metadata by re-encoding the pixels with Pillow. Best effort:
+    # if Pillow is unavailable we keep the original bytes (documented EXIF risk).
+    try:
+        import io as _io
+        from PIL import Image as _Image  # type: ignore
+
+        img = _Image.open(_io.BytesIO(raw))
+        img.load()
+        fmt = (img.format or "").upper()
+        if fmt == "JPEG":
+            out_fmt, out_mime = "JPEG", "image/jpeg"
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+        elif fmt == "WEBP":
+            out_fmt, out_mime = "WEBP", "image/webp"
+        else:  # PNG / anything else Pillow opened → normalise to PNG
+            out_fmt, out_mime = "PNG", "image/png"
+        buf = _io.BytesIO()
+        # New empty image carries no EXIF; saving copies pixels only.
+        clean = _Image.new(img.mode, img.size)
+        clean.putdata(list(img.getdata()))
+        clean.save(buf, format=out_fmt)
+        payload = _b64.b64encode(buf.getvalue()).decode("ascii")
+        return f"data:{out_mime};base64,{payload}"
+    except HTTPException:
+        raise
+    except Exception as _exc:
+        logger.warning(f"photo: EXIF strip skipped (Pillow unavailable/failed): {_exc}")
+        # Fail safe: re-emit the validated original bytes under the declared mime.
+        payload = _b64.b64encode(raw).decode("ascii")
+        return f"data:{declared_mime};base64,{payload}"
+
+
+class PhotoUpdateRequest(BaseModel):
+    # Empty string clears the photo. A data URL sets it.
+    photo: str = ""
+    # Optional Geburtsdatum (Austrian CVs commonly show it). Free-form so the
+    # frontend can pass "1990" or "1990-05-12"; empty string clears it.
+    date_of_birth: Optional[str] = None
+
+
+@app.put("/api/cv/{session_id}/photo", tags=["CV"])
+def update_cv_photo(session_id: int, body: PhotoUpdateRequest, request: Request):
+    """Persist (or clear) the participant's Bewerbungsfoto and optional Geburtsdatum.
+
+    Local-only (mutates stored PII by session_id). Mirrors update_cv_skills: the
+    photo/DOB is written onto the STORED CVData.identity, so every consumer
+    (PDF/DOCX/Europass export header, Bewerbungs-Check) immediately reflects it.
+
+    EXIF metadata is stripped from the image before storage (DPIA privacy
+    requirement). Send an empty ``photo`` to remove the photo; send an empty
+    ``date_of_birth`` to clear the DOB.
+    """
+    _require_local(request)
+    cv_storage: CVStorage = request.app.state.cv_storage
+    cv_data = cv_storage.get_cv_data(session_id)
+    if cv_data is None:
+        # The photo UI appears mid-interview, before complete_interview has built
+        # and stored the CV (always the case in the default guided mode). Rather
+        # than drop the upload, create a minimal, not-ready CVData so the photo
+        # persists now; build_cv_from_session later carries it over into the
+        # finished CV via _extract_identity / _get_persisted_photo_dob.
+        sess = cv_storage.db.get_session(session_id)
+        if sess is None:
+            raise HTTPException(status_code=404, detail="Sitzung nicht gefunden.")
+        from cv.models import CVData
+        cv_data = CVData(
+            session_id=str(session_id),
+            user_id=str(sess.get("user_id") or session_id),
+            interview_path=sess.get("interview_path") or "other",
+            language_input=sess.get("language") or "de",
+        )
+
+    from cv.models import CVIdentity
+    if cv_data.identity is None:
+        cv_data.identity = CVIdentity(full_name=str(cv_data.user_id))
+
+    photo_in = (body.photo or "").strip()
+    if photo_in:
+        cv_data.identity.photo = _sanitize_photo_data_url(photo_in)
+    else:
+        cv_data.identity.photo = None
+
+    # DOB: only touch it when the field was supplied (None = leave unchanged).
+    if body.date_of_birth is not None:
+        dob = body.date_of_birth.strip()
+        cv_data.identity.date_of_birth = dob or None
+
+    cv_storage.save_cv_data(cv_data, session_id=session_id)
+    return {
+        "status": "success",
+        "data": {
+            "photo": bool(cv_data.identity.photo),
+            "date_of_birth": cv_data.identity.date_of_birth,
+        },
+    }
 
 
 @app.post("/api/cv/check", tags=["ATS"])

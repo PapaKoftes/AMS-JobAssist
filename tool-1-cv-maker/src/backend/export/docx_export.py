@@ -216,28 +216,37 @@ class DOCXExporter(CVExporter):
         name_run.font.size    = Pt(20)
         name_run.font.bold    = True
         name_run.font.color.rgb = COLOR_SECTION
-        name_para.paragraph_format.space_after = Pt(4)
+        name_para.paragraph_format.space_after = Pt(2)
 
-        # Contact lines
+        # Target job / Berufsziel — shown under the name when present
+        target_job = (getattr(cv_data, "target_job", "") or "").strip()
+        if target_job:
+            tj_label = "Berufsziel" if language == "de" else "Career objective"
+            tjp = left_cell.add_paragraph(f"{tj_label}: {target_job}")
+            tjp.runs[0].font.size = Pt(11)
+            tjp.runs[0].font.color.rgb = COLOR_ACCENT
+            tjp.paragraph_format.space_after = Pt(2)
+
+        # Contact lines — plain German labels, no emoji (ATS-safe, recruiter-friendly)
         if identity:
             contact_parts = []
             if identity.location:
-                contact_parts.append(f"📍 {identity.location}")
+                contact_parts.append(f"Adresse: {identity.location}")
             if identity.contact_phone:
-                contact_parts.append(f"📞 {identity.contact_phone}")
+                contact_parts.append(f"Tel.: {identity.contact_phone}")
             if identity.contact_email:
-                contact_parts.append(f"✉ {identity.contact_email}")
+                contact_parts.append(f"E-Mail: {identity.contact_email}")
             if contact_parts:
-                cp = left_cell.add_paragraph("  ".join(contact_parts))
+                cp = left_cell.add_paragraph(" | ".join(contact_parts))
                 cp.runs[0].font.size = Pt(9)
                 cp.runs[0].font.color.rgb = COLOR_MUTED
                 cp.paragraph_format.space_after = Pt(2)
 
             extra = []
             if identity.date_of_birth:
-                extra.append(f"📅 Geburtsdatum: {identity.date_of_birth}")
+                extra.append(f"Geburtsdatum: {identity.date_of_birth}")
             if identity.nationality:
-                extra.append(f"🌍 Staatsangehörigkeit: {identity.nationality}")
+                extra.append(f"Staatsangehörigkeit: {identity.nationality}")
             if extra:
                 ep = left_cell.add_paragraph("  ".join(extra))
                 ep.runs[0].font.size = Pt(9)

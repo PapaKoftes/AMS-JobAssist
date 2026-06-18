@@ -14,6 +14,10 @@ class TrainerApp {
         this.currentView = 'dashboard';
         this.currentPage = 1;
         this.totalPages = 1;
+        // Classroom-scale: load the whole cohort in one page so "select all"
+        // is never silently lossy. Backend caps page_size at MAX_PAGE_SIZE (200),
+        // so we page-loop in loadParticipants() to gather everything.
+        this.pageSize = 200;
         this.init();
     }
 
@@ -124,7 +128,7 @@ class TrainerApp {
         appState.setLoading('participants', true);
 
         try {
-            const response = await api.listParticipants();
+            const response = await api.listParticipants(null, null, 1, this.pageSize);
             // Handle paginated response
             const participants = response.items || response;
             appState.setParticipants(participants);
@@ -245,18 +249,25 @@ class TrainerApp {
         appState.setLoading('participants', true);
 
         try {
-            const response = await api.listParticipants(
-                appState.filters.cohort || null,
-                appState.filters.status || null,
-                this.currentPage
-            );
+            // Page-loop so "select all" sees the whole filtered set, not just
+            // the first 50. Backend caps page_size at 200, so loop if needed.
+            const cohort = appState.filters.cohort || null;
+            const status = appState.filters.status || null;
+            let all = [];
+            let page = 1;
+            let totalPages = 1;
+            do {
+                const response = await api.listParticipants(cohort, status, page, this.pageSize);
+                const items = response.items || response;
+                all = all.concat(items);
+                totalPages = response.total_pages || 1;
+                page += 1;
+            } while (page <= totalPages);
 
-            // Handle paginated response
-            const participants = response.items || response;
-            this.totalPages = response.total_pages || 1;
-            this.currentPage = response.page || 1;
+            this.totalPages = totalPages;
+            this.currentPage = 1;
 
-            appState.setParticipants(participants);
+            appState.setParticipants(all);
             this.updateCohortSelectors();
             this.renderParticipantsList();
         } catch (error) {
@@ -320,6 +331,13 @@ class TrainerApp {
             const btn = document.getElementById(id);
             if (btn) btn.disabled = count === 0;
         });
+
+        // Make the selection scope explicit so "select all" is never ambiguous.
+        const countEl = document.getElementById('selection-count');
+        if (countEl) {
+            const total = appState.getFilteredParticipants().length;
+            countEl.textContent = count > 0 ? `${count} von ${total} ausgewählt` : '';
+        }
     }
 
     async bulkApprove() {
@@ -334,25 +352,34 @@ class TrainerApp {
         }
 
         appState.setLoading('approval', true);
-        let successCount = 0;
+        const ids = Array.from(appState.selectedParticipants);
 
-        for (const participantId of appState.selectedParticipants) {
-            try {
-                await api.approveSubmission(participantId, {
-                    approval_status: 'approved',
-                    feedback: 'Approved via bulk action',
-                    approved_by: trainerName
-                });
-                successCount++;
-            } catch (error) {
-                console.error(`Error approving participant ${participantId}:`, error);
+        try {
+            // Atomic bulk endpoint — one call, commits in a single transaction.
+            // Empty feedback so the backend preserves any existing trainer_notes.
+            const result = await api.bulkApprove({
+                participant_ids: ids,
+                approval_status: 'approved',
+                feedback: '',
+                approved_by: trainerName
+            });
+
+            appState.clearSelections();
+            this.loadParticipants();
+
+            const errors = result.errors || [];
+            if (errors.length > 0) {
+                alert(`${result.approved} von ${count} Teilnehmern freigegeben.\n` +
+                    `Fehlgeschlagen:\n${errors.join('\n')}`);
+            } else {
+                alert(`${result.approved} von ${count} Teilnehmern freigegeben`);
             }
+        } catch (error) {
+            console.error('Bulk approve error:', error);
+            alert(`Freigabe fehlgeschlagen: ${error.message}`);
+        } finally {
+            appState.setLoading('approval', false);
         }
-
-        appState.clearSelections();
-        appState.setLoading('approval', false);
-        this.loadParticipants();
-        alert(`${successCount} von ${count} Teilnehmern freigegeben`);
     }
 
     async bulkReject() {
@@ -369,25 +396,35 @@ class TrainerApp {
         }
 
         appState.setLoading('approval', true);
-        let successCount = 0;
+        const ids = Array.from(appState.selectedParticipants);
 
-        for (const participantId of appState.selectedParticipants) {
-            try {
-                await api.approveSubmission(participantId, {
-                    approval_status: 'rejected',
-                    feedback: reason,
-                    approved_by: trainerName
-                });
-                successCount++;
-            } catch (error) {
-                console.error(`Error rejecting participant ${participantId}:`, error);
+        try {
+            // No dedicated bulk-reject endpoint exists; the atomic bulk-approve
+            // endpoint accepts any approval_status, so reuse it for rejections.
+            // The reason is real feedback, so it is passed through to trainer_notes.
+            const result = await api.bulkApprove({
+                participant_ids: ids,
+                approval_status: 'rejected',
+                feedback: reason,
+                approved_by: trainerName
+            });
+
+            appState.clearSelections();
+            this.loadParticipants();
+
+            const errors = result.errors || [];
+            if (errors.length > 0) {
+                alert(`${result.approved} von ${count} Teilnehmern abgelehnt.\n` +
+                    `Fehlgeschlagen:\n${errors.join('\n')}`);
+            } else {
+                alert(`${result.approved} von ${count} Teilnehmern abgelehnt`);
             }
+        } catch (error) {
+            console.error('Bulk reject error:', error);
+            alert(`Ablehnung fehlgeschlagen: ${error.message}`);
+        } finally {
+            appState.setLoading('approval', false);
         }
-
-        appState.clearSelections();
-        appState.setLoading('approval', false);
-        this.loadParticipants();
-        alert(`${successCount} von ${count} Teilnehmern abgelehnt`);
     }
 
     async bulkExport() {
@@ -397,9 +434,8 @@ class TrainerApp {
             return;
         }
 
-        const format = prompt(`Export-Format wählen für ${ids.length} Teilnehmer:\npdf / docx / json`, 'pdf');
-        if (!format || !['pdf', 'docx', 'json'].includes(format.trim().toLowerCase())) return;
-        const fmt = format.trim().toLowerCase();
+        const fmt = await this._chooseExportFormat(ids.length);
+        if (!fmt) return;  // cancelled
 
         try {
             const headers = { 'Content-Type': 'application/json' };
@@ -506,6 +542,13 @@ class TrainerApp {
             });
         }
 
+        const lockBtn = document.getElementById('detail-lock-btn');
+        if (lockBtn) {
+            lockBtn.addEventListener('click', async () => {
+                await this.toggleLock();
+            });
+        }
+
         // B2: Prev/Next participant navigation
         if (prevBtn) {
             prevBtn.addEventListener('click', async () => {
@@ -551,11 +594,67 @@ class TrainerApp {
             const participant = await api.getParticipant(participantId);
             appState.setCurrentParticipant(participant);
             this.renderDetailView(participant);
+
+            // Lock state lives on the submission and is exposed via /status.
+            try {
+                const status = await api.getParticipantStatus(participantId);
+                this.currentLocked = !!status.locked;
+            } catch (e) {
+                console.warn('Could not load lock status:', e);
+                this.currentLocked = false;
+            }
+            this.renderLockButton();
         } catch (error) {
             console.error('Detail load error:', error);
             alert(`Fehler beim Laden der Teilnehmer-Details: ${error.message}`);
         } finally {
             appState.setLoading('detail', false);
+        }
+    }
+
+    renderLockButton() {
+        const lockBtn = document.getElementById('detail-lock-btn');
+        if (!lockBtn) return;
+        if (this.currentLocked) {
+            lockBtn.textContent = '🔓 Entsperren';
+            lockBtn.title = 'Bearbeitung durch Teilnehmer wieder erlauben';
+            lockBtn.classList.add('is-locked');
+        } else {
+            lockBtn.textContent = '🔒 Sperren';
+            lockBtn.title = 'Bearbeitung durch Teilnehmer sperren';
+            lockBtn.classList.remove('is-locked');
+        }
+    }
+
+    async toggleLock() {
+        if (!appState.currentParticipant) {
+            alert('Kein Teilnehmer ausgewählt');
+            return;
+        }
+        const trainerName = appState.currentUser.name;
+        if (!trainerName || trainerName === 'Trainer') {
+            alert('Bitte legen Sie zuerst Ihren Trainer-Namen in den Einstellungen fest.');
+            return;
+        }
+
+        const participantId = appState.currentParticipant.participant_id;
+        const lockBtn = document.getElementById('detail-lock-btn');
+        if (lockBtn) lockBtn.disabled = true;
+
+        try {
+            if (this.currentLocked) {
+                await api.unlockParticipant(participantId, trainerName);
+                this.currentLocked = false;
+            } else {
+                await api.lockParticipant(participantId, trainerName);
+                this.currentLocked = true;
+            }
+            this.renderLockButton();
+        } catch (error) {
+            console.error('Lock toggle error:', error);
+            alert(`Sperren/Entsperren fehlgeschlagen: ${error.message}`);
+        } finally {
+            if (lockBtn) lockBtn.disabled = false;
         }
     }
 
@@ -995,6 +1094,47 @@ class TrainerApp {
     /* ========================================
        UTILITY METHODS
        ======================================== */
+
+    /**
+     * Show a small modal letting the trainer pick an export format.
+     * Resolves to 'pdf' | 'docx' | 'json', or null if cancelled.
+     * Replaces the old free-text prompt() so the format can't be mistyped.
+     */
+    _chooseExportFormat(count) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <h3>Export-Format wählen</h3>
+                <p>Format für ${count} Teilnehmer auswählen:</p>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" data-format="pdf">PDF</button>
+                    <button class="btn btn-secondary" data-format="docx">Word (.docx)</button>
+                    <button class="btn btn-secondary" data-format="json">JSON</button>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-small" data-format="">Abbrechen</button>
+                </div>
+            `;
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            const finish = (value) => {
+                overlay.remove();
+                resolve(value || null);
+            };
+
+            modal.querySelectorAll('[data-format]').forEach(btn => {
+                btn.addEventListener('click', () => finish(btn.dataset.format));
+            });
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) finish('');
+            });
+        });
+    }
 
     /**
      * Safely set text content of an element by ID
